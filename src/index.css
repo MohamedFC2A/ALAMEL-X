@@ -2,3 +2,9 @@
 @import './styles/base.css';
 @import './styles/layout.css';
 @import './styles/components.css';
+
+.app-shell__noise,
+.app-shell__grid,
+.app-shell__vignette {
+    pointer-events: none !important;
+}

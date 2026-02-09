@@ -2,6 +2,10 @@
 
 /* ─── Cards & Panels ─── */
 .glass-card {
+    position: relative;
+    z-index: var(--z-ui);
+    box-sizing: border-box;
+    max-width: 100%;
     border-radius: var(--radius-2);
     border: 1px solid var(--stroke-1);
     background: color-mix(in oklab, var(--surface-1) 90%, transparent);
@@ -160,6 +164,7 @@
 /* ─── Buttons ─── */
 .game-button {
     position: relative;
+    z-index: var(--z-ui);
     min-height: 44px;
     border-radius: var(--radius-1);
     border: 1px solid var(--stroke-1);
@@ -191,7 +196,7 @@
 }
 
 .game-button__label {
-    line-height: 1;
+    line-height: 1.6;
 }
 
 .game-button--md {
@@ -206,9 +211,9 @@
 }
 
 .game-button--hero {
-    min-height: 64px;
     width: min(100%, 320px);
-    padding: 0.75rem 1.25rem;
+    padding-block: var(--space-3);
+    padding-inline: var(--space-4);
     border-radius: var(--radius-2);
     font-size: clamp(1rem, 3.5vw, 1.25rem);
     font-weight: 700;
@@ -222,7 +227,8 @@
 }
 
 .game-button--icon {
-    min-height: 64px;
+    padding-block: var(--space-3);
+    padding-inline: var(--space-2);
     width: calc(33.333% - var(--space-2));
     border-radius: var(--radius-2);
     flex-direction: column;
@@ -331,7 +337,7 @@
 .reveal-action-bar {
     position: sticky;
     inset-block-end: var(--space-2);
-    z-index: 25;
+    z-index: var(--z-sticky);
     border-color: color-mix(in oklab, var(--accent) 40%, transparent);
 }
 
@@ -366,6 +372,7 @@
 }
 
 .case-actions {
+    justify-content: center;
     padding: 0.16rem 0;
     flex-wrap: wrap;
 }
@@ -522,6 +529,9 @@ input[type='range'] {
 
 .player-main {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
 }
 
 .player-main p {
@@ -571,11 +581,17 @@ input[type='range'] {
 .player-select-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    place-items: center;
+    justify-content: center;
     gap: var(--space-2);
 }
 
 .player-select-grid.compact {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.player-select-grid>* {
+    width: 100%;
 }
 
 .pick-card {
@@ -650,6 +666,14 @@ input[type='range'] {
 .phase-card,
 .timer-card {
     text-align: center;
+}
+
+.phase-card,
+.timer-card,
+.history-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
 }
 
 .handoff-card {
@@ -848,7 +872,7 @@ input[type='range'] {
 /* ─── Timer & Progress ─── */
 .cooldown-text {
     color: var(--text-soft);
-    margin-top: var(--space-2);
+    margin-block-start: var(--space-2);
 }
 
 .timer-card h2 {
@@ -861,7 +885,7 @@ input[type='range'] {
 }
 
 .progress-track {
-    margin-top: var(--space-2);
+    margin-block-start: var(--space-2);
     width: 100%;
     height: 10px;
     border-radius: 999px;
@@ -905,18 +929,20 @@ input[type='range'] {
 .choice-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    place-items: center;
     gap: var(--space-2);
-    margin-top: var(--space-2);
+    margin-block-start: var(--space-2);
 }
 
 .choice-card {
-    min-height: 64px;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     font-weight: 600;
-    padding: 0.7rem;
+    padding-block: var(--space-3);
+    padding-inline: var(--space-4);
     border: 1px solid var(--stroke-1);
     background: linear-gradient(162deg, rgba(120, 180, 255, 0.1), rgba(8, 14, 25, 0.95));
 }
@@ -963,7 +989,7 @@ input[type='range'] {
 }
 
 .history-section h2 {
-    margin-bottom: var(--space-2);
+    margin-block-end: var(--space-2);
 }
 
 .history-section--focused {
@@ -977,6 +1003,7 @@ input[type='range'] {
 .resolution-stage-hud {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    place-items: center;
     gap: var(--space-2);
     padding: var(--space-2);
 }
@@ -1033,7 +1060,7 @@ input[type='range'] {
     justify-content: center;
     align-items: center;
     padding: var(--space-3);
-    z-index: 300;
+    z-index: var(--z-modal);
 }
 
 .modal {
@@ -1130,7 +1157,6 @@ html[dir='rtl'] .player-row {
     }
 
     .reveal-content {
-        min-height: 180px;
         padding: 0.95rem;
     }
 
@@ -1154,7 +1180,7 @@ html[dir='rtl'] .player-row {
     .stats-grid {
         grid-template-columns: 1fr;
         gap: 0.2rem;
-        margin-top: var(--space-2);
+        margin-block-start: var(--space-2);
         font-size: 0.88rem;
     }
 
@@ -1199,7 +1225,7 @@ html[dir='rtl'] .player-row {
 
     .home-hud .game-button--icon {
         width: 31%;
-        min-height: 70px;
+        padding-block: var(--space-3);
         font-size: 0.66rem;
         letter-spacing: 0.08em;
     }
@@ -1224,7 +1250,7 @@ html[dir='rtl'] .player-row {
     }
 
     .home-hud .game-button--hero {
-        min-height: 76px;
+        padding-block: var(--space-4);
         font-size: 1rem;
     }
 

@@ -16,6 +16,12 @@
     --app-height: 100dvh;
     --content-width: min(100%, 480px);
 
+    /* ═══════════ LAYERS ═══════════ */
+    --z-bg: 0;
+    --z-ui: 10;
+    --z-sticky: 50;
+    --z-modal: 100;
+
     /* ═══════════ FONTS ═══════════ */
     --font-hud: 'Rajdhani', sans-serif;
     --font-body: 'Cairo', sans-serif;
@@ -160,7 +166,6 @@ p {
 
 h1 {
     font-size: var(--font-size-h1);
-    line-height: 1.2;
     letter-spacing: 0.08em;
     font-family: var(--font-hud);
     font-weight: 700;
@@ -170,16 +175,22 @@ h1 {
 
 h2 {
     font-size: var(--font-size-h2);
-    line-height: 1.3;
     font-weight: 600;
     color: var(--text-primary);
 }
 
 h3 {
     font-size: var(--font-size-h3);
-    line-height: 1.35;
     font-weight: 600;
     color: var(--text-secondary);
+}
+
+p,
+h1,
+h2,
+h3,
+span {
+    line-height: 1.6;
 }
 
 button,
@@ -190,6 +201,8 @@ select {
 }
 
 button {
+    position: relative;
+    z-index: var(--z-ui);
     cursor: pointer;
     transition: transform calc(220ms * max(var(--anim-speed), 0.01)) ease, opacity 150ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
@@ -203,6 +216,8 @@ input,
 textarea,
 select,
 [contenteditable] {
+    position: relative;
+    z-index: var(--z-ui);
     user-select: text;
     -webkit-user-select: text;
     -webkit-touch-callout: default;
