@@ -11,6 +11,7 @@ import type { Player, PlayerAccessibility } from '../types';
 import { ScreenScaffold } from '../components/ScreenScaffold';
 import { StatusBanner } from '../components/StatusBanner';
 import { formatWordForDisplay } from '../lib/word-format';
+import { GameButton } from '../components/GameButton';
 
 interface PlayerFormState {
   id?: string;
@@ -128,20 +129,20 @@ export function PlayersScreen() {
       {redirectMessage ? <StatusBanner tone="warning">{t(redirectMessage)}</StatusBanner> : null}
 
       <div className="actions-row case-actions">
-        <button type="button" className="primary-btn" onClick={openCreateModal}>
+        <GameButton type="button" variant="primary" size="lg" onClick={openCreateModal}>
           {t('addPlayer')}
-        </button>
+        </GameButton>
         {!hasPlayers ? (
-          <button type="button" className="ghost-btn" onClick={() => void handleQuickAdd()}>
+          <GameButton type="button" variant="ghost" size="md" onClick={() => void handleQuickAdd()}>
             {t('quickAddPlayers')}
-          </button>
+          </GameButton>
         ) : null}
       </div>
 
       <section className="stack-list">
         <div className="section-heading">
           <h2>{t('players')}</h2>
-          <span className="subtle">{(players ?? []).length}</span>
+          <span className="section-count-badge">{t('playersCountBadge', { count: (players ?? []).length })}</span>
         </div>
         {(players ?? []).map((player) => (
           <GlassCard key={player.id} className="player-card section-card cinematic-panel">
@@ -152,12 +153,12 @@ export function PlayersScreen() {
                 <p>{player.enabled ? t('playerEnabled') : t('playerDisabled')}</p>
               </div>
               <div className="player-actions">
-                <button type="button" className="ghost-btn" onClick={() => openEditModal(player)}>
+                <GameButton type="button" variant="ghost" size="md" onClick={() => openEditModal(player)}>
                   {t('editPlayer')}
-                </button>
-                <button type="button" className="ghost-btn" onClick={() => void handleToggle(player)}>
+                </GameButton>
+                <GameButton type="button" variant="ghost" size="md" onClick={() => void handleToggle(player)}>
                   {player.enabled ? t('disable') : t('enable')}
-                </button>
+                </GameButton>
               </div>
             </div>
 
@@ -184,7 +185,7 @@ export function PlayersScreen() {
       >
         <div className="section-heading">
           <h2>{t('history')}</h2>
-          <span className="subtle">{(matches ?? []).length}</span>
+          <span className="section-count-badge">{t('historyCountBadge', { count: (matches ?? []).length })}</span>
         </div>
         {(matches ?? []).length === 0 ? (
           <StatusBanner>{t('emptyHistory')}</StatusBanner>
@@ -312,12 +313,12 @@ export function PlayersScreen() {
             </div>
 
             <div className="modal-actions">
-              <button type="button" className="ghost-btn" onClick={() => setModalOpen(false)}>
+              <GameButton type="button" variant="ghost" size="md" onClick={() => setModalOpen(false)}>
                 {t('cancel')}
-              </button>
-              <button type="button" className="primary-btn" onClick={() => void savePlayer()}>
+              </GameButton>
+              <GameButton type="button" variant="primary" size="lg" onClick={() => void savePlayer()}>
                 {t('save')}
-              </button>
+              </GameButton>
             </div>
           </div>
         </div>

@@ -132,3 +132,31 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - Locked scroll region flex sizing to ensure internal scrolling works inside ScreenScaffold.
 - Restored global text-selection policy to include all [contenteditable] nodes and added -webkit-user-select reset.
 - Tightened home navigation test to assert history focus highlighting class when deep-linked.
+
+## Progress Log
+- Executed RTL/UI hotfix pass focused on mobile-first stability and contrast.
+- Updated `src/index.css` with stronger subtitle wrapping, subtle text legibility, custom internal scrollbar styling, and improved case action layout behavior.
+- Refined mobile header composition so metadata/actions stay stable in one lane without overlap on 390px.
+- Improved Players card readability by fixing `stats-grid` wrapping/line-height and mobile column behavior.
+- Captured refreshed before/after style outputs in `output/` including mobile + desktop shots for Home/Players/Settings/Setup/Reveal/Discussion/Resolution/Summary.
+- Ran develop-web-game client loop and produced fresh artifacts in:
+  - `output/web-game/home-v5`
+  - `output/web-game/players-v5`
+  - `output/web-game/settings-v5`
+  - `output/web-game/setup-v5`
+  - `output/web-game/reveal-v5`
+  - `output/web-game/discussion-v5`
+  - `output/web-game/resolution-v5`
+  - `output/web-game/summary-v5`
+
+## Validation Update (RTL/UI Hotfix)
+- `npm run lint`: pass.
+- `npm run build`: pass.
+- `npm run test`: fails in this environment due Vitest runner-resolution issue when invoked via npm/local binary.
+- Equivalent suite validation passed with:
+  - `npx -y vitest run --config c:/Projects/SUSAWI/vite.config.ts` (16 tests passed).
+- Playwright console check (error level): no console errors.
+
+## Remaining TODOs / Suggestions
+- Investigate local `npm run test` runner-resolution mismatch (likely tooling/env quirk) to keep CI/local command parity.
+- If desired, add deterministic IndexedDB seed helper for screenshot scenarios so `render_game_to_text` route states remain stable across fresh browser contexts.

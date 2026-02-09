@@ -24,5 +24,4 @@ dist-ssr
 *.sw?
 
 # Local test artifacts
-output/mobile-ui-check/
-output/web-game/ui-spy-theme-*/
+output/

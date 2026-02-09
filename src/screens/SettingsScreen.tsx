@@ -21,7 +21,7 @@ export function SettingsScreen() {
   return (
     <ScreenScaffold title={t('globalSettings')} subtitle={t('settingsSubtitle')} eyebrow={t('settings')}>
       <section className="stack-list settings-section">
-        <div className="section-heading">
+        <div className="section-heading section-heading--stack">
           <h2>{t('gameSettings')}</h2>
           <span className="subtle">{t('settingsGameplayHint')}</span>
         </div>
@@ -89,7 +89,7 @@ export function SettingsScreen() {
       </section>
 
       <section className="stack-list settings-section">
-        <div className="section-heading">
+        <div className="section-heading section-heading--stack">
           <h2>{t('displaySettings')}</h2>
           <span className="subtle">{t('themeLocked')}</span>
         </div>
@@ -154,10 +154,6 @@ export function SettingsScreen() {
               <option value="compact">{t('densityCompact')}</option>
             </select>
           </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <p className="subtle">{t('themeLocked')}</p>
         </div>
       </section>
 
