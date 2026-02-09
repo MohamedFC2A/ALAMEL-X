@@ -19,6 +19,7 @@ import { PhaseIndicator } from '../components/PhaseIndicator';
 import { StatusBanner } from '../components/StatusBanner';
 import { useActiveMatch } from '../hooks/useActiveMatch';
 import { formatWordForDisplay } from '../lib/word-format';
+import { GameButton } from '../components/GameButton';
 
 export function ResolutionScreen() {
   const { t, i18n } = useTranslation();
@@ -144,9 +145,14 @@ export function ResolutionScreen() {
             })}
           </div>
           <PrimaryActionBar>
-            <button type="button" className="primary-btn" disabled={voteDraft.length !== spyCount} onClick={() => void submitVote()}>
+            <GameButton
+              variant="primary"
+              size="lg"
+              disabled={voteDraft.length !== spyCount}
+              onClick={() => void submitVote()}
+            >
               {t('submitVote')}
-            </button>
+            </GameButton>
           </PrimaryActionBar>
         </section>
       ) : null}
@@ -222,9 +228,9 @@ export function ResolutionScreen() {
             </span>
           </p>
           <PrimaryActionBar>
-            <button type="button" className="primary-btn" onClick={() => void finishRound()}>
+            <GameButton variant="primary" size="lg" onClick={() => void finishRound()}>
               {t('finishRound')}
-            </button>
+            </GameButton>
           </PrimaryActionBar>
         </section>
       ) : null}

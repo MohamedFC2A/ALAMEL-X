@@ -381,6 +381,7 @@ export async function updateGlobalSettings(patch: Partial<GlobalSettings>): Prom
   await db.settings.put({
     ...current,
     ...patch,
+    theme: 'onyx',
     id: 'global',
   });
 }

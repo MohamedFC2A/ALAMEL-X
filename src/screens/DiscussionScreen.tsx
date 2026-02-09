@@ -10,6 +10,7 @@ import { PrimaryActionBar } from '../components/PrimaryActionBar';
 import { PhaseIndicator } from '../components/PhaseIndicator';
 import { useActiveMatch } from '../hooks/useActiveMatch';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { GameButton } from '../components/GameButton';
 
 export function DiscussionScreen() {
   const { t } = useTranslation();
@@ -108,9 +109,9 @@ export function DiscussionScreen() {
         <section className="glass-card phase-card section-card cinematic-panel">
           <h2>{t('closePhone')}</h2>
           <p className="subtle">{t('discussionStartHint')}</p>
-          <button type="button" className="primary-btn" onClick={() => void startDiscussion()}>
+          <GameButton variant="primary" size="lg" onClick={() => void startDiscussion()}>
             {t('startDiscussion')}
-          </button>
+          </GameButton>
         </section>
       ) : (
         <section className="glass-card timer-card section-card cinematic-panel">
@@ -129,9 +130,9 @@ export function DiscussionScreen() {
       )}
 
       <PrimaryActionBar>
-        <button type="button" className="ghost-btn" onClick={() => void skipDiscussion()}>
+        <GameButton variant="ghost" onClick={() => void skipDiscussion()}>
           {t('skipTimer')}
-        </button>
+        </GameButton>
       </PrimaryActionBar>
     </ScreenScaffold>
   );

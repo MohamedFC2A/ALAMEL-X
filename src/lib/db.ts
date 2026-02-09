@@ -68,11 +68,10 @@ export { db };
 export async function ensureSettings(): Promise<GlobalSettings> {
   const current = await db.settings.get('global');
   if (current) {
-    const resolvedTheme = current.theme === 'aurora' ? 'onyx' : current.theme ?? defaultSettings.theme;
     const merged: GlobalSettings = {
       ...defaultSettings,
       ...current,
-      theme: resolvedTheme,
+      theme: 'onyx',
       language: 'ar',
       pendingLanguage: undefined,
     };

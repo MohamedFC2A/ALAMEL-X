@@ -15,6 +15,7 @@ import { PhaseIndicator } from '../components/PhaseIndicator';
 import { useActiveMatch } from '../hooks/useActiveMatch';
 import { formatWordForDisplay } from '../lib/word-format';
 import { clamp } from '../lib/utils';
+import { GameButton } from '../components/GameButton';
 
 type HoldPhase = 'idle' | 'holding' | 'revealed';
 
@@ -331,9 +332,9 @@ export function RevealScreen() {
           <PlayerAvatar avatarId={revealPlayer.avatarId} alt={revealPlayer.name} size={104} />
           <h2>{t('handoff', { name: revealPlayer.name })}</h2>
           <p className="subtle">{t('handoffSafetyNote')}</p>
-          <button type="button" className="primary-btn" onClick={() => void goToReveal()}>
+          <GameButton variant="primary" size="lg" onClick={() => void goToReveal()}>
             {t('continue')}
-          </button>
+          </GameButton>
         </section>
       ) : (
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={`glass-card reveal-card section-card ${revealClass}`.trim()}>
@@ -401,20 +402,21 @@ export function RevealScreen() {
       <PrimaryActionBar
         className="reveal-action-bar"
         leading={
-          <button
-            type="button"
-            className="ghost-btn"
-            onClick={() => void goBack()}
-            disabled={currentMatch.revealState.phase === 'handoff'}
-          >
+          <GameButton variant="ghost" onClick={() => void goBack()} disabled={currentMatch.revealState.phase === 'handoff'}>
             {t('back')}
-          </button>
+          </GameButton>
         }
       >
         {currentMatch.revealState.phase === 'reveal' ? (
-          <button type="button" className="primary-btn next-btn" onClick={() => void goNext()} disabled={!canMoveNext}>
+          <GameButton
+            variant="safe"
+            size="lg"
+            className="next-btn"
+            onClick={() => void goNext()}
+            disabled={!canMoveNext}
+          >
             {t('next')}
-          </button>
+          </GameButton>
         ) : (
           <div className="subtle">{t('safeTransitionHint')}</div>
         )}

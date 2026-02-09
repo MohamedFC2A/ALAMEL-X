@@ -7,6 +7,7 @@ import { PrimaryActionBar } from '../components/PrimaryActionBar';
 import { PhaseIndicator } from '../components/PhaseIndicator';
 import { StatusBanner } from '../components/StatusBanner';
 import { formatWordForDisplay } from '../lib/word-format';
+import { GameButton } from '../components/GameButton';
 
 export function SummaryScreen() {
   const { t, i18n } = useTranslation();
@@ -16,9 +17,9 @@ export function SummaryScreen() {
   if (!latestMatch) {
     return (
       <ScreenScaffold title={t('roundSummary')} subtitle={t('summaryUnavailable')}>
-        <button type="button" className="primary-btn" onClick={() => navigate('/')}>
+        <GameButton variant="primary" size="lg" onClick={() => navigate('/')}>
           {t('returnHome')}
-        </button>
+        </GameButton>
       </ScreenScaffold>
     );
   }
@@ -59,10 +60,10 @@ export function SummaryScreen() {
         </p>
       </section>
 
-      <PrimaryActionBar leading={<button type="button" className="ghost-btn" onClick={() => navigate('/')}>{t('returnHome')}</button>}>
-        <button type="button" className="primary-btn" onClick={() => navigate('/play/setup')}>
+      <PrimaryActionBar leading={<GameButton variant="ghost" onClick={() => navigate('/')}>{t('returnHome')}</GameButton>}>
+        <GameButton variant="primary" size="lg" onClick={() => navigate('/play/setup')}>
           {t('quickReplay')}
-        </button>
+        </GameButton>
       </PrimaryActionBar>
     </ScreenScaffold>
   );

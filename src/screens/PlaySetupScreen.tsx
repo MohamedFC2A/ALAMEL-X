@@ -9,6 +9,7 @@ import { ScreenScaffold } from '../components/ScreenScaffold';
 import { StatusBanner } from '../components/StatusBanner';
 import { PrimaryActionBar } from '../components/PrimaryActionBar';
 import { PhaseIndicator } from '../components/PhaseIndicator';
+import { GameButton } from '../components/GameButton';
 
 export function PlaySetupScreen() {
   const { t } = useTranslation();
@@ -151,15 +152,15 @@ export function PlaySetupScreen() {
           </span>
         }
       >
-        <button type="button" className="primary-btn" onClick={() => void handleStart()} disabled={selectedPlayers.length < 4}>
+        <GameButton variant="primary" size="lg" onClick={() => void handleStart()} disabled={selectedPlayers.length < 4}>
           {t('startGame')}
-        </button>
+        </GameButton>
       </PrimaryActionBar>
 
       <div className="actions-row">
-        <button type="button" className="ghost-btn" onClick={() => void handleResetWords()}>
+        <GameButton variant="ghost" onClick={() => void handleResetWords()}>
           {t('resetWordLocks')}
-        </button>
+        </GameButton>
       </div>
     </ScreenScaffold>
   );

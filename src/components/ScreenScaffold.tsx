@@ -44,7 +44,7 @@ export function ScreenScaffold({
             <h1>{title}</h1>
           </div>
         </GlassCard>
-        {children}
+        <section className="screen-scroll-region">{children}</section>
       </div>
     </main>
   );

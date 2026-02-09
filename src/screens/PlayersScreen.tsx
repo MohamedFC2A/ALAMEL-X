@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { avatarPresets } from '../data/avatars';
@@ -32,14 +32,27 @@ function createDefaultForm(): PlayerFormState {
 export function PlayersScreen() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const players = useLiveQuery(async () => (await db.players.toArray()).sort((a, b) => a.createdAt - b.createdAt), []);
   const matches = useLiveQuery(() => db.matches.orderBy('endedAt').reverse().limit(20).toArray(), []);
 
   const [formState, setFormState] = useState<PlayerFormState>(createDefaultForm());
   const [isModalOpen, setModalOpen] = useState(false);
+  const historySectionRef = useRef<HTMLElement | null>(null);
 
   const hasPlayers = (players?.length ?? 0) > 0;
   const redirectMessage = location.state && (location.state as { reason?: string }).reason;
+  const focusHistory = searchParams.get('focus') === 'history';
+
+  useEffect(() => {
+    if (!focusHistory) {
+      return;
+    }
+    const node = historySectionRef.current;
+    if (node && typeof node.scrollIntoView === 'function') {
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [focusHistory]);
 
   const playerMatches = useMemo(() => {
     const map = new Map<string, number>();
@@ -164,7 +177,11 @@ export function PlayersScreen() {
         ) : null}
       </section>
 
-      <section className="history-section">
+      <section
+        ref={historySectionRef}
+        id="history-section"
+        className={`history-section ${focusHistory ? 'history-section--focused' : ''}`.trim()}
+      >
         <div className="section-heading">
           <h2>{t('history')}</h2>
           <span className="subtle">{(matches ?? []).length}</span>

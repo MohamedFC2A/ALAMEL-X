@@ -86,3 +86,44 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 ## Remaining TODOs / Suggestions
 - Add a dedicated end-to-end scripted flow that seeds players and drives setup -> reveal -> discussion automatically for stronger browser-level regression coverage.
 - Consider exposing explicit test hooks/ids for key reveal controls to reduce brittle selector logic in automated UI tests.
+
+## Progress Log
+- Implemented ALAMEL-X OLED Noir HUD overhaul (phase 1-4) with a locked void palette and cinematic shell overlays.
+- Added reusable `GameButton` (`src/components/GameButton.tsx`) and migrated core gameplay CTAs (setup, reveal, discussion, resolution, summary) to tactile motion interactions.
+- Rebuilt `HomeScreen` into a single-view HUD: title stack, breathing `START MISSION` bar, and bottom utility icon strip (Players/History/Settings).
+- Added History utility deep-link behavior (`/players?focus=history`) and focus handling in `PlayersScreen`.
+- Locked runtime/persisted theme behavior to onyx/noir while preserving settings schema compatibility.
+- Updated settings UI to remove theme switching and show locked-theme messaging.
+- Added/updated tests for the new Home HUD contract and History navigation path.
+
+## Validation Update (OLED Noir HUD)
+- `npm run lint`: pass.
+- `npm run test`: pass (13 tests).
+- `npm run build`: pass (PWA output generated; existing chunk-size warning remains).
+- Ran develop-web-game Playwright client flows for Home/History/Settings using local dev server.
+- Reviewed latest screenshots:
+  - `output/web-game/mission/shot-0.png`
+  - `output/web-game/history/shot-0.png`
+  - `output/web-game/settings/shot-0.png`
+- Reviewed text-state artifacts:
+  - `output/web-game/mission/state-0.json` (`screen: "/"`)
+  - `output/web-game/history/state-0.json` (`screen: "/players"`)
+  - `output/web-game/settings/state-0.json` (`screen: "/settings"`)
+
+## Remaining TODOs / Suggestions
+- The Playwright helper's `--click-selector #start-mission-btn` can fail because the continuous breathing animation keeps the element "unstable" for Playwright's strict click check; keep coordinate click fallback or expose a non-animated test hook variant during automated runs.
+- Consider adding a visual regression snapshot baseline for the new Noir HUD to detect style drift.
+
+## Validation Addendum (Playwright Artifacts Final)
+- Re-ran Playwright visual checks into dedicated artifact folders to avoid mixing with older runs:
+  - `output/web-game/mission-v3`
+  - `output/web-game/history-v3`
+  - `output/web-game/settings-v3`
+- Verified updated state payloads:
+  - `output/web-game/mission-v3/state-0.json` -> `screen: "/"`
+  - `output/web-game/history-v3/state-0.json` -> `screen: "/players"`
+  - `output/web-game/settings-v3/state-0.json` -> `screen: "/settings"`
+
+## Validation Addendum (Test Coverage)
+- Added Home navigation test for mission button routing to setup when no active match is present.
+- Current suite: `npm run test` pass (14 tests).

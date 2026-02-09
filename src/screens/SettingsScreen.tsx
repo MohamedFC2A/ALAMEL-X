@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { db, ensureSettings } from '../lib/db';
 import { updateGlobalSettings } from '../lib/game-repository';
 import { ScreenScaffold } from '../components/ScreenScaffold';
-import type { ContrastPreset, HintMode, ThemeName, UiDensity, WordDifficulty } from '../types';
+import type { ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
 
 export function SettingsScreen() {
   const { t } = useTranslation();
@@ -91,9 +91,7 @@ export function SettingsScreen() {
       <section className="stack-list settings-section">
         <div className="section-heading">
           <h2>{t('displaySettings')}</h2>
-          <span className="subtle">
-            {settings.theme === 'aurora' ? t('themeAurora') : settings.theme === 'solar' ? t('themeSolar') : t('themeOnyx')}
-          </span>
+          <span className="subtle">{t('themeLocked')}</span>
         </div>
 
         <div className="glass-card setting-card cinematic-panel section-card">
@@ -159,14 +157,7 @@ export function SettingsScreen() {
         </div>
 
         <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>{t('theme')}</span>
-            <select value={settings.theme} onChange={(event) => void updateGlobalSettings({ theme: event.target.value as ThemeName })}>
-              <option value="aurora">{t('themeAurora')}</option>
-              <option value="solar">{t('themeSolar')}</option>
-              <option value="onyx">{t('themeOnyx')}</option>
-            </select>
-          </label>
+          <p className="subtle">{t('themeLocked')}</p>
         </div>
       </section>
 

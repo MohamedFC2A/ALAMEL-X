@@ -5,6 +5,8 @@ const translation = {
   appName: 'العميل X',
   homeTagline: 'مرر الموبايل.. وخلي شكك صاحي.',
   play: 'ابدأ اللعب',
+  startMission: 'ابدأ المهمة',
+  resumeMission: 'استكمل المهمة',
   playAi: 'اللعب ضد الذكاء الاصطناعي',
   comingSoon: 'قريبًا',
   playersRecords: 'اللاعبون والسجل',
@@ -116,6 +118,7 @@ const translation = {
   home: 'الرئيسية',
   homeSubline: 'جهاز واحد.. توتر أعلى.. وجولة أسرع.',
   activeMatchResumeHint: 'يوجد جولة جارية بالفعل.',
+  homeUtilities: 'أدوات القائمة',
   startRoundFast: 'ابدأ جولة محلية فورًا',
   manageProfiles: 'إدارة الملفات والإحصاءات',
   tuneExperience: 'الحركة، الحجم، التباين، والألوان',
@@ -160,6 +163,7 @@ const translation = {
   themeAurora: 'نسيم',
   themeSolar: 'شمس',
   themeOnyx: 'مخابرات',
+  themeLocked: 'سمة OLED Noir مفعلة دائمًا',
 };
 
 const resources = {

@@ -17,6 +17,9 @@ import { installClockDebugHooks } from './lib/clock';
 import type { GlobalSettings } from './types';
 import './index.css';
 
+const NOISE_TEXTURE =
+  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")";
+
 function ThemeController({ settings }: { settings: GlobalSettings | undefined }) {
   const { i18n } = useTranslation();
   const location = useLocation();
@@ -30,15 +33,16 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     const root = document.documentElement;
     root.style.setProperty('--ui-scale', settings.uiScale.toString());
     root.style.setProperty('--anim-speed', settings.reducedMotionMode ? '0' : settings.animationSpeed.toString());
-    root.setAttribute('data-theme', settings.theme);
+    root.setAttribute('data-theme', 'onyx');
     root.setAttribute('data-contrast', settings.contrastPreset);
     root.setAttribute('data-density', settings.uiDensity);
 
     const targetLanguage = 'ar' as const;
-    if (settings.language !== 'ar' || settings.pendingLanguage) {
+    if (settings.language !== 'ar' || settings.pendingLanguage || settings.theme !== 'onyx') {
       void db.settings.put({
         ...settings,
         language: 'ar',
+        theme: 'onyx',
         pendingLanguage: undefined,
       });
     }
@@ -73,6 +77,7 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <motion.div
         key={location.pathname}
+        className="route-stage"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -16 }}
@@ -105,8 +110,12 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-shell">
-        <ThemeController settings={settings} />
-        <AnimatedRoutes />
+        <div className="app-shell__vignette" />
+        <div className="app-shell__noise" style={{ backgroundImage: NOISE_TEXTURE }} />
+        <div className="app-shell__content">
+          <ThemeController settings={settings} />
+          <AnimatedRoutes />
+        </div>
       </div>
     </BrowserRouter>
   );
