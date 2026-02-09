@@ -557,6 +557,26 @@ html[dir='rtl'] .form-field {
   box-shadow: var(--shadow-soft);
 }
 
+.reveal-action-bar {
+  position: sticky;
+  inset-block-end: 0.5rem;
+  z-index: 25;
+  border-color: color-mix(in oklab, var(--accent) 48%, white);
+  box-shadow: 0 12px 30px rgba(2, 8, 16, 0.78), var(--glow);
+}
+
+.reveal-action-bar .action-main {
+  justify-content: center;
+}
+
+.reveal-action-bar .next-btn {
+  min-width: min(100%, 280px);
+  min-height: 60px;
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
 .action-leading {
   flex: 1;
   color: var(--text-soft);
@@ -1084,6 +1104,16 @@ input[type='range'] {
   filter: blur(0.55px);
 }
 
+.spy-team-note {
+  color: color-mix(in oklab, var(--accent-2) 72%, white);
+  border: 1px solid color-mix(in oklab, var(--accent-2) 35%, white);
+  background: rgba(123, 255, 202, 0.08);
+  border-radius: 0.7rem;
+  padding: 0.35rem 0.58rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
 .reveal-content strong {
   font-size: clamp(1.8rem, 9vw, 2.9rem);
 }
@@ -1293,10 +1323,24 @@ input[type='range'] {
     --space-3: 0.74rem;
     --space-4: 0.94rem;
     --space-5: 1.06rem;
+    --bg-0: #000000;
+    --bg-1: #020406;
+    --bg-2: #05080d;
+    --surface-1: rgba(2, 5, 10, 0.94);
+    --surface-2: rgba(3, 7, 13, 0.96);
+    --surface-3: rgba(5, 10, 18, 0.98);
   }
 
   main {
     gap: var(--space-2);
+  }
+
+  body {
+    background-image:
+      radial-gradient(45rem 24rem at 100% -12%, rgba(255, 75, 99, 0.08), transparent 68%),
+      radial-gradient(40rem 28rem at -16% 8%, rgba(98, 233, 255, 0.09), transparent 72%),
+      repeating-linear-gradient(120deg, rgba(100, 156, 219, 0.04) 0 1px, transparent 1px 72px),
+      linear-gradient(158deg, #000000, #010306, #04070d);
   }
 
   .screen-header {
@@ -1349,6 +1393,11 @@ input[type='range'] {
     flex-direction: column;
   }
 
+  .glass-card {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
   .action-main,
   .action-leading {
     width: 100%;
@@ -1364,7 +1413,7 @@ input[type='range'] {
 
   .reveal-content {
     min-height: 180px;
-    padding: 1.1rem;
+    padding: 0.95rem;
   }
 
   .role-title {
@@ -1389,6 +1438,16 @@ input[type='range'] {
   .handoff-card,
   .reveal-card {
     padding: 0.72rem;
+  }
+
+  .reveal-action-bar {
+    inset-block-end: 0.15rem;
+    padding: 0.62rem 0.66rem;
+  }
+
+  .reveal-action-bar .action-main,
+  .reveal-action-bar .action-main .next-btn {
+    width: 100%;
   }
 }
 

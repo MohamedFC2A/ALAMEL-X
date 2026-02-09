@@ -36,6 +36,14 @@ export function SummaryScreen() {
           <span className="subtle">{new Date(latestMatch.endedAt).toLocaleTimeString(i18n.language)}</span>
         </div>
         <p>
+          {t('submitGuess')}:
+          <span className="word-pill">
+            {latestMatch.result.spyGuess
+              ? formatWordForDisplay(latestMatch.result.spyGuess, i18n.language as 'en' | 'ar')
+              : t('guessPending')}
+          </span>
+        </p>
+        <p>
           {t('correctWord')}:
           <span className="word-pill">
             {formatWordForDisplay(i18n.language === 'ar' ? latestMatch.wordTextAr : latestMatch.wordTextEn, i18n.language as 'en' | 'ar')}

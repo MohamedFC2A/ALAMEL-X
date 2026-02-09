@@ -55,21 +55,6 @@ export function ResolutionScreen() {
   const guessRemainingMs = Math.max(0, (activeMatch?.guessEndsAt ?? 0) - now);
   const guessRemaining = Math.ceil(guessRemainingMs / 1000);
 
-  useEffect(() => {
-    if (!activeMatch || activeMatch.resolutionStage !== 'guess' || guessRemainingMs > 0) {
-      return;
-    }
-
-    void (async () => {
-      await updateActiveMatch({
-        spyGuessCorrect: false,
-        spyGuess: '',
-        resolutionStage: 'result',
-        winner: 'citizens',
-      });
-    })();
-  }, [activeMatch, guessRemainingMs]);
-
   if (!activeMatch) {
     return null;
   }
@@ -94,17 +79,6 @@ export function ResolutionScreen() {
 
   async function submitVote() {
     await updateActiveMatch({ votedSpyIds: voteDraft });
-    const updated = await db.activeMatch.get('active');
-    if (!updated) {
-      return;
-    }
-
-    const success = computeVoteOutcome({ ...updated, votedSpyIds: voteDraft });
-
-    if (!success) {
-      await updateActiveMatch({ resolutionStage: 'result', votedSpyIds: voteDraft, winner: 'spies' });
-      return;
-    }
 
     await updateActiveMatch({
       resolutionStage: 'guess',
@@ -179,7 +153,9 @@ export function ResolutionScreen() {
 
       {currentMatch.resolutionStage === 'guess' ? (
         <section className="glass-card phase-card section-card cinematic-panel">
-          <StatusBanner tone="success">{t('voteSucceeded')}</StatusBanner>
+          <StatusBanner tone={computeVoteOutcome(currentMatch) ? 'success' : 'warning'}>
+            {computeVoteOutcome(currentMatch) ? t('voteCapturedInfo') : t('voteMissedInfo')}
+          </StatusBanner>
           <p>{t('spyGuessPrompt')}</p>
           <h2 className="countdown-value">{guessRemaining}</h2>
           <p className="subtle">{t('spyGuessPick')}</p>
@@ -201,6 +177,7 @@ export function ResolutionScreen() {
               );
             })}
           </div>
+          {guessRemaining === 0 ? <StatusBanner tone="warning">{t('guessRequired')}</StatusBanner> : null}
         </section>
       ) : null}
 
@@ -210,22 +187,26 @@ export function ResolutionScreen() {
             const citizensCaughtSpies = computeVoteOutcome(currentMatch);
             return (
               <>
-          <StatusBanner tone={currentMatch.winner === 'citizens' ? 'success' : 'danger'}>
+                <StatusBanner tone={currentMatch.winner === 'citizens' ? 'success' : 'danger'}>
             {currentMatch.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}
           </StatusBanner>
-                {citizensCaughtSpies ? (
-                  <StatusBanner tone={currentMatch.spyGuessCorrect ? 'success' : 'danger'}>
-                    {currentMatch.spyGuess
-                      ? currentMatch.spyGuessCorrect
-                        ? t('guessCorrectMessage')
-                        : t('guessWrongMessage')
-                      : t('guessTimeoutMessage')}
-                  </StatusBanner>
-                ) : null}
-                <p>{citizensCaughtSpies ? t('voteSucceeded') : t('voteFailed')}</p>
+                <StatusBanner tone={currentMatch.spyGuessCorrect ? 'success' : 'danger'}>
+                  {currentMatch.spyGuess
+                    ? currentMatch.spyGuessCorrect
+                      ? t('guessCorrectMessage')
+                      : t('guessWrongMessage')
+                    : t('guessPending')}
+                </StatusBanner>
+                <p>{citizensCaughtSpies ? t('voteCapturedInfo') : t('voteMissedInfo')}</p>
               </>
             );
           })()}
+          <p>
+            {t('submitGuess')}:
+            <span className="word-pill">
+              {currentMatch.spyGuess || t('guessPending')}
+            </span>
+          </p>
           <p>
             {t('correctWord')}:
             <span className="word-pill">

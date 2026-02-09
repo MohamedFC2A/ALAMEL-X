@@ -78,6 +78,11 @@ export function RevealScreen() {
   const currentMatch = activeMatch;
   const revealPlayer = currentPlayer;
   const isSpy = currentMatch.match.spyIds.includes(revealPlayer.id);
+  const teammateNames = isSpy
+    ? currentMatch.match.spyIds
+      .filter((spyId) => spyId !== revealPlayer.id)
+      .map((spyId) => playerMap.get(spyId)?.name ?? spyId)
+    : [];
   const isLastPlayer = currentMatch.revealState.currentRevealIndex === currentMatch.match.playerIds.length - 1;
   const canMoveNext = isRevealed && now >= nextReadyAt && !currentMatch.transitionLock;
   const revealClass = [
@@ -214,6 +219,13 @@ export function RevealScreen() {
                   <h2 className="role-title role-title-spy">{t('roleSpy')}</h2>
                   <p className="spy-category">{t('category')}: {currentMatch.match.category}</p>
                   <p className="spy-hint">{t('hint')}: {i18n.language === 'ar' ? currentMatch.spyHintAr : currentMatch.spyHintEn}</p>
+                  {teammateNames.length > 0 ? (
+                    <p className="spy-team-note">
+                      {t('spyTeamNote', {
+                        names: teammateNames.join(' - '),
+                      })}
+                    </p>
+                  ) : null}
                 </div>
               ) : (
                 <div className="reveal-meta">
@@ -249,6 +261,7 @@ export function RevealScreen() {
       )}
 
       <PrimaryActionBar
+        className="reveal-action-bar"
         leading={
           <button
             type="button"

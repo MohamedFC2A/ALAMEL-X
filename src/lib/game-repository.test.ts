@@ -16,7 +16,7 @@ describe('game-repository logic', () => {
   });
 
   it('resolves winner matrix correctly', () => {
-    expect(resolveWinner(false, false)).toBe('spies');
+    expect(resolveWinner(false, false)).toBe('citizens');
     expect(resolveWinner(true, false)).toBe('citizens');
     expect(resolveWinner(true, true)).toBe('spies');
     expect(resolveWinner(false, true)).toBe('spies');
