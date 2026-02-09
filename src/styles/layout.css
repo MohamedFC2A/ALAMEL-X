@@ -104,12 +104,12 @@ main {
 .screen-scroll-region {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-2);
     overflow-y: auto;
     flex: 1;
     min-height: 0;
-    padding-inline: 0.08rem;
-    padding-block-end: calc(80px + var(--space-4));
+    padding-inline: var(--space-1);
+    padding-block-end: calc(80px + var(--space-3));
     /* Height of Action Bar + extra padding */
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
@@ -278,7 +278,9 @@ html[dir='rtl'] .header-meta {
 /* ═══════════ MEDIA QUERIES (Layout) ═══════════ */
 @media (max-width: 560px) {
     .app-shell__content {
-        padding: 0.6rem 0.62rem 1rem;
+        padding-block-start: var(--space-2);
+        padding-inline: var(--space-1);
+        padding-block-end: var(--space-3);
     }
 
     /* Header Rail (defined here as it wasn't in main block) */
@@ -296,7 +298,7 @@ html[dir='rtl'] .header-meta {
     .header-subtitle {
         max-width: 26ch;
         font-size: 0.84rem;
-        line-height: 1.42;
+        line-height: var(--lh-body);
     }
 
     .header-actions {
@@ -325,6 +327,11 @@ html[dir='rtl'] .header-meta {
     .home-hud__footer {
         width: 100%;
         gap: 0.45rem;
+    }
+
+    .screen-scroll-region {
+        padding-inline: var(--space-1);
+        padding-block-end: calc(80px + var(--space-2));
     }
 }
 

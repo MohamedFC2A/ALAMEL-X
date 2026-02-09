@@ -55,6 +55,9 @@
     --font-size-h1: clamp(1.75rem, 7vw, 2.5rem);
     --font-size-h2: clamp(1.25rem, 4.5vw, 1.75rem);
     --font-size-h3: clamp(1rem, 3vw, 1.25rem);
+    --lh-body: 1.6;
+    --lh-heading: 1.32;
+    --lh-compact: 1.35;
 
     /* ═══════════ SURFACES ═══════════ */
     --bg-0: var(--bg-void);
@@ -152,7 +155,7 @@ body,
 body {
     font-family: var(--font-body);
     font-size: var(--font-size-body);
-    line-height: 1.6;
+    line-height: var(--lh-body);
     color: var(--text-main);
     background: var(--bg-void);
 }
@@ -166,6 +169,7 @@ p {
 
 h1 {
     font-size: var(--font-size-h1);
+    line-height: var(--lh-heading);
     letter-spacing: 0.08em;
     font-family: var(--font-hud);
     font-weight: 700;
@@ -175,22 +179,20 @@ h1 {
 
 h2 {
     font-size: var(--font-size-h2);
+    line-height: var(--lh-heading);
     font-weight: 600;
     color: var(--text-primary);
 }
 
 h3 {
     font-size: var(--font-size-h3);
+    line-height: var(--lh-heading);
     font-weight: 600;
     color: var(--text-secondary);
 }
 
-p,
-h1,
-h2,
-h3,
-span {
-    line-height: 1.6;
+p {
+    line-height: var(--lh-body);
 }
 
 button,
@@ -198,6 +200,7 @@ input,
 select {
     font: inherit;
     color: inherit;
+    line-height: var(--lh-compact);
 }
 
 button {

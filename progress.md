@@ -160,3 +160,21 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 ## Remaining TODOs / Suggestions
 - Investigate local `npm run test` runner-resolution mismatch (likely tooling/env quirk) to keep CI/local command parity.
 - If desired, add deterministic IndexedDB seed helper for screenshot scenarios so `render_game_to_text` route states remain stable across fresh browser contexts.
+
+## Progress Log
+- Implemented UI rebalance pass across core screens (`/`, `/players`, `/settings`, `/play/setup`) with RTL-safe logical CSS adjustments.
+- Added global line-height tokens in `src/styles/base.css` and removed broad `span` line-height coupling to reduce cramped text blocks.
+- Rebuilt Players card layout in `src/styles/components.css` from fragile flex stacking to responsive grid areas, removing mobile overflow/void spacing caused by `flex: 1` on `.player-main`.
+- Converted setup/resolution/choice/player grids from rigid center placement to `auto-fit/minmax` with stretch alignment for cleaner balance across desktop and mobile.
+- Tightened settings section rhythm and card spacing; aligned mobile card paddings to spacing tokens for consistent App-like density.
+- Updated `src/styles/layout.css` scroll region paddings and mobile shell in logical properties to avoid edge collisions on 390px.
+
+## Validation Update (UI Rebalance)
+- `npm run test`: pass (16 tests).
+- `npm run build`: pass (PWA artifacts generated; existing chunk-size warning unchanged).
+- Playwright checks completed on Desktop + Mobile for `/`, `/players`, `/settings`, `/play/setup`.
+- Interaction checks confirmed single-tap behavior for:
+  - Home navigation buttons.
+  - Players edit/toggle actions.
+  - Settings update/check button (`تحديث اللعبة` -> `اللعبة محدّثة` state observed).
+- Long Arabic player name scenario verified on mobile: no horizontal overflow or card breakage in players list.
