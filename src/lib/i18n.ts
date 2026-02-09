@@ -178,9 +178,9 @@ export async function setupI18n(initialLanguage: 'en' | 'ar'): Promise<void> {
   });
 }
 
-export function applyDocumentLanguage(_language: 'en' | 'ar'): void {
-  document.documentElement.lang = 'ar';
-  document.documentElement.dir = 'rtl';
+export function applyDocumentLanguage(language: 'en' | 'ar'): void {
+  document.documentElement.lang = language;
+  document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
 }
 
 export default i18n;

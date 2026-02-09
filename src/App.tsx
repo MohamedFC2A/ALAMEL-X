@@ -34,7 +34,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     root.setAttribute('data-contrast', settings.contrastPreset);
     root.setAttribute('data-density', settings.uiDensity);
 
-    const targetLanguage: 'ar' = 'ar';
+    const targetLanguage = 'ar' as const;
     if (settings.language !== 'ar' || settings.pendingLanguage) {
       void db.settings.put({
         ...settings,

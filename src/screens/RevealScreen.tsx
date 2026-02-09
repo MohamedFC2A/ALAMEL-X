@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,24 @@ import { PrimaryActionBar } from '../components/PrimaryActionBar';
 import { PhaseIndicator } from '../components/PhaseIndicator';
 import { useActiveMatch } from '../hooks/useActiveMatch';
 import { formatWordForDisplay } from '../lib/word-format';
+import { clamp } from '../lib/utils';
+
+type HoldPhase = 'idle' | 'holding' | 'revealed';
+
+const HOLD_PROGRESS_TICK_MS = 16;
+const HOLD_RELEASE_THRESHOLD = 0.7;
+
+function computeHoldDurationMs(extraReadMs: number): number {
+  return clamp(460 + Math.round(extraReadMs * 0.08), 430, 840);
+}
+
+function computeRevealReadyDelayMs(hintText: string, hasSpyTeammate: boolean, extraReadMs: number): number {
+  const compactHintLength = hintText.replace(/\s+/g, '').length;
+  const hintBonus = Math.min(1400, compactHintLength * 28);
+  const teammateBonus = hasSpyTeammate ? 260 : 0;
+  const accessibilityBonus = clamp(extraReadMs, 0, 1800);
+  return clamp(920 + hintBonus + teammateBonus + accessibilityBonus, 1100, 4200);
+}
 
 export function RevealScreen() {
   const { t, i18n } = useTranslation();
@@ -21,10 +39,19 @@ export function RevealScreen() {
   const activeMatchState = useActiveMatch();
   const activeMatch = activeMatchState?.match ?? null;
   const players = useLiveQuery(() => db.players.toArray(), []);
-  const [holding, setHolding] = useState(false);
-  const [isRevealed, setRevealed] = useState(false);
+  const [holdPhase, setHoldPhase] = useState<HoldPhase>('idle');
+  const [holdProgress, setHoldProgress] = useState(0);
   const [nextReadyAt, setNextReadyAt] = useState(0);
+  const [nextUnlocked, setNextUnlocked] = useState(false);
   const now = useClockNow(120);
+  const holdStartedAtRef = useRef(0);
+  const holdIntervalRef = useRef<number | null>(null);
+  const holdFinishTimerRef = useRef<number | null>(null);
+  const unlockTimerRef = useRef<number | null>(null);
+  const holdProgressRef = useRef(0);
+  const holdPhaseRef = useRef<HoldPhase>('idle');
+  const revealIndex = activeMatch?.revealState.currentRevealIndex ?? -1;
+  const revealPhase = activeMatch?.revealState.phase ?? 'handoff';
 
   const playerMap = useMemo(() => {
     const map = new Map<string, Player>();
@@ -57,19 +84,54 @@ export function RevealScreen() {
   }, [activeMatch, activeMatchState, navigate]);
 
   useEffect(() => {
-    if (!holding || activeMatch?.revealState.phase !== 'reveal') {
-      return;
+    holdProgressRef.current = holdProgress;
+  }, [holdProgress]);
+
+  useEffect(() => {
+    holdPhaseRef.current = holdPhase;
+  }, [holdPhase]);
+
+  const clearHoldTimers = useCallback(() => {
+    if (holdIntervalRef.current !== null) {
+      window.clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
     }
+    if (holdFinishTimerRef.current !== null) {
+      window.clearTimeout(holdFinishTimerRef.current);
+      holdFinishTimerRef.current = null;
+    }
+  }, []);
 
-    const duration = (currentPlayer?.accessibility.extraReadMs ?? 1000) > 0 ? 650 : 500;
-    const timer = window.setTimeout(() => {
-      setRevealed(true);
-      const readDelay = 700 + (currentPlayer?.accessibility.extraReadMs ?? 0);
-      setNextReadyAt(nowMs() + readDelay);
-    }, duration);
+  const clearUnlockTimer = useCallback(() => {
+    if (unlockTimerRef.current !== null) {
+      window.clearTimeout(unlockTimerRef.current);
+      unlockTimerRef.current = null;
+    }
+  }, []);
 
-    return () => window.clearTimeout(timer);
-  }, [activeMatch?.revealState.phase, currentPlayer?.accessibility.extraReadMs, holding]);
+  const resetRevealLocalState = useCallback(() => {
+    clearHoldTimers();
+    clearUnlockTimer();
+    setHoldPhase('idle');
+    setHoldProgress(0);
+    setNextReadyAt(0);
+    setNextUnlocked(false);
+  }, [clearHoldTimers, clearUnlockTimer]);
+
+  useEffect(() => {
+    const resetTimer = window.setTimeout(() => {
+      resetRevealLocalState();
+    }, 0);
+    return () => window.clearTimeout(resetTimer);
+  }, [revealIndex, revealPhase, resetRevealLocalState]);
+
+  useEffect(
+    () => () => {
+      clearHoldTimers();
+      clearUnlockTimer();
+    },
+    [clearHoldTimers, clearUnlockTimer],
+  );
 
   if (!activeMatch || !currentPlayer) {
     return null;
@@ -78,13 +140,19 @@ export function RevealScreen() {
   const currentMatch = activeMatch;
   const revealPlayer = currentPlayer;
   const isSpy = currentMatch.match.spyIds.includes(revealPlayer.id);
+  const isRevealed = holdPhase === 'revealed';
+  const spyHintText = i18n.language === 'ar' ? currentMatch.spyHintAr : currentMatch.spyHintEn;
+  const citizenWord = formatWordForDisplay(
+    i18n.language === 'ar' ? currentMatch.wordTextAr : currentMatch.wordTextEn,
+    i18n.language as 'en' | 'ar',
+  );
   const teammateNames = isSpy
     ? currentMatch.match.spyIds
       .filter((spyId) => spyId !== revealPlayer.id)
       .map((spyId) => playerMap.get(spyId)?.name ?? spyId)
     : [];
   const isLastPlayer = currentMatch.revealState.currentRevealIndex === currentMatch.match.playerIds.length - 1;
-  const canMoveNext = isRevealed && now >= nextReadyAt && !currentMatch.transitionLock;
+  const canMoveNext = isRevealed && nextUnlocked && now >= nextReadyAt && !currentMatch.transitionLock;
   const revealClass = [
     revealPlayer.accessibility.shortSightedMode ? 'access-magnify' : '',
     revealPlayer.accessibility.longSightedMode ? 'access-long' : '',
@@ -103,14 +171,41 @@ export function RevealScreen() {
     await updateActiveMatch({ transitionLock: false });
   }
 
+  function finishReveal() {
+    if (holdPhaseRef.current === 'revealed') {
+      return;
+    }
+
+    clearHoldTimers();
+    setHoldProgress(1);
+    setHoldPhase('revealed');
+
+    const readDelay = computeRevealReadyDelayMs(
+      isSpy ? spyHintText : '',
+      teammateNames.length > 0,
+      revealPlayer.accessibility.extraReadMs ?? 0,
+    );
+
+    setNextUnlocked(false);
+    setNextReadyAt(nowMs() + readDelay);
+    clearUnlockTimer();
+    unlockTimerRef.current = window.setTimeout(() => {
+      setNextUnlocked(true);
+    }, readDelay);
+  }
+
+  function resetHoldOnly() {
+    clearHoldTimers();
+    setHoldPhase('idle');
+    setHoldProgress(0);
+  }
+
   async function goBack() {
     if (currentMatch.revealState.phase !== 'reveal') {
       return;
     }
 
-    setRevealed(false);
-    setHolding(false);
-    setNextReadyAt(0);
+    resetRevealLocalState();
     await safePatch({
       revealState: {
         ...currentMatch.revealState,
@@ -131,13 +226,45 @@ export function RevealScreen() {
   }
 
   function handleHoldStart(event: React.PointerEvent<HTMLButtonElement>) {
+    if (currentMatch.revealState.phase !== 'reveal' || holdPhaseRef.current === 'revealed') {
+      return;
+    }
     event.preventDefault();
-    setHolding(true);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+
+    const holdDuration = computeHoldDurationMs(revealPlayer.accessibility.extraReadMs ?? 0);
+    resetHoldOnly();
+    setHoldPhase('holding');
+    holdStartedAtRef.current = nowMs();
+
+    holdIntervalRef.current = window.setInterval(() => {
+      const elapsed = nowMs() - holdStartedAtRef.current;
+      const progress = clamp(elapsed / holdDuration, 0, 1);
+      setHoldProgress(progress);
+      if (progress >= 1) {
+        finishReveal();
+      }
+    }, HOLD_PROGRESS_TICK_MS);
+
+    holdFinishTimerRef.current = window.setTimeout(() => {
+      setHoldProgress(1);
+      finishReveal();
+    }, holdDuration + HOLD_PROGRESS_TICK_MS);
   }
 
   function handleHoldEnd(event: React.PointerEvent<HTMLButtonElement>) {
+    if (holdPhaseRef.current !== 'holding') {
+      return;
+    }
     event.preventDefault();
-    setHolding(false);
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (holdProgressRef.current >= HOLD_RELEASE_THRESHOLD) {
+      finishReveal();
+      return;
+    }
+    resetHoldOnly();
   }
 
   async function goNext() {
@@ -178,9 +305,7 @@ export function RevealScreen() {
       },
     });
 
-    setRevealed(false);
-    setHolding(false);
-    setNextReadyAt(0);
+    resetRevealLocalState();
   }
 
   return (
@@ -215,10 +340,16 @@ export function RevealScreen() {
           <div className="reveal-mask-wrapper">
             <div className="reveal-content">
               {isSpy ? (
-                <div className="reveal-meta">
+                <div className="reveal-meta spy-meta-grid">
                   <h2 className="role-title role-title-spy">{t('roleSpy')}</h2>
-                  <p className="spy-category">{t('category')}: {currentMatch.match.category}</p>
-                  <p className="spy-hint">{t('hint')}: {i18n.language === 'ar' ? currentMatch.spyHintAr : currentMatch.spyHintEn}</p>
+                  <p className="spy-category-pill">
+                    <span>{t('category')}</span>
+                    <strong>{currentMatch.match.category}</strong>
+                  </p>
+                  <div className="spy-hint-box">
+                    <span className="spy-hint-label">{t('hint')}</span>
+                    <p className="spy-hint">{spyHintText}</p>
+                  </div>
                   {teammateNames.length > 0 ? (
                     <p className="spy-team-note">
                       {t('spyTeamNote', {
@@ -231,26 +362,33 @@ export function RevealScreen() {
                 <div className="reveal-meta">
                   <h2 className="role-title role-title-citizen">{t('roleCitizen')}</h2>
                   <p>{t('secretWord')}</p>
-                  <strong className="word-display">{formatWordForDisplay(i18n.language === 'ar' ? currentMatch.wordTextAr : currentMatch.wordTextEn, i18n.language as 'en' | 'ar')}</strong>
+                  <strong className="word-display">{citizenWord}</strong>
                 </div>
               )}
             </div>
             {!isRevealed ? (
               <button
                 type="button"
-                className={`reveal-mask ${holding ? 'holding' : ''}`}
+                className={`reveal-mask ${holdPhase === 'holding' ? 'holding' : ''}`}
                 onPointerDown={handleHoldStart}
                 onPointerUp={handleHoldEnd}
                 onPointerLeave={handleHoldEnd}
+                onPointerCancel={handleHoldEnd}
                 onContextMenu={(event) => event.preventDefault()}
                 onDragStart={(event) => event.preventDefault()}
               >
-                {t('pressHoldReveal')}
+                <span className="reveal-mask-title">{t('pressHoldReveal')}</span>
+                <span className="reveal-mask-progress" aria-hidden>
+                  <span className="reveal-mask-progress-fill" style={{ transform: `scaleX(${holdProgress})` }} />
+                </span>
+                <span className="reveal-mask-percentage" aria-hidden>
+                  {Math.round(holdProgress * 100)}%
+                </span>
               </button>
             ) : null}
           </div>
 
-          {!canMoveNext && isRevealed ? (
+          {isRevealed && !canMoveNext ? (
             <p className="cooldown-text">
               {t('revealReadyIn', {
                 seconds: Math.max(1, Math.ceil((nextReadyAt - now) / 1000)),

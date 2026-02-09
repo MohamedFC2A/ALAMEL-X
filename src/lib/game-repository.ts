@@ -56,7 +56,7 @@ export function assignSpies(playerIds: string[], spyCount: 1 | 2): string[] {
   return shuffle(playerIds).slice(0, spyCount);
 }
 
-function buildGuessOptions(
+export function buildGuessOptions(
   language: 'en' | 'ar',
   correct: string,
   similar: string[],
@@ -65,45 +65,60 @@ function buildGuessOptions(
   sameCategoryPool: string[],
   otherPool: string[],
 ): string[] {
-  const options = new Map<string, string>();
-  const addOption = (value?: string) => {
+  const formattedCorrect = formatWordForDisplay(correct, language);
+  const normalizedCorrect = normalizeWord(formattedCorrect);
+  const decoyOptions = new Map<string, string>();
+
+  const addDecoyOption = (value?: string) => {
     if (!value) {
       return;
     }
     const formatted = formatWordForDisplay(value, language);
     const key = normalizeWord(formatted);
-    if (!key || options.has(key)) {
+    if (!key || key === normalizedCorrect || decoyOptions.has(key)) {
       return;
     }
-    options.set(key, formatted);
+    decoyOptions.set(key, formatted);
   };
 
-  [correct, ...similar, ...related, extra].forEach((value) => addOption(value));
+  [...similar, ...related, extra].forEach((value) => addDecoyOption(value));
 
-  if (options.size < 5) {
+  if (decoyOptions.size < 4) {
     const rankedSameCategory = [...sameCategoryPool].sort((left, right) => {
       const leftScore = similarityScore(left, correct);
       const rightScore = similarityScore(right, correct);
       return rightScore - leftScore;
     });
     for (const value of rankedSameCategory) {
-      addOption(value);
-      if (options.size >= 5) {
+      addDecoyOption(value);
+      if (decoyOptions.size >= 4) {
         break;
       }
     }
   }
 
-  if (options.size < 5) {
+  if (decoyOptions.size < 4) {
     for (const value of shuffle(otherPool)) {
-      addOption(value);
-      if (options.size >= 5) {
+      addDecoyOption(value);
+      if (decoyOptions.size >= 4) {
         break;
       }
     }
   }
 
-  return shuffle([...options.values()]).slice(0, 5);
+  const finalOptions = shuffle([formattedCorrect, ...shuffle([...decoyOptions.values()]).slice(0, 4)]);
+  const hasCorrect = finalOptions.some((value) => normalizeWord(value) === normalizedCorrect);
+
+  if (hasCorrect) {
+    return finalOptions.slice(0, 5);
+  }
+
+  if (finalOptions.length === 0) {
+    return [formattedCorrect];
+  }
+
+  finalOptions[finalOptions.length - 1] = formattedCorrect;
+  return finalOptions.slice(0, 5);
 }
 
 function similarityScore(candidate: string, reference: string): number {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { assignSpies, computeSpyGuessCorrect, resolveWinner } from './game-repository';
+import { assignSpies, buildGuessOptions, computeSpyGuessCorrect, resolveWinner } from './game-repository';
 import type { ActiveMatch } from '../types';
+import { formatWordForDisplay, normalizeWord } from './word-format';
 
 describe('game-repository logic', () => {
   it('assigns exactly one spy when spyCount is 1', () => {
@@ -60,5 +61,38 @@ describe('game-repository logic', () => {
     expect(computeSpyGuessCorrect(activeMatch, 'golden harbor')).toBe(true);
     expect(computeSpyGuessCorrect(activeMatch, 'harbor')).toBe(true);
     expect(computeSpyGuessCorrect(activeMatch, 'wrong')).toBe(false);
+  });
+
+  it('always keeps the correct word inside spy guess options', () => {
+    const options = buildGuessOptions(
+      'ar',
+      'ميدان عام',
+      ['شارع جانبي', 'حارة شعبية', 'موقف ميكروباص'],
+      ['كوبري', 'جامعة'],
+      'ملعب',
+      ['شارع جانبي', 'حارة شعبية', 'موقف ميكروباص', 'محطة مترو', 'كوبري', 'جامعة'],
+      ['طعمية', 'فول', 'كشري', 'شاي'],
+    );
+
+    expect(options).toContain('ميدان عام');
+    expect(options).toHaveLength(5);
+    expect(new Set(options).size).toBe(options.length);
+  });
+
+  it('never drops the correct option even with repeated shuffles', () => {
+    const expected = normalizeWord(formatWordForDisplay('Golden Harbor', 'en'));
+    for (let i = 0; i < 120; i += 1) {
+      const options = buildGuessOptions(
+        'en',
+        'Golden Harbor',
+        ['Silent Harbor', 'Harbor Street', 'Dock Gate'],
+        ['Port Watch', 'Harbor Light'],
+        'Sea Route',
+        ['Silent Harbor', 'Harbor Street', 'Dock Gate', 'Port Watch', 'Harbor Light'],
+        ['Pocket Compass', 'Royal Camera', 'Hidden Market'],
+      );
+      expect(options.some((option) => normalizeWord(option) === expected)).toBe(true);
+      expect(new Set(options).size).toBe(options.length);
+    }
   });
 });

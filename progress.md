@@ -65,3 +65,24 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 
 ## TODO (Current)
 - Run Playwright skill client and inspect latest screenshots/state snapshots for visual regressions after the full theme update.
+
+## Progress Log
+- Fixed spy guess option generation to always include the citizens' correct word, even after shuffle/truncation.
+- Added unit coverage for guess-options correctness (always includes correct option, no duplicates, stable length at 5 when pool allows).
+- Reworked reveal hold interaction into a robust state machine (`idle -> holding -> revealed`) with pointer capture and progress-based tolerance.
+- Added local unlock timer after reveal (timeout-backed) so `Next` activation is reliable and no longer depends only on clock polling.
+- Added adaptive reveal delay calculation based on hint length, teammate presence, and accessibility extra-read configuration with safe clamp limits.
+- Improved reveal card information hierarchy for spy role (category pill + hint box + cleaner teammate note).
+- Applied no-copy/no-select behavior to gameplay screen containers while preserving text selection/editing inside inputs, textareas, selects, and contenteditable controls.
+- Added integration-style UI test for reveal hold flow: early release fails, near-threshold release succeeds, reveal remains open, and Next unlocks after smart delay.
+- Restored lint-clean state after changes (`npm run lint`).
+
+## Validation Update (Reveal + Guess Robustness)
+- Ran `npm test`: pass (12 tests).
+- Ran `npm run lint`: pass.
+- Ran `npm run build`: pass (PWA build complete; existing chunk-size warning remains).
+- Ran develop-web-game Playwright client smoke check and reviewed generated screenshot/state artifact from the latest run.
+
+## Remaining TODOs / Suggestions
+- Add a dedicated end-to-end scripted flow that seeds players and drives setup -> reveal -> discussion automatically for stronger browser-level regression coverage.
+- Consider exposing explicit test hooks/ids for key reveal controls to reduce brittle selector logic in automated UI tests.
