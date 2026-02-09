@@ -165,6 +165,7 @@ const translation = {
   spyRecommended: 'موصى به',
   confirmLocation: '{{location}}',
   voteMissedResult: 'التصويت لم يحدد الجاسوس — الجواسيس كسبوا تلقائيًا.',
+  spyTeamLabel: 'فريقك',
   spyTeamNote: 'زميلك في الفريق: {{names}}',
   themeAurora: 'نسيم',
   themeSolar: 'شمس',

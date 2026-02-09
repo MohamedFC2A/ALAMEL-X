@@ -824,6 +824,100 @@ input[type='range'] {
     font-weight: 600;
 }
 
+/* ─── Spy Hero Title (big red "أنت الجاسوس") ─── */
+.spy-hero-title {
+    font-size: clamp(2.2rem, 10vw, 3.4rem) !important;
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 18px rgba(229, 62, 62, 0.45), 0 0 40px rgba(229, 62, 62, 0.2);
+    animation: spy-pulse 2s ease-in-out infinite;
+}
+
+@keyframes spy-pulse {
+
+    0%,
+    100% {
+        text-shadow: 0 0 18px rgba(229, 62, 62, 0.45), 0 0 40px rgba(229, 62, 62, 0.2);
+    }
+
+    50% {
+        text-shadow: 0 0 24px rgba(229, 62, 62, 0.65), 0 0 50px rgba(229, 62, 62, 0.35);
+    }
+}
+
+/* ─── Spy Category Display (clear, readable) ─── */
+.spy-category-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid color-mix(in oklab, var(--accent) 40%, white);
+    border-radius: var(--radius-2);
+    background: rgba(77, 215, 255, 0.08);
+}
+
+.spy-category-label {
+    font-size: 0.78rem;
+    color: var(--text-soft);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.spy-category-name {
+    font-size: clamp(1.2rem, 5vw, 1.65rem);
+    color: #ffffff;
+    letter-spacing: 0.04em;
+}
+
+/* ─── Spy Team Banner (2-spy games) ─── */
+.spy-team-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius-2);
+    border: 1px solid color-mix(in oklab, var(--accent-2) 50%, transparent);
+    background: linear-gradient(135deg, rgba(123, 255, 202, 0.12), rgba(77, 215, 255, 0.08));
+    animation: team-glow 2.5s ease-in-out infinite;
+}
+
+@keyframes team-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 1px rgba(123, 255, 202, 0.15);
+    }
+
+    50% {
+        box-shadow: 0 0 12px rgba(123, 255, 202, 0.25);
+    }
+}
+
+.spy-team-banner-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.spy-team-banner-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.spy-team-banner-label {
+    font-size: 0.72rem;
+    color: var(--text-soft);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.spy-team-banner-names {
+    color: color-mix(in oklab, var(--accent-2) 85%, white);
+    font-size: 1.1rem;
+    letter-spacing: 0.03em;
+}
+
 .reveal-content strong {
     font-size: clamp(1.8rem, 9vw, 2.9rem);
 }
