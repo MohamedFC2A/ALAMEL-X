@@ -1,0 +1,314 @@
+/* ═══════════ APP SHELL & SCAFFOLDING ═══════════ */
+.app-shell {
+    position: relative;
+    height: var(--app-height);
+    width: 100%;
+    background-color: var(--bg-void);
+    overflow: hidden;
+}
+
+.app-shell__vignette {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.25) 100%);
+}
+
+.app-shell__noise {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    opacity: 0.015;
+    mix-blend-mode: overlay;
+}
+
+/* Base grid animation moved to utilities or kept here if specific */
+.app-shell__grid {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    background-image:
+        linear-gradient(rgba(79, 209, 197, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79, 209, 197, 0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    /* animation defined in utilities/index */
+    animation:
+        gridPulse 4s ease-in-out infinite,
+        gridDrift 20s linear infinite;
+}
+
+.app-shell__content {
+    position: relative;
+    z-index: 30;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: var(--space-3) var(--space-2) var(--space-4);
+}
+
+.route-stage {
+    width: var(--content-width);
+    height: 100%;
+    margin: 0 auto;
+}
+
+.route-stage>* {
+    height: 100%;
+}
+
+main {
+    margin: 0;
+}
+
+/* ═══════════ SCREEN LAYOUTS ═══════════ */
+.screen-frame {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.screen-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    position: relative;
+    background: var(--surface-1);
+    border-bottom: 1px solid var(--stroke-1);
+}
+
+.screen-header-main {
+    flex: 1;
+    text-align: center;
+}
+
+.screen-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    height: 100%;
+    min-height: 0;
+}
+
+.screen-scroll-region {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding-inline: 0.08rem;
+    padding-block-end: 1.8rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+}
+
+.screen-scroll-region::-webkit-scrollbar {
+    width: 8px;
+}
+
+.screen-scroll-region::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.screen-scroll-region::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.screen-shell input,
+.screen-shell textarea,
+.screen-shell select,
+.screen-shell [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+}
+
+/* ═══════════ HEADER GRID ═══════════ */
+.header-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.header-grid__start {
+    justify-self: start;
+}
+
+.header-grid__center {
+    justify-self: center;
+    text-align: center;
+}
+
+.header-grid__center h1 {
+    margin: 0;
+    font-size: var(--font-size-h2);
+    letter-spacing: 0.08em;
+}
+
+.header-grid__end {
+    justify-self: end;
+}
+
+.header-subtitle {
+    color: var(--text-soft);
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+}
+
+.header-home-link {
+    min-height: 36px;
+    text-align: center;
+    border-radius: var(--radius-1);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--stroke-1);
+    background: transparent;
+    color: var(--text-soft);
+    font-size: 0.75rem;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: border-color 150ms ease;
+}
+
+.header-home-link:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+/* ═══════════ HOME HUD ═══════════ */
+.home-hud {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-2);
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.home-hud__top {
+    flex: 0 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    text-align: center;
+}
+
+.home-hud__kicker {
+    font-family: var(--font-hud);
+    letter-spacing: 0.3em;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.home-hud__top h1 {
+    margin-top: 0;
+    letter-spacing: 0.15em;
+    font-size: clamp(1.75rem, 10vw, 2.5rem);
+    color: var(--text-primary);
+}
+
+.home-hud__center {
+    flex: 1 1 auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-hud__mission-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.home-hud__footer {
+    flex: 0 0 auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+}
+
+/* ═══════════ RTL ADAPTATIONS (Layout) ═══════════ */
+html[dir='rtl'] .screen-header-main,
+html[dir='rtl'] .header-meta {
+    text-align: right;
+}
+
+/* Removed flex-direction overrides for layout to test natural flow. 
+   If issues arise, restore 'flex-direction: row-reverse' or use 'flex-direction: row' explicitly.
+*/
+
+/* ═══════════ MEDIA QUERIES (Layout) ═══════════ */
+@media (max-width: 560px) {
+    .app-shell__content {
+        padding: 0.6rem 0.62rem 1rem;
+    }
+
+    /* Header Rail (defined here as it wasn't in main block) */
+    .header-rail {
+        display: flex;
+        /* inferred */
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
+
+    .header-meta {
+        flex: 1 1 auto;
+    }
+
+    .header-subtitle {
+        max-width: 26ch;
+        font-size: 0.84rem;
+        line-height: 1.42;
+    }
+
+    .header-actions {
+        width: auto;
+        align-self: flex-start;
+    }
+
+    /* RTL override for header actions might be needed if they are flex row */
+    html[dir='rtl'] .header-actions {
+        /* Using natural flow instead of row-reverse for now. 
+       If actions order matters (e.g. back button), natural flow in RTL (Right-to-Left) puts first item on Right.
+       If design wants first item on Left, then row-reverse usage was correct for that specific goal.
+       But standard RTL behavior is 'start' is Right.
+    */
+    }
+
+    .home-hud {
+        padding-top: 0.8rem;
+    }
+
+    .home-hud__top h1 {
+        letter-spacing: 0.16em;
+        font-size: clamp(2rem, 13vw, 3rem);
+    }
+
+    .home-hud__footer {
+        width: 100%;
+        gap: 0.45rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .header-home-link {
+        min-height: 1.85rem;
+        font-size: 0.7rem;
+    }
+}

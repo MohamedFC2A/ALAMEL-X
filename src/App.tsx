@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -17,8 +17,28 @@ import { installClockDebugHooks } from './lib/clock';
 import type { GlobalSettings } from './types';
 import './index.css';
 
-const NOISE_TEXTURE =
-  "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")";
+function generateNoise(opacity = 0.04): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  const imageData = ctx.createImageData(64, 64);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    if (Math.random() < 0.5) {
+      data[i] = 0;     // R
+      data[i + 1] = 0; // G
+      data[i + 2] = 0; // B
+      data[i + 3] = Math.floor(255 * opacity); // A
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return `url(${canvas.toDataURL()})`;
+}
 
 function ThemeController({ settings }: { settings: GlobalSettings | undefined }) {
   const { i18n } = useTranslation();
@@ -33,25 +53,15 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     const root = document.documentElement;
     root.style.setProperty('--ui-scale', settings.uiScale.toString());
     root.style.setProperty('--anim-speed', settings.reducedMotionMode ? '0' : settings.animationSpeed.toString());
-    root.setAttribute('data-theme', 'onyx');
+    root.setAttribute('data-theme', settings.theme);
     root.setAttribute('data-contrast', settings.contrastPreset);
     root.setAttribute('data-density', settings.uiDensity);
 
-    const targetLanguage = 'ar' as const;
-    if (settings.language !== 'ar' || settings.pendingLanguage || settings.theme !== 'onyx') {
-      void db.settings.put({
-        ...settings,
-        language: 'ar',
-        theme: 'onyx',
-        pendingLanguage: undefined,
-      });
+    if (i18n.language !== settings.language) {
+      void i18n.changeLanguage(settings.language);
     }
 
-    if (i18n.language !== targetLanguage) {
-      void i18n.changeLanguage(targetLanguage);
-    }
-
-    applyDocumentLanguage(targetLanguage);
+    applyDocumentLanguage(settings.language);
   }, [activeMatch, i18n, settings]);
 
   useEffect(() => {
@@ -101,6 +111,7 @@ function AnimatedRoutes() {
 
 function App() {
   const settings = useLiveQuery(() => db.settings.get('global'), []);
+  const noiseTexture = useMemo(() => generateNoise(0.03), []);
 
   useEffect(() => {
     void ensureSettings();
@@ -112,7 +123,7 @@ function App() {
       <div className="app-shell">
         <div className="app-shell__grid" aria-hidden="true" />
         <div className="app-shell__vignette" />
-        <div className="app-shell__noise" style={{ backgroundImage: NOISE_TEXTURE }} />
+        <div className="app-shell__noise" style={{ backgroundImage: noiseTexture }} />
         <div className="app-shell__content">
           <ThemeController settings={settings} />
           <AnimatedRoutes />

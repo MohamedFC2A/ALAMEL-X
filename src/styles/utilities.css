@@ -1,0 +1,78 @@
+/* ═══════════ ANIMATIONS ═══════════ */
+@keyframes gridPulse {
+
+    0%,
+    100% {
+        opacity: 0.025;
+    }
+
+    50% {
+        opacity: 0.055;
+    }
+}
+
+@keyframes gridDrift {
+    0% {
+        background-position: 0 0, 0 0;
+    }
+
+    100% {
+        background-position: 40px 40px, 40px 40px;
+    }
+}
+
+@keyframes cardRise {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes maskFade {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes updatePulse {
+
+    0%,
+    100% {
+        border-color: var(--success);
+    }
+
+    50% {
+        border-color: color-mix(in oklab, var(--success) 60%, white);
+    }
+}
+
+/* ═══════════ UTILITIES ═══════════ */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

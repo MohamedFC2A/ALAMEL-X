@@ -1,0 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Cairo:wght@500;600;700&display=swap');
+
+:root {
+    /* ═══════════ MINIMAL SCI-FI HUD PALETTE ═══════════ */
+    --bg-void: #0a0a0c;
+    --bg-depth: #0e0e10;
+
+    --text-primary: #e8e8ea;
+    --text-secondary: #a0a0a6;
+    --text-muted: #68686e;
+
+    --accent-primary: #4fd1c5;
+    --accent-danger: #e53e3e;
+
+    /* ═══════════ DIMENSIONS ═══════════ */
+    --app-height: 100dvh;
+    --content-width: min(100%, 480px);
+
+    /* ═══════════ FONTS ═══════════ */
+    --font-hud: 'Rajdhani', sans-serif;
+    --font-body: 'Cairo', sans-serif;
+
+    /* ═══════════ SPACING (8px rhythm) ═══════════ */
+    --ui-scale: 1;
+    --anim-speed: 1;
+    --space-1: 0.5rem;
+    /* 8px */
+    --space-2: 0.75rem;
+    /* 12px */
+    --space-3: 1rem;
+    /* 16px */
+    --space-4: 1.5rem;
+    /* 24px */
+    --space-5: 2rem;
+    /* 32px */
+
+    /* ═══════════ RADIUS (HUD-style) ═══════════ */
+    --radius-1: 0.375rem;
+    /* 6px */
+    --radius-2: 0.5rem;
+    /* 8px */
+    --radius-3: 0.75rem;
+    /* 12px */
+
+    /* ═══════════ TYPOGRAPHY ═══════════ */
+    --font-main: var(--font-body);
+    --font-display: var(--font-hud);
+    --font-size-body: calc(16px * var(--ui-scale));
+    --font-size-h1: clamp(1.75rem, 7vw, 2.5rem);
+    --font-size-h2: clamp(1.25rem, 4.5vw, 1.75rem);
+    --font-size-h3: clamp(1rem, 3vw, 1.25rem);
+
+    /* ═══════════ SURFACES ═══════════ */
+    --bg-0: var(--bg-void);
+    --bg-1: var(--bg-depth);
+    --bg-2: #121214;
+    --text-main: var(--text-primary);
+    --text-soft: var(--text-secondary);
+    --text-dim: var(--text-muted);
+    --line: rgba(255, 255, 255, 0.12);
+    --stroke-1: rgba(255, 255, 255, 0.15);
+    --stroke-2: rgba(255, 255, 255, 0.08);
+    --surface-1: rgba(14, 14, 16, 0.95);
+    --surface-2: rgba(18, 18, 20, 0.95);
+    --surface-3: rgba(22, 22, 24, 0.95);
+
+    /* ═══════════ SHADOWS (minimal) ═══════════ */
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    /* ═══════════ ACCENTS ═══════════ */
+    --accent: var(--accent-primary);
+    --accent-strong: #5ce0d3;
+    --accent-2: #7de8dd;
+    --stamp: var(--accent-danger);
+    --warning: #ecc94b;
+    --danger: var(--accent-danger);
+    --success: var(--accent-primary);
+
+    /* ═══════════ PANELS ═══════════ */
+    --panel: rgba(14, 14, 16, 0.92);
+    --panel-strong: rgba(10, 10, 12, 0.96);
+
+    color-scheme: dark;
+}
+
+:root[data-contrast='high'],
+.access-contrast {
+    --text-main: #ffffff;
+    --text-soft: #f0f0f0;
+    --text-dim: #c0c0c0;
+    --line: rgba(255, 255, 255, 0.5);
+    --stroke-1: rgba(255, 255, 255, 0.6);
+    --shadow: none;
+    --shadow-soft: none;
+}
+
+:root[data-density='compact'] {
+    --space-2: 0.62rem;
+    --space-3: 0.82rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+}
+
+@media (max-width: 560px) {
+    :root {
+        --space-2: 0.58rem;
+        --space-3: 0.74rem;
+        --space-4: 0.94rem;
+        --space-5: 1.06rem;
+        --bg-0: #000000;
+        --bg-1: #030303;
+        --bg-2: #080808;
+    }
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Accessibility: Selective User Select */
+button,
+.clickable,
+[role="button"],
+.home-hud__kicker,
+.metric-chip span,
+.phase-label,
+.game-button {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+html,
+body,
+#root {
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    padding: 0;
+    background-color: var(--bg-void);
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: var(--font-size-body);
+    color: var(--text-main);
+    background: var(--bg-void);
+}
+
+h1,
+h2,
+h3,
+p {
+    margin: 0;
+}
+
+h1 {
+    font-size: var(--font-size-h1);
+    letter-spacing: 0.08em;
+    font-family: var(--font-hud);
+    text-transform: uppercase;
+}
+
+h2 {
+    font-size: var(--font-size-h2);
+}
+
+h3 {
+    font-size: var(--font-size-h3);
+}
+
+button,
+input,
+select {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+    transition: transform calc(220ms * max(var(--anim-speed), 0.01)) ease, opacity 150ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.52;
+}
+
+input,
+textarea,
+select,
+[contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+}
