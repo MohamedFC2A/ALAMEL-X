@@ -108,7 +108,7 @@ main {
     overflow-y: auto;
     flex: 1;
     min-height: 0;
-    padding-inline: var(--space-1);
+    padding-inline: var(--space-2);
     padding-block-end: calc(80px + var(--space-3));
     /* Height of Action Bar + extra padding */
     scrollbar-width: thin;
@@ -307,13 +307,7 @@ html[dir='rtl'] .header-meta {
     }
 
     /* RTL override for header actions might be needed if they are flex row */
-    html[dir='rtl'] .header-actions {
-        /* Using natural flow instead of row-reverse for now. 
-       If actions order matters (e.g. back button), natural flow in RTL (Right-to-Left) puts first item on Right.
-       If design wants first item on Left, then row-reverse usage was correct for that specific goal.
-       But standard RTL behavior is 'start' is Right.
-    */
-    }
+
 
     .home-hud {
         padding-block-start: 0.8rem;
@@ -330,7 +324,7 @@ html[dir='rtl'] .header-meta {
     }
 
     .screen-scroll-region {
-        padding-inline: var(--space-1);
+        padding-inline: var(--space-2);
         padding-block-end: calc(80px + var(--space-2));
     }
 }

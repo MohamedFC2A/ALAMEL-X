@@ -522,6 +522,7 @@ input[type='range'] {
     align-items: center;
     column-gap: var(--space-2);
     row-gap: var(--space-1);
+    width: 100%;
 }
 
 .player-row .player-avatar {
@@ -542,7 +543,7 @@ input[type='range'] {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: 0.25rem;
 }
 
 .player-main h3 {
@@ -562,20 +563,19 @@ input[type='range'] {
     justify-content: flex-end;
     align-items: center;
     flex-wrap: wrap;
-    min-width: 0;
 }
 
 .player-actions .game-button {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
 }
 
 .stats-grid {
     margin-block-start: var(--space-2);
     padding-block-start: var(--space-2);
     border-block-start: 1px solid var(--stroke-2);
-    display: grid;
-    gap: var(--space-1);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
     color: var(--text-soft);
     font-size: 0.9rem;
     line-height: var(--lh-body);
@@ -1184,23 +1184,23 @@ html[dir='rtl'] .reveal-mask-progress-fill {
         grid-template-areas:
             "avatar main"
             "actions actions";
-        align-items: start;
+        align-items: center;
     }
 
     .player-actions {
         width: 100%;
-        justify-content: stretch;
+        justify-content: space-between;
+        margin-block-start: var(--space-1);
     }
 
     .player-actions .game-button {
-        flex: 1 1 min(100%, 9rem);
+        flex: 1;
+        min-width: 0;
     }
 
     .stats-grid {
-        grid-template-columns: 1fr;
+        flex-direction: column;
         gap: var(--space-1);
-        margin-block-start: var(--space-2);
-        font-size: 0.88rem;
     }
 
     .case-actions {

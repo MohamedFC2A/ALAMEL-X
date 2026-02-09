@@ -155,7 +155,6 @@ body,
 body {
     font-family: var(--font-body);
     font-size: var(--font-size-body);
-    line-height: var(--lh-body);
     color: var(--text-main);
     background: var(--bg-void);
 }
@@ -191,7 +190,11 @@ h3 {
     color: var(--text-secondary);
 }
 
-p {
+p,
+ul,
+ol,
+dl,
+textarea {
     line-height: var(--lh-body);
 }
 
