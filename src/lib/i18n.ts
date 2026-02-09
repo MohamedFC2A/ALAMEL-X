@@ -154,7 +154,7 @@ const translation = {
   guessTimeoutMessage: 'انتهى الوقت بدون تخمين.',
   themeAurora: 'نسيم',
   themeSolar: 'شمس',
-  themeOnyx: 'ليل',
+  themeOnyx: 'مخابرات',
 };
 
 const resources = {

@@ -61,14 +61,38 @@
 }
 
 :root[data-theme='onyx'] {
-  --bg-0: #07080d;
-  --bg-1: #161b25;
-  --bg-2: #242c3a;
-  --text-main: #f2f4f8;
-  --text-soft: #d0d8e6;
-  --text-dim: #9ba8bf;
-  --accent: #9bb0ff;
-  --accent-2: #5bd8ff;
+  --bg-0: #010205;
+  --bg-1: #05080f;
+  --bg-2: #0a1019;
+  --text-main: #ebf8ff;
+  --text-soft: #aec3d8;
+  --text-dim: #7188a3;
+  --line: rgba(103, 146, 193, 0.28);
+  --stroke-1: rgba(90, 147, 209, 0.33);
+  --stroke-2: rgba(130, 197, 255, 0.42);
+  --glass-top: rgba(91, 152, 216, 0.12);
+  --glass-bottom: rgba(2, 7, 14, 0.92);
+  --surface-1: rgba(3, 9, 18, 0.88);
+  --surface-2: rgba(4, 11, 20, 0.94);
+  --surface-3: rgba(7, 14, 24, 0.97);
+  --accent: #62e9ff;
+  --accent-strong: #40cfff;
+  --accent-2: #7bffca;
+  --stamp: #ff4b63;
+  --glow: 0 0 26px rgba(98, 233, 255, 0.3);
+  --glow-strong: 0 0 38px rgba(98, 233, 255, 0.48);
+  --shadow: 0 22px 64px rgba(0, 0, 0, 0.78);
+  --shadow-soft: 0 14px 30px rgba(0, 0, 0, 0.58);
+}
+
+:root[data-theme='onyx'] body {
+  background-image:
+    radial-gradient(50rem 30rem at 92% -12%, rgba(255, 75, 99, 0.12), transparent 68%),
+    radial-gradient(46rem 32rem at -12% 8%, rgba(98, 233, 255, 0.14), transparent 70%),
+    radial-gradient(55rem 32rem at 50% 118%, rgba(123, 255, 202, 0.08), transparent 72%),
+    repeating-linear-gradient(120deg, rgba(128, 188, 255, 0.05) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 52px),
+    linear-gradient(152deg, var(--bg-0), var(--bg-1), var(--bg-2));
 }
 
 :root[data-contrast='high'],

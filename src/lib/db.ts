@@ -19,7 +19,7 @@ export const defaultSettings: GlobalSettings = {
   uiDensity: 'comfortable',
   soundEnabled: true,
   language: 'ar',
-  theme: 'aurora',
+  theme: 'onyx',
   discussionMinutes: 3,
   guessSeconds: 30,
   wordDifficulty: 'any',
@@ -68,9 +68,11 @@ export { db };
 export async function ensureSettings(): Promise<GlobalSettings> {
   const current = await db.settings.get('global');
   if (current) {
+    const resolvedTheme = current.theme === 'aurora' ? 'onyx' : current.theme ?? defaultSettings.theme;
     const merged: GlobalSettings = {
       ...defaultSettings,
       ...current,
+      theme: resolvedTheme,
       language: 'ar',
       pendingLanguage: undefined,
     };
