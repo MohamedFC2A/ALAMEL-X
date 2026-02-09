@@ -30,9 +30,9 @@ export function GameButton({
       type={type}
       className={classes}
       disabled={disabled}
-      whileHover={disabled ? undefined : { scale: variant === 'icon' ? 1.06 : 1.03, textShadow: '0 0 8px rgb(255 255 255 / 0.8)' }}
-      whileTap={disabled ? undefined : { scale: 0.95 }}
-      transition={{ duration: 0.16 }}
+      whileHover={disabled ? undefined : { scale: 1.02 }}
+      whileTap={disabled ? undefined : { scale: 0.98 }}
+      transition={{ duration: 0.12 }}
       {...rest}
     >
       {icon ? <span className="game-button__icon">{icon}</span> : null}
