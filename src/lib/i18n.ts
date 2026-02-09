@@ -167,6 +167,11 @@ const translation = {
   themeSolar: 'شمس',
   themeOnyx: 'مخابرات',
   themeLocked: 'سمة OLED Noir مفعلة دائمًا',
+  systemSettings: 'النظام',
+  checkForUpdates: 'تحديث اللعبة',
+  updateAvailable: 'يتوفر تحديث جديد',
+  upToDate: 'اللعبة محدّثة',
+  checking: 'جاري الفحص...',
 };
 
 const resources = {

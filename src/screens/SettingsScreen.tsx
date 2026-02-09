@@ -1,17 +1,58 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RefreshCw } from 'lucide-react';
 import { db, ensureSettings } from '../lib/db';
 import { updateGlobalSettings } from '../lib/game-repository';
 import { ScreenScaffold } from '../components/ScreenScaffold';
+import { GameButton } from '../components/GameButton';
 import type { ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
+
+type UpdateStatus = 'idle' | 'checking' | 'available' | 'up-to-date';
 
 export function SettingsScreen() {
   const { t } = useTranslation();
   const settings = useLiveQuery(() => db.settings.get('global'), []);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
 
   useEffect(() => {
     void ensureSettings();
+  }, []);
+
+  const checkForUpdates = useCallback(async () => {
+    setUpdateStatus('checking');
+
+    try {
+      // Check if service worker is available (PWA)
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.update();
+
+          // Check if there's a waiting worker (update available)
+          if (registration.waiting) {
+            setUpdateStatus('available');
+            // Activate the new service worker
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            // Reload after activation
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+              window.location.reload();
+            });
+            return;
+          }
+        }
+      }
+
+      // If no update detected, mark as up-to-date briefly then trigger reload
+      setUpdateStatus('up-to-date');
+      setTimeout(() => {
+        // Force reload to get any cached updates
+        window.location.reload();
+      }, 500);
+    } catch {
+      // On error, just reload the page
+      window.location.reload();
+    }
   }, []);
 
   if (!settings) {
@@ -171,6 +212,29 @@ export function SettingsScreen() {
               onChange={(event) => void updateGlobalSettings({ soundEnabled: event.target.checked })}
             />
           </label>
+        </div>
+      </section>
+
+      <section className="stack-list settings-section">
+        <div className="section-heading">
+          <h2>{t('systemSettings')}</h2>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <GameButton
+            variant="primary"
+            size="md"
+            className={`update-check-btn ${updateStatus === 'available' ? 'game-button--update-available' : ''}`}
+            icon={<RefreshCw size={18} aria-hidden />}
+            onClick={() => void checkForUpdates()}
+            disabled={updateStatus === 'checking'}
+          >
+            {updateStatus === 'checking'
+              ? t('checking')
+              : updateStatus === 'available'
+                ? t('updateAvailable')
+                : t('checkForUpdates')}
+          </GameButton>
         </div>
       </section>
     </ScreenScaffold>

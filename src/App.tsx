@@ -110,6 +110,7 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-shell">
+        <div className="app-shell__grid" aria-hidden="true" />
         <div className="app-shell__vignette" />
         <div className="app-shell__noise" style={{ backgroundImage: NOISE_TEXTURE }} />
         <div className="app-shell__content">

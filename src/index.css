@@ -153,6 +153,43 @@ body {
   mix-blend-mode: overlay;
 }
 
+/* ═══════════ SPY GRID BACKGROUND ═══════════ */
+@keyframes gridPulse {
+
+  0%,
+  100% {
+    opacity: 0.025;
+  }
+
+  50% {
+    opacity: 0.055;
+  }
+}
+
+@keyframes gridDrift {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+
+  100% {
+    background-position: 40px 40px, 40px 40px;
+  }
+}
+
+.app-shell__grid {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  background-image:
+    linear-gradient(rgba(79, 209, 197, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 209, 197, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation:
+    gridPulse 4s ease-in-out infinite,
+    gridDrift 20s linear infinite;
+}
+
 .app-shell__content {
   position: relative;
   z-index: 30;
@@ -754,11 +791,10 @@ html[dir='rtl'] .action-leading {
   font-size: 1.05rem;
   background: linear-gradient(135deg, color-mix(in oklab, var(--success) 78%, white), var(--success));
   color: #051b12;
-  box-shadow: 0 14px 34px rgba(154, 247, 208, 0.35);
 }
 
 .next-btn:hover {
-  box-shadow: 0 0 30px rgba(154, 247, 208, 0.55);
+  opacity: 0.92;
 }
 
 .ghost-link {
@@ -770,7 +806,6 @@ html[dir='rtl'] .action-leading {
 
 .ghost-link:hover {
   border-color: color-mix(in oklab, var(--accent) 40%, white);
-  box-shadow: 0 0 0 1px rgba(95, 228, 255, 0.2);
 }
 
 .actions-row {
@@ -1692,6 +1727,41 @@ input[type='range'] {
     min-height: 1.85rem;
     font-size: 0.7rem;
   }
+}
+
+/* ═══════════ UPDATE BUTTON STYLES ═══════════ */
+.update-check-btn {
+  width: 100%;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.update-check-btn svg {
+  flex-shrink: 0;
+}
+
+@keyframes updatePulse {
+
+  0%,
+  100% {
+    border-color: var(--success);
+  }
+
+  50% {
+    border-color: color-mix(in oklab, var(--success) 60%, white);
+  }
+}
+
+.game-button--update-available {
+  border-color: var(--success);
+  background: color-mix(in oklab, var(--success) 12%, var(--surface-2));
+  color: var(--success);
+  animation: updatePulse 2s ease-in-out infinite;
+}
+
+.game-button--update-available:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--success) 80%, white);
+  background: color-mix(in oklab, var(--success) 18%, var(--surface-2));
 }
 
 @media (prefers-reduced-motion: reduce) {
