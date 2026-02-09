@@ -31,11 +31,14 @@ export function ScreenScaffold({
               {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
               {subtitle ? <p className="header-subtitle">{subtitle}</p> : null}
             </div>
-            {backHome ? (
-              <Link to="/" className="ghost-link header-home-link">
-                {t('home')}
-              </Link>
-            ) : null}
+            <div className="header-actions">
+              <span className="case-badge">Case X</span>
+              {backHome ? (
+                <Link to="/" className="ghost-link header-home-link">
+                  {t('home')}
+                </Link>
+              ) : null}
+            </div>
           </div>
           <div className="screen-header-main">
             <h1>{title}</h1>

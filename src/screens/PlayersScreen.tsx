@@ -114,7 +114,7 @@ export function PlayersScreen() {
     <ScreenScaffold title={t('playersRecords')} subtitle={t('playersManagementSubtitle')} eyebrow={t('players')}>
       {redirectMessage ? <StatusBanner tone="warning">{t(redirectMessage)}</StatusBanner> : null}
 
-      <div className="actions-row">
+      <div className="actions-row case-actions">
         <button type="button" className="primary-btn" onClick={openCreateModal}>
           {t('addPlayer')}
         </button>
@@ -131,7 +131,7 @@ export function PlayersScreen() {
           <span className="subtle">{(players ?? []).length}</span>
         </div>
         {(players ?? []).map((player) => (
-          <GlassCard key={player.id} className="player-card cinematic-panel">
+          <GlassCard key={player.id} className="player-card section-card cinematic-panel">
             <div className="player-row">
               <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={58} />
               <div className="player-main">
@@ -173,7 +173,7 @@ export function PlayersScreen() {
           <StatusBanner>{t('emptyHistory')}</StatusBanner>
         ) : (
           (matches ?? []).map((entry) => (
-            <GlassCard key={entry.id} className="history-card cinematic-panel">
+            <GlassCard key={entry.id} className="history-card section-card cinematic-panel">
               <strong>{new Date(entry.endedAt).toLocaleString(i18n.language)}</strong>
               <p>{entry.result.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}</p>
               <p>
@@ -190,7 +190,7 @@ export function PlayersScreen() {
 
       {isModalOpen ? (
         <div className="modal-backdrop" role="presentation" onClick={() => setModalOpen(false)}>
-          <div className="modal glass-card cinematic-panel" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+          <div className="modal glass-card section-card cinematic-panel" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <h2>{formState.id ? t('editPlayer') : t('addPlayer')}</h2>
 
             <label className="form-field">

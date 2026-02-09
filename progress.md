@@ -56,3 +56,12 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 ## Pending Enhancements (Optional)
 - Add dedicated integration test for the new phase indicator presence across setup/reveal/discussion/resolution/summary.
 - Add visual regression snapshots (golden screenshots) to catch UI drift in future edits.
+
+## Progress Log
+- Reworked the full visual language to a unified spy-mission style across all screens (dossier-like cards, tactical badges, stronger phase/UI hierarchy).
+- Updated `ScreenScaffold` header structure with a persistent case badge to unify page identity.
+- Applied gameplay-first styling to home, setup, players, reveal, discussion, resolution, settings, and summary through shared class tuning in `src/index.css`.
+- Tightened responsive behavior for small phones by reducing spacing, card padding, button heights, and header density.
+
+## TODO (Current)
+- Run Playwright skill client and inspect latest screenshots/state snapshots for visual regressions after the full theme update.

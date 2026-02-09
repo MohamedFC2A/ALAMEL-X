@@ -31,7 +31,7 @@ export function HomeScreen() {
 
   return (
     <main className="home-screen screen-shell">
-      <header className="hero-panel glass-card cinematic-panel">
+      <header className="hero-panel glass-card section-card cinematic-panel">
         <div className="hero-grid">
           <div className="hero-copy">
             <p className="eyebrow">{t('homeTagline')}</p>
@@ -104,7 +104,7 @@ export function HomeScreen() {
       </section>
 
       {activeMatch ? (
-        <section className="cta-panel glass-card cinematic-panel">
+        <section className="cta-panel glass-card section-card cinematic-panel">
           <div>
             <h3>{t('activeMatchResume')}</h3>
             <p className="subtle">{t('activeMatchResumeHint')}</p>

@@ -88,7 +88,7 @@ export function PlaySetupScreen() {
     <ScreenScaffold title={t('setupMatch')} subtitle={t('selectPlayers')} eyebrow={t('phaseSetupEyebrow')}>
       <PhaseIndicator current={1} labels={[t('phaseSetup'), t('phaseReveal'), t('phaseTalk'), t('phaseResolve')]} />
 
-      <section className="setup-insights panel-grid glass-card cinematic-panel">
+      <section className="setup-insights panel-grid glass-card section-card cinematic-panel">
         <div className="metric-chip">
           <strong>{selectedPlayers.length}</strong>
           <span>{t('selectedCount')}</span>
@@ -113,7 +113,7 @@ export function PlaySetupScreen() {
 
       {errorKey ? <StatusBanner tone="danger">{t(errorKey)}</StatusBanner> : null}
 
-      <section className="player-select-grid panel-grid">
+      <section className="player-select-grid panel-grid section-card">
         {(players ?? []).map((player) => {
           const selected = selectedPlayers.includes(player.id);
           const maxReached = !selected && selectedPlayers.length >= 10;
@@ -132,7 +132,7 @@ export function PlaySetupScreen() {
         })}
       </section>
 
-      <section className="glass-card spy-count-panel cinematic-panel toggle-panel">
+      <section className="glass-card spy-count-panel section-card cinematic-panel toggle-panel">
         <p>{t('spiesCount')}</p>
         <div className="pill-row" role="group" aria-label={t('spiesCount')}>
           <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => setSpyCount(1)}>
