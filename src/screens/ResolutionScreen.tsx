@@ -40,6 +40,13 @@ export function ResolutionScreen() {
     return map;
   }, [players]);
 
+  // Visual Polish: Haptics helper
+  const vibrate = () => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  };
+
   useEffect(() => {
     if (!activeMatchState) {
       return;
@@ -131,25 +138,30 @@ export function ResolutionScreen() {
                 return null;
               }
               const picked = voteDraft.includes(id);
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`glass-card pick-card ${picked ? 'selected' : ''}`}
-                  onClick={() => toggleVote(id)}
-                >
-                  <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={44} />
-                  <span>{player.name}</span>
-                </button>
+              return <button
+                key={id}
+                type="button"
+                className={`glass-card pick-card ${picked ? 'selected' : ''}`}
+                onClick={() => {
+                  vibrate();
+                  toggleVote(id);
+                }}
+              >
+                <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={56} />
+                <span>{player.name}</span>
+              </button>
               );
             })}
           </div>
-          <PrimaryActionBar>
+          <PrimaryActionBar className="sticky-action-bar">
             <GameButton
               variant="primary"
               size="lg"
               disabled={voteDraft.length !== spyCount}
-              onClick={() => void submitVote()}
+              onClick={() => {
+                vibrate();
+                void submitVote()
+              }}
             >
               {t('submitVote')}
             </GameButton>
@@ -169,17 +181,18 @@ export function ResolutionScreen() {
             {(i18n.language === 'ar' ? currentMatch.spyGuessOptionsAr : currentMatch.spyGuessOptionsEn).map((option) => {
               const displayOption = formatWordForDisplay(option, i18n.language as 'en' | 'ar');
               return (
-              <button
-                key={option}
-                type="button"
-                className={`glass-card choice-card ${guessDraft === displayOption ? 'selected' : ''}`}
-                onClick={() => {
-                  setGuessInput(displayOption);
-                  void submitGuess(displayOption);
-                }}
-              >
-                {displayOption}
-              </button>
+                <button
+                  key={option}
+                  type="button"
+                  className={`glass-card choice-card ${guessDraft === displayOption ? 'selected' : ''}`}
+                  onClick={() => {
+                    setGuessInput(displayOption);
+                    vibrate();
+                    void submitGuess(displayOption);
+                  }}
+                >
+                  {t('confirmLocation', { location: displayOption }) || `Confirm: ${displayOption}`}
+                </button>
               );
             })}
           </div>
@@ -194,8 +207,8 @@ export function ResolutionScreen() {
             return (
               <>
                 <StatusBanner tone={currentMatch.winner === 'citizens' ? 'success' : 'danger'}>
-            {currentMatch.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}
-          </StatusBanner>
+                  {currentMatch.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}
+                </StatusBanner>
                 <StatusBanner tone={currentMatch.spyGuessCorrect ? 'success' : 'danger'}>
                   {currentMatch.spyGuess
                     ? currentMatch.spyGuessCorrect
@@ -227,8 +240,11 @@ export function ResolutionScreen() {
                 .join(' - ')}
             </span>
           </p>
-          <PrimaryActionBar>
-            <GameButton variant="primary" size="lg" onClick={() => void finishRound()}>
+          <PrimaryActionBar className="sticky-action-bar">
+            <GameButton variant="primary" size="lg" onClick={() => {
+              vibrate();
+              void finishRound();
+            }}>
               {t('finishRound')}
             </GameButton>
           </PrimaryActionBar>

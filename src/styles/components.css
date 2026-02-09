@@ -578,7 +578,8 @@ input[type='range'] {
 }
 
 .pick-card {
-    min-height: 92px;
+    min-height: 110px;
+    /* Increased touch target */
     border: 1px solid var(--stroke-1);
     color: var(--text-main);
     display: flex;
@@ -590,6 +591,8 @@ input[type='range'] {
     background:
         linear-gradient(155deg, rgba(120, 180, 255, 0.08), transparent 36%),
         rgba(7, 14, 25, 0.95);
+    position: relative;
+    transition: all 0.2s ease;
 }
 
 .pick-card span {
@@ -597,8 +600,12 @@ input[type='range'] {
 }
 
 .pick-card.selected {
-    border-color: color-mix(in oklab, var(--accent) 70%, white);
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 48%, transparent), 0 10px 24px rgba(0, 0, 0, 0.35);
+    border-color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 15%, rgba(7, 14, 25, 0.95));
+    box-shadow:
+        0 0 0 2px var(--accent),
+        0 0 15px color-mix(in oklab, var(--accent) 40%, transparent);
+    transform: translateY(-2px);
 }
 
 /* ─── Spy Controls ─── */

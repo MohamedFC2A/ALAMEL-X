@@ -103,7 +103,9 @@ main {
     flex: 1;
     min-height: 0;
     padding-inline: 0.08rem;
-    padding-block-end: 1.8rem;
+    padding-inline: 0.08rem;
+    padding-block-end: calc(80px + var(--space-4));
+    /* Height of Action Bar + extra padding */
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
@@ -228,10 +230,22 @@ main {
     justify-content: center;
 }
 
-.home-hud__mission-wrap {
+.home-hud__mission-wrap,
+.home-hud__dual-actions {
     width: 100%;
     display: flex;
     justify-content: center;
+}
+
+.home-hud__dual-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    width: min(100%, 320px);
+}
+
+.home-hud__dual-actions .game-button {
+    width: 100%;
 }
 
 .home-hud__footer {
