@@ -125,6 +125,16 @@ export function RevealScreen() {
     });
   }
 
+  function handleHoldStart(event: React.PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setHolding(true);
+  }
+
+  function handleHoldEnd(event: React.PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setHolding(false);
+  }
+
   async function goNext() {
     if (!canMoveNext) {
       return;
@@ -217,9 +227,11 @@ export function RevealScreen() {
               <button
                 type="button"
                 className={`reveal-mask ${holding ? 'holding' : ''}`}
-                onPointerDown={() => setHolding(true)}
-                onPointerUp={() => setHolding(false)}
-                onPointerLeave={() => setHolding(false)}
+                onPointerDown={handleHoldStart}
+                onPointerUp={handleHoldEnd}
+                onPointerLeave={handleHoldEnd}
+                onContextMenu={(event) => event.preventDefault()}
+                onDragStart={(event) => event.preventDefault()}
               >
                 {t('pressHoldReveal')}
               </button>

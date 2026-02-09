@@ -105,6 +105,7 @@ body {
   font-family: var(--font-main);
   font-size: var(--font-size-body);
   color: var(--text-main);
+  overflow-x: hidden;
   background-image:
     radial-gradient(48rem 36rem at 90% -10%, rgba(255, 106, 125, 0.16), transparent 65%),
     radial-gradient(62rem 46rem at 110% -10%, rgba(108, 245, 255, 0.14), transparent 64%),
@@ -120,6 +121,7 @@ body {
   width: min(100%, 820px);
   margin: 0 auto;
   padding: clamp(1.1rem, 4vw, 1.6rem) var(--space-3) calc(var(--space-5) * 1.6);
+  min-height: 100dvh;
 }
 
 main {
@@ -515,11 +517,22 @@ html[dir='rtl'] .form-field {
   color: #04131c;
   font-weight: 700;
   box-shadow: 0 12px 30px rgba(43, 209, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.25);
+  position: relative;
 }
 
 .primary-btn:hover {
   box-shadow: var(--glow-strong);
   transform: translateY(-1px);
+}
+
+.primary-btn::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  pointer-events: none;
 }
 
 .next-btn {
@@ -876,6 +889,8 @@ input[type='range'] {
 
 .reveal-card {
   text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .reveal-mask-wrapper {
@@ -895,6 +910,8 @@ input[type='range'] {
   padding: var(--space-3);
   font-size: 1.2rem;
   text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .reveal-meta {
@@ -948,10 +965,21 @@ input[type='range'] {
   inset: 0;
   border: 1px solid var(--stroke-1);
   border-radius: var(--radius-2);
-  background: rgba(6, 9, 17, 0.94);
+  background-color: rgba(6, 9, 17, 0.94);
+  background-image:
+    radial-gradient(circle 6px at 14px 14px, rgba(108, 245, 255, 0.85) 0 60%, transparent 62%),
+    radial-gradient(circle 6px at calc(100% - 14px) 14px, rgba(108, 245, 255, 0.85) 0 60%, transparent 62%),
+    radial-gradient(circle 6px at 14px calc(100% - 14px), rgba(108, 245, 255, 0.85) 0 60%, transparent 62%),
+    radial-gradient(circle 6px at calc(100% - 14px) calc(100% - 14px), rgba(108, 245, 255, 0.85) 0 60%, transparent 62%);
+  background-repeat: no-repeat;
   backdrop-filter: blur(14px);
   color: var(--text-main);
   font-weight: 700;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .reveal-mask.holding {
@@ -1123,6 +1151,16 @@ input[type='range'] {
 }
 
 @media (max-width: 560px) {
+  :root {
+    --space-3: 0.78rem;
+    --space-4: 1rem;
+    --space-5: 1.15rem;
+  }
+
+  main {
+    gap: var(--space-2);
+  }
+
   .screen-header {
     flex-direction: column;
     align-items: stretch;
@@ -1198,6 +1236,17 @@ input[type='range'] {
   .player-actions {
     width: 100%;
   }
+
+  .player-card,
+  .history-card,
+  .setting-card,
+  .phase-card,
+  .timer-card,
+  .spy-count-panel,
+  .handoff-card,
+  .reveal-card {
+    padding: 0.9rem;
+  }
 }
 
 @media (max-width: 420px) {
@@ -1210,6 +1259,19 @@ input[type='range'] {
   .primary-action-bar .action-main button,
   .primary-action-bar .action-main a {
     width: 100%;
+  }
+
+  .hero-panel h1 {
+    font-size: clamp(1.9rem, 10vw, 3rem);
+    letter-spacing: 0.12em;
+  }
+
+  .home-action {
+    min-height: 108px;
+  }
+
+  .metric-chip {
+    min-height: 52px;
   }
 }
 
