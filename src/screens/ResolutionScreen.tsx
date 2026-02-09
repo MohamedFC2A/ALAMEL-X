@@ -138,18 +138,19 @@ export function ResolutionScreen() {
                 return null;
               }
               const picked = voteDraft.includes(id);
-              return <button
-                key={id}
-                type="button"
-                className={`glass-card pick-card ${picked ? 'selected' : ''}`}
-                onClick={() => {
-                  vibrate();
-                  toggleVote(id);
-                }}
-              >
-                <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={56} />
-                <span>{player.name}</span>
-              </button>
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={`glass-card pick-card ${picked ? 'selected' : ''}`}
+                  onClick={() => {
+                    vibrate();
+                    toggleVote(id);
+                  }}
+                >
+                  <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={56} />
+                  <span>{player.name}</span>
+                </button>
               );
             })}
           </div>
