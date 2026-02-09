@@ -127,3 +127,8 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 ## Validation Addendum (Test Coverage)
 - Added Home navigation test for mission button routing to setup when no active match is present.
 - Current suite: `npm run test` pass (14 tests).
+
+## Progress Log
+- Locked scroll region flex sizing to ensure internal scrolling works inside ScreenScaffold.
+- Restored global text-selection policy to include all [contenteditable] nodes and added -webkit-user-select reset.
+- Tightened home navigation test to assert history focus highlighting class when deep-linked.

@@ -91,6 +91,7 @@
 * {
   box-sizing: border-box;
   user-select: none;
+  -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -204,7 +205,7 @@ button:disabled {
 input,
 textarea,
 select,
-[contenteditable='true'] {
+[contenteditable] {
   user-select: text;
   -webkit-user-select: text;
   -webkit-touch-callout: default;
@@ -314,6 +315,7 @@ select,
   flex-direction: column;
   gap: var(--space-3);
   overflow-y: auto;
+  flex: 1;
   min-height: 0;
   padding-inline: 0.08rem;
   padding-block-end: 1.8rem;
@@ -324,7 +326,7 @@ select,
 .screen-shell input,
 .screen-shell textarea,
 .screen-shell select,
-.screen-shell [contenteditable='true'] {
+.screen-shell [contenteditable] {
   user-select: text;
   -webkit-user-select: text;
   -webkit-touch-callout: default;

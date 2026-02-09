@@ -76,6 +76,7 @@ describe('home screen', () => {
     const locations = await screen.findAllByTestId('location');
     expect(locations[locations.length - 1]).toHaveTextContent('/players?focus=history');
     expect(await screen.findByRole('heading', { name: /اللاعبون والسجل/i })).toBeInTheDocument();
+    expect(document.getElementById('history-section')).toHaveClass('history-section--focused');
   });
 
   it('routes mission button to setup screen when there is no active match', async () => {
