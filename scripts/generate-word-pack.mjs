@@ -85,10 +85,13 @@ const words = [];
 let wordIndex = 0;
 
 for (const category of categories) {
-  for (const cluster of category.clusters) {
+  for (let clusterIdx = 0; clusterIdx < category.clusters.length; clusterIdx++) {
+    const cluster = category.clusters[clusterIdx];
+    // Semantic difficulty: first 2 clusters = easy, next 2 = medium, rest = hard
+    const clusterDifficulty = clusterIdx < 2 ? 'easy' : clusterIdx < 4 ? 'medium' : 'hard';
     for (const item of cluster) {
       const related = cluster.filter((word) => word !== item).slice(0, 4);
-      const difficulty = wordIndex % 3 === 0 ? 'easy' : wordIndex % 3 === 1 ? 'medium' : 'hard';
+      const difficulty = clusterDifficulty;
 
       words.push({
         id: `word_${wordIndex.toString().padStart(5, '0')}`,

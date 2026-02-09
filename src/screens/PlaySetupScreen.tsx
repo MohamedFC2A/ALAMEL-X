@@ -11,12 +11,17 @@ import { PrimaryActionBar } from '../components/PrimaryActionBar';
 import { PhaseIndicator } from '../components/PhaseIndicator';
 import { GameButton } from '../components/GameButton';
 
+function recommendedSpyCount(playerCount: number): 1 | 2 {
+  return playerCount >= 7 ? 2 : 1;
+}
+
 export function PlaySetupScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const players = useLiveQuery(() => db.players.filter((player) => player.enabled).toArray(), []);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [spyCount, setSpyCount] = useState<1 | 2>(1);
+  const [overridden, setOverridden] = useState(false);
   const [errorKey, setErrorKey] = useState<string>('');
   const [usageSummary, setUsageSummary] = useState<{ used: number; total: number }>({ used: 0, total: 0 });
 
@@ -41,6 +46,12 @@ export function PlaySetupScreen() {
       navigate('/players', { state: { reason: 'noPlayersRedirect' } });
     }
   }, [navigate, players]);
+
+  useEffect(() => {
+    if (!overridden) {
+      setSpyCount(recommendedSpyCount(selectedPlayers.length));
+    }
+  }, [selectedPlayers.length, overridden]);
 
   function togglePlayer(playerId: string) {
     setSelectedPlayers((prev) => {
@@ -136,11 +147,11 @@ export function PlaySetupScreen() {
       <section className="glass-card spy-count-panel section-card cinematic-panel toggle-panel">
         <p>{t('spiesCount')}</p>
         <div className="pill-row" role="group" aria-label={t('spiesCount')}>
-          <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => setSpyCount(1)}>
-            1
+          <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => { setSpyCount(1); setOverridden(true); }}>
+            1 {!overridden && recommendedSpyCount(selectedPlayers.length) === 1 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
           </button>
-          <button type="button" className={`pill-btn ${spyCount === 2 ? 'active' : ''}`} onClick={() => setSpyCount(2)}>
-            2
+          <button type="button" className={`pill-btn ${spyCount === 2 ? 'active' : ''}`} onClick={() => { setSpyCount(2); setOverridden(true); }}>
+            2 {!overridden && recommendedSpyCount(selectedPlayers.length) === 2 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
           </button>
         </div>
       </section>

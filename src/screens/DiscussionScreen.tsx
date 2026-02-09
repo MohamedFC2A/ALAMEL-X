@@ -124,7 +124,7 @@ export function DiscussionScreen() {
             {(remainingSeconds % 60).toString().padStart(2, '0')}
           </h2>
           <div className="progress-track" aria-hidden="true">
-            <div className="progress-fill" style={{ width: `${progress}%` }} />
+            <div className={`progress-fill${progress < 20 ? ' warning' : ''}`} style={{ width: `${progress}%` }} />
           </div>
         </section>
       )}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +33,7 @@ export function ResolutionScreen() {
 
   const [selectedVotes, setSelectedVotes] = useState<string[]>([]);
   const [guessInput, setGuessInput] = useState('');
+  const guessTimeoutHandled = useRef(false);
 
   const playerMap = useMemo(() => {
     const map = new Map<string, Player>();
@@ -60,8 +61,39 @@ export function ResolutionScreen() {
     }
   }, [activeMatch, activeMatchState, navigate]);
 
+  // Guess timeout auto-resolve: when timer expires without a guess, citizens win
   const guessRemainingMs = Math.max(0, (activeMatch?.guessEndsAt ?? 0) - now);
   const guessRemaining = Math.ceil(guessRemainingMs / 1000);
+
+  useEffect(() => {
+    if (
+      !activeMatch ||
+      activeMatch.resolutionStage !== 'guess' ||
+      guessRemainingMs > 0 ||
+      !activeMatch.guessEndsAt ||
+      guessTimeoutHandled.current
+    ) {
+      return;
+    }
+
+    guessTimeoutHandled.current = true;
+    void (async () => {
+      await updateActiveMatch({
+        spyGuess: '',
+        spyGuessCorrect: false,
+        guessTimedOut: true,
+        resolutionStage: 'result',
+        winner: 'citizens',
+      });
+    })();
+  }, [activeMatch, guessRemainingMs]);
+
+  // Reset timeout handler when entering a new guess stage
+  useEffect(() => {
+    if (activeMatch?.resolutionStage !== 'guess') {
+      guessTimeoutHandled.current = false;
+    }
+  }, [activeMatch?.resolutionStage]);
 
   if (!activeMatch) {
     return null;
@@ -88,13 +120,35 @@ export function ResolutionScreen() {
   async function submitVote() {
     await updateActiveMatch({ votedSpyIds: voteDraft });
 
-    await updateActiveMatch({
-      resolutionStage: 'guess',
-      votedSpyIds: voteDraft,
-      guessEndsAt: nowMs() + guessMs,
-      spyGuess: '',
-      spyGuessCorrect: false,
-    });
+    // Compute vote outcome
+    const refreshed = await db.activeMatch.get('active');
+    if (!refreshed) {
+      return;
+    }
+    const updatedMatch = { ...refreshed, votedSpyIds: voteDraft };
+    const captured = computeVoteOutcome(updatedMatch);
+
+    if (captured) {
+      // Citizens caught spies → spy gets a chance to guess
+      await updateActiveMatch({
+        resolutionStage: 'guess',
+        votedSpyIds: voteDraft,
+        voteOutcome: 'captured',
+        guessEndsAt: nowMs() + guessMs,
+        spyGuess: '',
+        spyGuessCorrect: false,
+      });
+    } else {
+      // Citizens missed → spies win immediately, skip guess
+      await updateActiveMatch({
+        resolutionStage: 'result',
+        votedSpyIds: voteDraft,
+        voteOutcome: 'missed',
+        winner: 'spies',
+        spyGuess: '',
+        spyGuessCorrect: false,
+      });
+    }
   }
 
   async function submitGuess(selectedGuess: string) {
@@ -108,6 +162,7 @@ export function ResolutionScreen() {
     await updateActiveMatch({
       spyGuess: selectedGuess,
       spyGuessCorrect: correct,
+      guessTimedOut: false,
       resolutionStage: 'result',
       winner: correct ? 'spies' : 'citizens',
     });
@@ -172,8 +227,8 @@ export function ResolutionScreen() {
 
       {currentMatch.resolutionStage === 'guess' ? (
         <section className="glass-card phase-card section-card cinematic-panel">
-          <StatusBanner tone={computeVoteOutcome(currentMatch) ? 'success' : 'warning'}>
-            {computeVoteOutcome(currentMatch) ? t('voteCapturedInfo') : t('voteMissedInfo')}
+          <StatusBanner tone="success">
+            {t('voteCapturedInfo')}
           </StatusBanner>
           <p>{t('spyGuessPrompt')}</p>
           <h2 className="countdown-value">{guessRemaining}</h2>
@@ -197,27 +252,38 @@ export function ResolutionScreen() {
               );
             })}
           </div>
-          {guessRemaining === 0 ? <StatusBanner tone="warning">{t('guessRequired')}</StatusBanner> : null}
+          {guessRemaining === 0 ? <StatusBanner tone="warning">{t('guessTimeoutMessage')}</StatusBanner> : null}
         </section>
       ) : null}
 
       {currentMatch.resolutionStage === 'result' ? (
         <section className="glass-card phase-card section-card cinematic-panel">
           {(() => {
-            const citizensCaughtSpies = computeVoteOutcome(currentMatch);
+            const voteOutcome = currentMatch.voteOutcome;
+            const isGuessTimedOut = currentMatch.guessTimedOut;
             return (
               <>
                 <StatusBanner tone={currentMatch.winner === 'citizens' ? 'success' : 'danger'}>
                   {currentMatch.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}
                 </StatusBanner>
-                <StatusBanner tone={currentMatch.spyGuessCorrect ? 'success' : 'danger'}>
-                  {currentMatch.spyGuess
-                    ? currentMatch.spyGuessCorrect
-                      ? t('guessCorrectMessage')
-                      : t('guessWrongMessage')
-                    : t('guessPending')}
-                </StatusBanner>
-                <p>{citizensCaughtSpies ? t('voteCapturedInfo') : t('voteMissedInfo')}</p>
+                {voteOutcome === 'missed' ? (
+                  <StatusBanner tone="warning">
+                    {t('voteFailed')}
+                  </StatusBanner>
+                ) : isGuessTimedOut ? (
+                  <StatusBanner tone="warning">
+                    {t('guessTimeoutMessage')}
+                  </StatusBanner>
+                ) : (
+                  <StatusBanner tone={currentMatch.spyGuessCorrect ? 'danger' : 'success'}>
+                    {currentMatch.spyGuess
+                      ? currentMatch.spyGuessCorrect
+                        ? t('guessCorrectMessage')
+                        : t('guessWrongMessage')
+                      : t('guessPending')}
+                  </StatusBanner>
+                )}
+                <p>{voteOutcome === 'captured' ? t('voteSucceeded') : voteOutcome === 'missed' ? t('voteMissedInfo') : ''}</p>
               </>
             );
           })()}

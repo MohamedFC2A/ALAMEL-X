@@ -303,7 +303,10 @@ export function computeSpyGuessCorrect(activeMatch: ActiveMatch, guess: string):
   );
 }
 
-export function resolveWinner(_citizensIdentified: boolean, spyGuessCorrect: boolean): Winner {
+export function resolveWinner(citizensIdentified: boolean, spyGuessCorrect: boolean): Winner {
+  if (!citizensIdentified) {
+    return 'spies';
+  }
   return spyGuessCorrect ? 'spies' : 'citizens';
 }
 

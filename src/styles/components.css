@@ -928,6 +928,25 @@ input[type='range'] {
     transition: width 300ms linear;
 }
 
+.progress-fill.warning {
+    background: linear-gradient(90deg, #ff6b35, #ff3d3d);
+    box-shadow: 0 0 8px rgba(255, 61, 61, 0.35);
+}
+
+/* ─── Recommend Badge ─── */
+.recommend-badge {
+    display: inline-flex;
+    margin-inline-start: 0.35rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--accent) 22%, transparent);
+    color: color-mix(in oklab, var(--accent) 80%, white);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+}
+
 /* ─── Summary/Choice ─── */
 .word-reveal {
     background: var(--panel);

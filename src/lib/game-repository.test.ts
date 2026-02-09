@@ -17,10 +17,18 @@ describe('game-repository logic', () => {
   });
 
   it('resolves winner matrix correctly', () => {
-    expect(resolveWinner(false, false)).toBe('citizens');
-    expect(resolveWinner(true, false)).toBe('citizens');
-    expect(resolveWinner(true, true)).toBe('spies');
+    // Vote missed → spies always win
+    expect(resolveWinner(false, false)).toBe('spies');
     expect(resolveWinner(false, true)).toBe('spies');
+    // Vote captured + guess wrong → citizens win
+    expect(resolveWinner(true, false)).toBe('citizens');
+    // Vote captured + guess correct → spies steal the round
+    expect(resolveWinner(true, true)).toBe('spies');
+  });
+
+  it('citizens win when spies are captured and guess times out', () => {
+    // Guess timeout is equivalent to spyGuessCorrect = false
+    expect(resolveWinner(true, false)).toBe('citizens');
   });
 
   it('validates spy guess case-insensitively and accepts core word', () => {

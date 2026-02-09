@@ -109,6 +109,8 @@ export interface ActiveMatch {
   votedSpyIds: string[];
   spyGuess: string;
   spyGuessCorrect: boolean;
+  voteOutcome?: 'captured' | 'missed';
+  guessTimedOut?: boolean;
   spyGuessOptionsEn: string[];
   spyGuessOptionsAr: string[];
   winner?: Winner;
