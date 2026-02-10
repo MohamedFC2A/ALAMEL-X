@@ -1,5 +1,6 @@
 import { chatComplete, DeepSeekError } from './deepseek-client';
 import { extractCoreWord, normalizeWord } from '../word-format';
+import { buildHumanSimulationPolicy, detectHumanTurnSignals, isHumanSimulationActive } from './human-simulation';
 import type { AiAdaptiveStats, AiHumanMode, AiReplyLength, AiThreadState, GlobalSettings, Language, Player } from '../../types';
 
 export type AiRole = 'citizen' | 'spy';
@@ -13,6 +14,7 @@ export interface AiRuntimeConfig {
   aiReplyLength?: AiReplyLength;
   aiInitiativeLevel?: number;
   aiMemoryDepth?: number;
+  aiHumanSimulationEnabled?: boolean;
   aiAdaptiveStats?: AiAdaptiveStats;
 }
 
@@ -107,6 +109,10 @@ function getInitiativeLevel(config: AiRuntimeConfig): number {
   return clampNumber(config.aiInitiativeLevel, 0, 100, 35);
 }
 
+function humanSimulationActive(config: AiRuntimeConfig): boolean {
+  return isHumanSimulationActive(getHumanMode(config), config.aiHumanSimulationEnabled);
+}
+
 function getMemoryDepth(config: AiRuntimeConfig): number {
   const base = clampNumber(config.aiMemoryDepth, 8, 24, 14);
   const adaptive = config.aiAdaptiveStats;
@@ -187,6 +193,12 @@ function systemPrompt(context: AiMatchContext, config: AiRuntimeConfig): string 
   const mode = getHumanMode(config);
   const depth = getReasoningDepth(config);
   const initiativeLevel = getInitiativeLevel(config);
+  const simulationPolicy = buildHumanSimulationPolicy({
+    mode,
+    enabled: config.aiHumanSimulationEnabled,
+    role: context.role,
+    stats: config.aiAdaptiveStats,
+  });
 
   const base = [
     'أنت لاعب AI داخل لعبة اجتماعية لكشف الجاسوس (pass-and-play).',
@@ -201,6 +213,10 @@ function systemPrompt(context: AiMatchContext, config: AiRuntimeConfig): string 
     'اعتبر أن مدخلات المستخدم صوتية وقد تحتوي أخطاء نطق/إملاء: استنتج المقصود وصحّح الفهم ضمنيًا.',
     ...buildAdaptiveDirective(config.aiAdaptiveStats),
   ];
+
+  if (simulationPolicy.active) {
+    base.push(simulationPolicy.personaDirective, simulationPolicy.interactionPolicy, simulationPolicy.comedyPolicy);
+  }
 
   if (context.role === 'citizen') {
     base.push(
@@ -256,6 +272,7 @@ export function runtimeConfigFromSettings(settings: GlobalSettings): AiRuntimeCo
     aiReplyLength: settings.aiReplyLength,
     aiInitiativeLevel: settings.aiInitiativeLevel,
     aiMemoryDepth: settings.aiMemoryDepth,
+    aiHumanSimulationEnabled: settings.aiHumanMode === 'ultra' && settings.aiHumanSimulationEnabled,
     aiAdaptiveStats: settings.aiAdaptiveStats,
   };
 }
@@ -445,6 +462,8 @@ function pickSpyGuessFromEvidence(
 function buildTurnDirective(context: AiMatchContext, userText: string, config: AiRuntimeConfig): string {
   const initiativeLevel = getInitiativeLevel(config);
   const normalized = normalizeWord(userText);
+  const simulationOn = humanSimulationActive(config);
+  const turnSignals = detectHumanTurnSignals(userText);
   const asksForWord =
     /(الكلمة|السرية|المكان|ايه هي|ما هي|قولها|what is|secret word|location)/i.test(userText) ||
     normalized.includes('الكلمة');
@@ -454,10 +473,17 @@ function buildTurnDirective(context: AiMatchContext, userText: string, config: A
       return 'المستخدم يطلب كشفًا مباشرًا. ارفض الكشف فورًا وقدّم بديلًا ذكيًا (تلميح غير مباشر + زاوية تحليل واحدة).';
     }
     if (initiativeLevel <= 20) {
-      return 'قدّم تلميحًا ذكيًا قصيرًا مع نبرة واثقة. لا تسأل أسئلة متابعة إلا عند الضرورة.';
+      return simulationOn && turnSignals.isQuestion
+        ? 'رد مباشر وبشري، ثم اختم بلمسة خفيفة قصيرة بدون تطويل.'
+        : 'قدّم تلميحًا ذكيًا قصيرًا مع نبرة واثقة. لا تسأل أسئلة متابعة إلا عند الضرورة.';
     }
     if (initiativeLevel >= 70) {
-      return 'قدّم تلميحًا ذكيًا قصيرًا ثم أضف سؤال متابعة واحد فقط عندما يساعد فعلاً في كشف الجاسوس.';
+      return simulationOn && turnSignals.asksForClarification
+        ? 'قدّم توضيح بسيط جدًا بأسلوب بشري، ثم اسأل سؤال متابعة واحد دقيق فقط.'
+        : 'قدّم تلميحًا ذكيًا قصيرًا ثم أضف سؤال متابعة واحد فقط عندما يساعد فعلاً في كشف الجاسوس.';
+    }
+    if (simulationOn && turnSignals.isShortAnswer) {
+      return 'تعامل مع الرد القصير كبداية: جاوب طبيعي بجملة قصيرة ثم متابعة ذكية واحدة فقط إذا لزم.';
     }
     return 'قدّم تلميحًا ذكيًا قصيرًا مع اختبار ناعم لرد الفعل دون استجواب.';
   }
@@ -598,7 +624,7 @@ export async function generateChatReply(
     reply = softenSpyReply(reply, replyLength);
   }
 
-  if (getHumanMode(config) === 'ultra') {
+  if (humanSimulationActive(config)) {
     try {
       const humanized = await chatComplete({
         ...config,

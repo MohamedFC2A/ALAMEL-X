@@ -10,7 +10,7 @@ import type {
   Player,
   Winner,
 } from '../types';
-import { defaultAccessibility, db, defaultSettings, ensureSettings } from './db';
+import { defaultAccessibility, db, defaultSettings, ensureSettings, normalizeGlobalSettings } from './db';
 import { createId, shuffle } from './utils';
 import { loadWordPack, pickBalancedUnusedWord } from './word-engine';
 import { extractCoreWord, formatWordForDisplay, normalizeWord } from './word-format';
@@ -591,12 +591,13 @@ export async function completeActiveMatch(): Promise<MatchRecord> {
   await db.transaction('rw', db.matches, db.activeMatch, db.players, db.settings, async () => {
     await db.matches.put(record);
     await updatePlayerStats(active.match, winner);
-    await db.settings.put({
+    await db.settings.put(
+      normalizeGlobalSettings({
       ...settings,
       aiAdaptiveStats: nextAdaptiveStats,
       id: 'global',
-      theme: 'onyx',
-    });
+      }),
+    );
     await db.activeMatch.delete('active');
   });
 
@@ -609,12 +610,16 @@ export async function ensureGlobalSettings(): Promise<GlobalSettings> {
 
 export async function updateGlobalSettings(patch: Partial<GlobalSettings>): Promise<void> {
   const current = await ensureSettings();
-  await db.settings.put({
+  const merged: GlobalSettings = {
     ...current,
     ...patch,
-    theme: 'onyx',
     id: 'global',
-  });
+    aiAdaptiveStats: {
+      ...current.aiAdaptiveStats,
+      ...(patch.aiAdaptiveStats ?? {}),
+    },
+  };
+  await db.settings.put(normalizeGlobalSettings(merged));
 }
 
 export async function resetWordLocks(): Promise<void> {

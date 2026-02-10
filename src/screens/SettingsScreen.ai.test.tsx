@@ -89,6 +89,34 @@ describe('settings screen AI section', () => {
       expect(settings?.aiAutoFacilitatorEnabled).toBe(false);
     });
 
+    const humanSimulation = await screen.findByRole('checkbox', { name: /محاكاة البشر للـai/i });
+    expect(humanSimulation).toBeDisabled();
+    expect(screen.getByText(/يتطلب وضع "بشري جدًا/i)).toBeInTheDocument();
+
+    const humanMode = await screen.findByRole('combobox', { name: /نمط الذكاء/i });
+    await user.selectOptions(humanMode, 'ultra');
+
+    await waitFor(async () => {
+      const updated = await db.settings.get('global');
+      expect(updated?.aiHumanMode).toBe('ultra');
+    });
+
+    const enabledHumanSimulation = await screen.findByRole('checkbox', { name: /محاكاة البشر للـai/i });
+    expect(enabledHumanSimulation).not.toBeDisabled();
+    await user.click(enabledHumanSimulation);
+
+    await waitFor(async () => {
+      const updated = await db.settings.get('global');
+      expect(updated?.aiHumanSimulationEnabled).toBe(true);
+    });
+
+    await user.selectOptions(humanMode, 'natural');
+    await waitFor(async () => {
+      const updated = await db.settings.get('global');
+      expect(updated?.aiHumanMode).toBe('natural');
+      expect(updated?.aiHumanSimulationEnabled).toBe(false);
+    });
+
     const provider = await screen.findByRole('combobox', { name: /مزود الصوت/i });
     expect(provider).toBeDisabled();
     expect(screen.getByRole('option', { name: /elevenlabs/i })).toBeInTheDocument();

@@ -40,6 +40,7 @@ export const defaultSettings: GlobalSettings = {
   aiAutoFacilitatorEnabled: true,
   aiSilenceThresholdMs: 6000,
   aiInterventionRestMs: 9000,
+  aiHumanSimulationEnabled: false,
   aiAdaptiveStats: {
     matchesPlayed: 0,
     spyRounds: 0,
@@ -55,6 +56,37 @@ export const defaultSettings: GlobalSettings = {
     updatedAt: Date.now(),
   },
 };
+
+function normalizeAdaptiveStats(input: GlobalSettings['aiAdaptiveStats'] | undefined): GlobalSettings['aiAdaptiveStats'] {
+  const base = defaultSettings.aiAdaptiveStats;
+  const merged = {
+    ...base,
+    ...(input ?? {}),
+  };
+
+  return {
+    ...merged,
+    memoryBank: Array.isArray(merged.memoryBank) ? merged.memoryBank.slice(0, 30) : [],
+    updatedAt: Number.isFinite(merged.updatedAt) ? merged.updatedAt : Date.now(),
+  };
+}
+
+export function normalizeGlobalSettings(input: GlobalSettings): GlobalSettings {
+  const normalized: GlobalSettings = {
+    ...input,
+    id: 'global',
+    theme: 'onyx',
+    language: 'ar',
+    aiVoiceProvider: 'elevenlabs',
+    pendingLanguage: undefined,
+    aiAdaptiveStats: normalizeAdaptiveStats(input.aiAdaptiveStats),
+  };
+
+  normalized.aiHumanSimulationEnabled =
+    normalized.aiHumanMode === 'ultra' ? Boolean(normalized.aiHumanSimulationEnabled) : false;
+
+  return normalized;
+}
 
 export const defaultAccessibility = {
   shortSightedMode: false,
@@ -98,22 +130,20 @@ export { db };
 export async function ensureSettings(): Promise<GlobalSettings> {
   const current = await db.settings.get('global');
   if (current) {
-    const merged: GlobalSettings = {
+    const merged = normalizeGlobalSettings({
       ...defaultSettings,
       ...current,
-      theme: 'onyx',
-      language: 'ar',
-      aiVoiceProvider: 'elevenlabs',
-      pendingLanguage: undefined,
-    };
+      aiAdaptiveStats: normalizeAdaptiveStats(current.aiAdaptiveStats),
+    });
     if (JSON.stringify(merged) !== JSON.stringify(current)) {
       await db.settings.put(merged);
     }
     return merged;
   }
 
-  await db.settings.put(defaultSettings);
-  return defaultSettings;
+  const normalizedDefault = normalizeGlobalSettings(defaultSettings);
+  await db.settings.put(normalizedDefault);
+  return normalizedDefault;
 }
 
 export async function ensureTeaser(): Promise<TeaserOptIn> {

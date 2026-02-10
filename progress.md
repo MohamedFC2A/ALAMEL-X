@@ -604,3 +604,30 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 ## Added Tests
 - Added discussion intent classification tests (directed question vs short answer).
 - Added adaptive-memory prompt test to ensure historical directives are injected when stats exist.
+## Progress Log
+- Implemented `aiHumanSimulationEnabled` setting across types/defaults and strict normalization rules.
+- Added `normalizeGlobalSettings` in `src/lib/db.ts` and wired it into `ensureSettings` and `updateGlobalSettings` flows.
+- Enforced strict coupling: human simulation is automatically OFF whenever `aiHumanMode !== ultra`.
+- Added new AI settings UI toggle in `SettingsScreen` with disable-state + warning text outside Ultra mode.
+- Added new localization keys for Human Simulation labels/hints/status.
+- Introduced new helper `src/lib/ai/human-simulation.ts` with:
+  - activation policy
+  - persona/interaction/comedy directives
+  - user turn signal detection
+- Integrated human simulation policy into `agent.ts` system prompts and turn directives.
+- Made Ultra humanization pass conditional on `aiHumanSimulationEnabled` (not Ultra mode alone).
+- Added runtime strict guard in `runtimeConfigFromSettings` to prevent non-Ultra activation.
+
+## Validation Update (AI Human Simulation)
+- `npm run test -- src/lib/db.test.ts src/lib/ai/agent.test.ts src/screens/SettingsScreen.ai.test.tsx`: pass.
+- `npm run test`: pass (58 tests).
+- `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.
+
+## Added/Updated Tests
+- Added `src/lib/db.test.ts` for strict settings normalization.
+- Extended `src/screens/SettingsScreen.ai.test.tsx` to validate Ultra-only enablement and forced disable when leaving Ultra.
+- Extended `src/lib/ai/agent.test.ts` to validate:
+  - simulation directives on/off behavior
+  - phase coverage (directed question, vote, guess)
+  - runtime strict disable when mode is not Ultra.

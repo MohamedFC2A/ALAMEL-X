@@ -87,6 +87,7 @@ export interface GlobalSettings {
   aiAutoFacilitatorEnabled: boolean;
   aiSilenceThresholdMs: number;
   aiInterventionRestMs: number;
+  aiHumanSimulationEnabled: boolean;
   aiAdaptiveStats: AiAdaptiveStats;
 }
 

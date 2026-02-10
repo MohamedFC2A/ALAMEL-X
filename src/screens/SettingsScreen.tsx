@@ -434,12 +434,39 @@ export function SettingsScreen() {
         <div className="glass-card setting-card cinematic-panel section-card">
           <label className="form-field">
             <span>{t('aiHumanMode')}</span>
-            <select value={settings.aiHumanMode} onChange={(event) => void updateGlobalSettings({ aiHumanMode: event.target.value as AiHumanMode })}>
+            <select
+              value={settings.aiHumanMode}
+              onChange={(event) => {
+                const nextMode = event.target.value as AiHumanMode;
+                void updateGlobalSettings({
+                  aiHumanMode: nextMode,
+                  ...(nextMode !== 'ultra' ? { aiHumanSimulationEnabled: false } : {}),
+                });
+              }}
+            >
               <option value="strategic">{t('aiHumanModeStrategic')}</option>
               <option value="natural">{t('aiHumanModeNatural')}</option>
               <option value="ultra">{t('aiHumanModeUltra')}</option>
             </select>
           </label>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="switch-row">
+            <span>{t('aiHumanSimulation')}</span>
+            <input
+              type="checkbox"
+              checked={settings.aiHumanSimulationEnabled}
+              disabled={settings.aiHumanMode !== 'ultra'}
+              onChange={(event) => void updateGlobalSettings({ aiHumanSimulationEnabled: event.target.checked })}
+            />
+          </label>
+          <p className="subtle">{t('aiHumanSimulationHint')}</p>
+          {settings.aiHumanMode !== 'ultra' ? (
+            <StatusBanner tone="warning">{t('aiHumanSimulationRequiresUltra')}</StatusBanner>
+          ) : settings.aiHumanSimulationEnabled ? (
+            <StatusBanner tone="success">{t('aiHumanSimulationEnabledBadge')}</StatusBanner>
+          ) : null}
         </div>
 
         <div className="glass-card setting-card cinematic-panel section-card">

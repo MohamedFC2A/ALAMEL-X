@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { defaultSettings } from '../db';
 
 const chatCompleteMock = vi.hoisted(() => vi.fn());
 
@@ -21,7 +22,15 @@ vi.mock('./deepseek-client', () => {
   };
 });
 
-import { decideGuess, decideVote, decideVoteDetailed, decideYesNo, generateChatReply } from './agent';
+import {
+  decideGuess,
+  decideVote,
+  decideVoteDetailed,
+  decideYesNo,
+  generateChatReply,
+  generateDirectedQuestion,
+  runtimeConfigFromSettings,
+} from './agent';
 import type { AiThreadState } from '../../types';
 
 describe('ai agent', () => {
@@ -320,5 +329,102 @@ describe('ai agent', () => {
 
     expect(combinedSystem).toContain('خبرة تراكمية: لعبت 9 جولة سابقة.');
     expect(combinedSystem).toContain('ذاكرة تكتيكية من جولات سابقة');
+  });
+
+  it('injects human simulation directives only when ultra+enabled', async () => {
+    const thread: AiThreadState = { messages: [], summary: '' };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'citizen' as const,
+      category: 'أماكن',
+      secretWord: 'ميدان عام',
+    };
+
+    chatCompleteMock.mockResolvedValueOnce('رد طبيعي');
+    await generateChatReply(
+      { ...config, aiHumanMode: 'ultra', aiHumanSimulationEnabled: true },
+      context,
+      thread,
+      'مين المشتبه؟',
+    );
+
+    const onPayload = chatCompleteMock.mock.calls[0]?.[0];
+    const onSystem = onPayload.messages
+      .filter((entry: { role: string; content: string }) => entry.role === 'system')
+      .map((entry: { content: string }) => entry.content)
+      .join('\n');
+    expect(onSystem).toContain('محاكاة البشر مفعلة');
+
+    chatCompleteMock.mockReset();
+    chatCompleteMock.mockResolvedValueOnce('رد طبيعي');
+    await generateChatReply(
+      { ...config, aiHumanMode: 'ultra', aiHumanSimulationEnabled: false },
+      context,
+      thread,
+      'مين المشتبه؟',
+    );
+
+    const offPayload = chatCompleteMock.mock.calls[0]?.[0];
+    const offSystem = offPayload.messages
+      .filter((entry: { role: string; content: string }) => entry.role === 'system')
+      .map((entry: { content: string }) => entry.content)
+      .join('\n');
+    expect(offSystem).not.toContain('محاكاة البشر مفعلة');
+  });
+
+  it('applies human simulation directives across directed-question, vote, and guess phases', async () => {
+    const thread: AiThreadState = {
+      messages: [{ at: 1, from: 'user', text: 'أعتقد إن الموضوع له علاقة بالمكتبة.' }],
+      summary: 'إشارات عن القراءة.',
+    };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'spy' as const,
+      category: 'أماكن',
+      spyHintText: 'مكان هادي.',
+      spyTeammateNames: [],
+    };
+    const simConfig = { ...config, aiHumanMode: 'ultra' as const, aiHumanSimulationEnabled: true };
+
+    chatCompleteMock.mockResolvedValueOnce('فين بتحب تروح؟');
+    await generateDirectedQuestion(simConfig, context, thread, 'محمد', 'neutral');
+    let systemText = chatCompleteMock.mock.calls[0][0].messages
+      .filter((entry: { role: string }) => entry.role === 'system')
+      .map((entry: { content: string }) => entry.content)
+      .join('\n');
+    expect(systemText).toContain('محاكاة البشر مفعلة');
+
+    chatCompleteMock.mockReset();
+    chatCompleteMock.mockResolvedValueOnce('{"choice":"p2","why":"ردوده متناقضة"}');
+    await decideVoteDetailed(simConfig, context, thread, [
+      { id: 'p1', name: 'سارة' },
+      { id: 'p2', name: 'محمد' },
+    ]);
+    systemText = chatCompleteMock.mock.calls[0][0].messages
+      .filter((entry: { role: string }) => entry.role === 'system')
+      .map((entry: { content: string }) => entry.content)
+      .join('\n');
+    expect(systemText).toContain('محاكاة البشر مفعلة');
+
+    chatCompleteMock.mockReset();
+    chatCompleteMock.mockResolvedValueOnce('{"choice":"مكتبة عامة","confidence":72}');
+    await decideGuess(simConfig, context, thread, ['مكتبة عامة', 'سوق شعبي', 'محطة وقود']);
+    systemText = chatCompleteMock.mock.calls[0][0].messages
+      .filter((entry: { role: string }) => entry.role === 'system')
+      .map((entry: { content: string }) => entry.content)
+      .join('\n');
+    expect(systemText).toContain('محاكاة البشر مفعلة');
+  });
+
+  it('runtime config disables human simulation when mode is not ultra even if enabled is true', () => {
+    const configFromSettings = runtimeConfigFromSettings({
+      ...defaultSettings,
+      aiHumanMode: 'natural',
+      aiHumanSimulationEnabled: true,
+    });
+
+    expect(configFromSettings.aiHumanSimulationEnabled).toBe(false);
   });
 });
