@@ -157,6 +157,21 @@ export async function speakWithEleven(request: ElevenTtsRequest): Promise<void> 
     throw new ElevenError(message, { kind: classifyStatus(response.status), status: response.status });
   }
 
+  const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+  if (!contentType.startsWith('audio/')) {
+    let preview = '';
+    try {
+      preview = (await response.text()).slice(0, 180).replace(/\s+/g, ' ').trim();
+    } catch {
+      preview = '';
+    }
+    const suffix = preview ? ` | preview: ${preview}` : '';
+    throw new ElevenError(`ElevenLabs TTS returned non-audio response.${suffix}`, {
+      kind: 'invalid_response',
+      status: response.status,
+    });
+  }
+
   const audioBlob = await response.blob();
   if (!audioBlob.size) {
     throw new ElevenError('ElevenLabs TTS returned empty audio.', { kind: 'invalid_response' });

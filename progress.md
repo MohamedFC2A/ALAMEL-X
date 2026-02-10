@@ -475,3 +475,17 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 
 ## Remaining TODOs / Suggestions
 - Validate ElevenLabs end-to-end with real environment variables in deployment/runtime target (local environment currently has no ElevenLabs key configured).
+
+## Progress Log
+- Hardened ElevenLabs diagnostics UX:
+  - `SettingsScreen` now detects non-JSON health responses and shows a runtime hint when `/api` endpoints are unavailable in the current runtime.
+  - `speakWithEleven` now validates `content-type` and raises a detailed `invalid_response` error if TTS returns non-audio payloads.
+- Improved local diagnostics script:
+  - `scripts/test-elevenlabs.mjs` now auto-loads `.env.local` then `.env` before checking environment variables.
+  - Updated missing-key error text to explicitly mention env file locations.
+
+## Validation Update (Diagnostics Hardening)
+- `npm run test`: pass (47 tests).
+- `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.
+- `npm run test:elevenlabs`: fail in current local environment because `ELEVENLABS_API_KEY` is still missing.

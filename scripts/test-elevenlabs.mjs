@@ -2,6 +2,45 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+function stripQuoted(value) {
+  const trimmed = value.trim();
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function loadEnvFile(fileName) {
+  const filePath = path.join(process.cwd(), fileName);
+  if (!fs.existsSync(filePath)) {
+    return;
+  }
+
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const lines = raw.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const separator = trimmed.indexOf('=');
+    if (separator <= 0) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separator).trim();
+    const value = stripQuoted(trimmed.slice(separator + 1));
+    if (!key || process.env[key]) {
+      continue;
+    }
+    process.env[key] = value;
+  }
+}
+
+loadEnvFile('.env.local');
+loadEnvFile('.env');
+
 const API_KEY = process.env.ELEVENLABS_API_KEY || '';
 const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '';
 const VOICE_NAME = process.env.ELEVENLABS_VOICE_NAME || '';
@@ -55,7 +94,7 @@ async function listVoices() {
 
 async function main() {
   if (!API_KEY) {
-    fail('ELEVENLABS_API_KEY is missing in environment.');
+    fail('ELEVENLABS_API_KEY is missing in environment (.env.local/.env or shell).');
   }
 
   const voices = await listVoices();

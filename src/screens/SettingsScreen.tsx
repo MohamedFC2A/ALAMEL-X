@@ -181,8 +181,16 @@ export function SettingsScreen() {
       headers: { Accept: 'application/json' },
     });
     const payload = await parseJsonSafe<ElevenHealthResponse>(response);
+    const contentType = response.headers?.get?.('content-type')?.toLowerCase?.() ?? '';
 
-    if (!response.ok || !payload?.ok) {
+    if (!payload) {
+      const runtimeHint = contentType.includes('text/html')
+        ? 'غالبًا endpoint /api غير شغال في البيئة الحالية. شغّل التطبيق عبر Vercel dev أو انشره على Vercel.'
+        : 'الرد غير متوقع من endpoint الصحة.';
+      throw new Error(`ElevenLabs health failed (${response.status}). ${runtimeHint}`);
+    }
+
+    if (!response.ok || !payload.ok) {
       const errorMessage = payload?.error?.message || `ElevenLabs health failed (${response.status}).`;
       const code = payload?.error?.code ? `code=${payload.error.code}` : '';
       const details = payload?.error?.details ? ` | details=${String(payload.error.details).slice(0, 500)}` : '';
