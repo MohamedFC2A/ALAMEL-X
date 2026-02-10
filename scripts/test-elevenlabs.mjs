@@ -85,7 +85,15 @@ async function listVoices() {
   }
 
   if (!response.ok) {
+    const status = String(payload?.detail?.status || payload?.error?.status || '').toLowerCase();
     const message = payload?.detail?.message || payload?.error?.message || `Voices API failed (${response.status}).`;
+    if (response.status === 403 && status === 'missing_permissions' && String(message).toLowerCase().includes('voices_read')) {
+      if (VOICE_ID) {
+        console.warn('WARN: API key has no voices_read permission; using ELEVENLABS_VOICE_ID directly.');
+        return [];
+      }
+      fail(`${message} | Provide ELEVENLABS_VOICE_ID or grant voices_read.`);
+    }
     fail(message);
   }
 
@@ -98,14 +106,16 @@ async function main() {
   }
 
   const voices = await listVoices();
-  if (!voices.length) {
+  if (!voices.length && !VOICE_ID) {
     fail('No voices returned from ElevenLabs account.');
   }
 
   let selected = null;
   if (VOICE_ID) {
-    selected = voices.find((voice) => String(voice?.voice_id || '') === VOICE_ID) || null;
-    if (!selected) {
+    selected = voices.find((voice) => String(voice?.voice_id || '') === VOICE_ID) || { voice_id: VOICE_ID, name: 'Configured Voice' };
+    if (!voices.length) {
+      // no-op; selected is already configured fallback
+    } else if (!selected) {
       console.warn(`WARN: configured ELEVENLABS_VOICE_ID not found (${VOICE_ID}). Falling back to auto voice.`);
     }
   }

@@ -38,6 +38,12 @@ function toVoicePreview(voice) {
   };
 }
 
+function hasMissingVoicesReadPermission(payload) {
+  const status = String(payload?.detail?.status || payload?.error?.status || '').toLowerCase();
+  const message = String(payload?.detail?.message || payload?.error?.message || '').toLowerCase();
+  return status === 'missing_permissions' && message.includes('voices_read');
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
@@ -78,6 +84,26 @@ export default async function handler(req, res) {
     }
 
     if (!upstream.ok) {
+      if (upstream.status === 403 && hasMissingVoicesReadPermission(payload) && preferredVoiceId) {
+        res.status(200).json({
+          ok: true,
+          provider: 'elevenlabs',
+          modelId,
+          configuredVoiceId: preferredVoiceId,
+          selectedVoice: {
+            id: preferredVoiceId,
+            name: 'Configured Voice',
+            category: '',
+            language: '',
+          },
+          voicesCount: 0,
+          voicesPreview: [],
+          warning:
+            'API key is missing voices_read permission, using configured voice id directly. Grant voices_read for richer diagnostics.',
+        });
+        return;
+      }
+
       const message = payload?.detail?.message || payload?.error?.message || `ElevenLabs voices request failed (${upstream.status}).`;
       fail(res, upstream.status, message, 'upstream_voices_failed', raw.slice(0, 800));
       return;

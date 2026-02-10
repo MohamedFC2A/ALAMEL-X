@@ -62,6 +62,11 @@ async function listVoices(apiKey, signal) {
 
 async function resolveVoiceId(apiKey, preferredVoiceId, signal) {
   const now = Date.now();
+  if (preferredVoiceId) {
+    cachedVoice = { id: preferredVoiceId, at: now };
+    return preferredVoiceId;
+  }
+
   if (!preferredVoiceId && cachedVoice.id && now - cachedVoice.at < VOICE_CACHE_TTL_MS) {
     return cachedVoice.id;
   }
