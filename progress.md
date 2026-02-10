@@ -571,3 +571,20 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - Redeploy on Vercel to apply the new `vercel.json` routing behavior and STT endpoint changes in production.
 - After deploy, verify `/api/eleven/stt` with a real discussion flow (non-empty speech + silence chunk) to confirm no more false 502 for silence.
 - Optional: add a tiny UI badge in AI monitor for `noSpeech` events for easier operator debugging.
+## Progress Log
+- Upgraded spy guess logic in `src/lib/ai/agent.ts` to be evidence-driven and human-like instead of blindly trusting model confidence.
+- Added spy guess parser with confidence handling (`parseGuessDecision`) and deterministic fallback selection using thread/hint evidence (`pickSpyGuessFromEvidence`).
+- Added ambiguity gating so spy guesses avoid overconfident "I know it" behavior when evidence is weak or mixed.
+- Kept citizen behavior unchanged while preserving strict option validity for guesses.
+- Updated guess prompt contract to explicitly reinforce that spy does not know the true word.
+
+## Validation Update (Spy Guess Realism)
+- `npm run test -- src/lib/ai/agent.test.ts`: pass.
+- `npm run test`: pass (50 tests).
+- `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.
+
+## Added/Updated Tests
+- Updated existing guess test to use realistic thread evidence + confidence.
+- Added test: invalid model guess response falls back to evidence-based option.
+- Added test: overconfident but weakly supported model guess is ignored in favor of evidence-backed choice.

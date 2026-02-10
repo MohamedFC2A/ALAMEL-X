@@ -43,6 +43,16 @@ export interface AiVoteDecision {
   reason: string;
 }
 
+interface ParsedGuessDecision {
+  choice: string | null;
+  confidence: number;
+}
+
+interface SpyGuessEvidence {
+  option: string;
+  score: number;
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -231,6 +241,160 @@ function parseOptionFromText(options: string[], modelText: string): string | nul
     return normalized && normalizedText.includes(normalized);
   });
   return matches.length === 1 ? matches[0] : null;
+}
+
+function clampPercent(value: unknown, fallback = 0): number {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return fallback;
+  }
+  return Math.max(0, Math.min(100, value));
+}
+
+function parseGuessDecision(text: string, options: string[]): ParsedGuessDecision {
+  const parsed = parseJsonObject(text);
+  if (parsed && typeof parsed === 'object' && parsed !== null) {
+    const candidate = (parsed as { choice?: unknown }).choice;
+    const confidenceRaw = (parsed as { confidence?: unknown }).confidence;
+    if (typeof candidate === 'string') {
+      const exact = options.find((opt) => normalizeWord(opt) === normalizeWord(candidate)) ?? null;
+      return {
+        choice: exact,
+        confidence: clampPercent(confidenceRaw, 0),
+      };
+    }
+  }
+
+  return {
+    choice: parseOptionFromText(options, text),
+    confidence: 0,
+  };
+}
+
+function stableHash(input: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function tokenizeForEvidence(text: string): string[] {
+  const normalized = normalizeWord(text)
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!normalized) {
+    return [];
+  }
+
+  const stopwords = new Set([
+    'في',
+    'من',
+    'على',
+    'الي',
+    'الى',
+    'ده',
+    'دي',
+    'هو',
+    'هي',
+    'ايه',
+    'ماذا',
+    'مكان',
+    'حاجة',
+    'شي',
+    'the',
+    'a',
+    'an',
+    'is',
+    'are',
+    'to',
+    'of',
+    'and',
+    'or',
+    'place',
+    'thing',
+  ]);
+
+  return normalized
+    .split(' ')
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2 && !stopwords.has(token));
+}
+
+function overlapScore(option: string, evidenceText: string): number {
+  const optionNormalized = normalizeWord(option);
+  const evidenceNormalized = normalizeWord(evidenceText);
+  if (!optionNormalized || !evidenceNormalized) {
+    return 0;
+  }
+
+  const tokens = tokenizeForEvidence(optionNormalized);
+  if (!tokens.length) {
+    return 0;
+  }
+
+  const tokenHits = tokens.reduce((total, token) => total + (evidenceNormalized.includes(token) ? 1 : 0), 0);
+  const phraseHit = evidenceNormalized.includes(optionNormalized) ? 1 : 0;
+  return tokenHits / tokens.length + (phraseHit ? 0.9 : 0);
+}
+
+function rankSpyGuessEvidence(options: string[], context: AiMatchContext, thread: AiThreadState): SpyGuessEvidence[] {
+  const userMessages = (thread.messages ?? [])
+    .filter((item) => item.from === 'user')
+    .slice(-14)
+    .map((item) => item.text);
+
+  const weightedEvidence = [
+    { text: context.spyHintText ?? '', weight: 0.7 },
+    ...userMessages.map((text) => ({ text, weight: 1 })),
+  ].filter((item) => item.text.trim().length > 0);
+
+  const ranked = options.map((option) => {
+    const score = weightedEvidence.reduce((total, item) => total + overlapScore(option, item.text) * item.weight, 0);
+    return { option, score };
+  });
+
+  return ranked.sort((left, right) => {
+    const diff = right.score - left.score;
+    if (Math.abs(diff) > 1e-6) {
+      return diff;
+    }
+    return left.option.localeCompare(right.option, 'ar');
+  });
+}
+
+function pickSpyGuessFromEvidence(
+  options: string[],
+  context: AiMatchContext,
+  thread: AiThreadState,
+): { choice: string; ranked: SpyGuessEvidence[]; ambiguous: boolean } {
+  const ranked = rankSpyGuessEvidence(options, context, thread);
+  if (!ranked.length) {
+    return { choice: options[0], ranked: [], ambiguous: true };
+  }
+
+  const best = ranked[0];
+  const second = ranked[1]?.score ?? 0;
+  const ambiguous = best.score < 0.95 || best.score - second < 0.28;
+
+  if (!ambiguous) {
+    return { choice: best.option, ranked, ambiguous: false };
+  }
+
+  const topPool = ranked.slice(0, Math.min(3, ranked.length));
+  const seedSource = [
+    context.aiPlayer.id,
+    context.category,
+    context.spyHintText ?? '',
+    thread.summary ?? '',
+    ...((thread.messages ?? []).slice(-6).map((item) => `${item.from}:${item.text}`)),
+    ...topPool.map((item) => item.option),
+  ].join('|');
+
+  const hashed = stableHash(seedSource);
+  const picked = topPool[hashed % topPool.length]?.option ?? ranked[0].option;
+  return { choice: picked, ranked, ambiguous: true };
 }
 
 function buildTurnDirective(context: AiMatchContext, userText: string, config: AiRuntimeConfig): string {
@@ -653,26 +817,36 @@ export async function decideGuess(
     {
       role: 'user' as const,
       content:
-        `لو أنت الجاسوس، اختر الكلمة الأقرب لما تعتقد أن المواطنين رأوه.\nالخيارات:\n${optionList}\n\n` +
+        `لو أنت الجاسوس، اختر الكلمة الأقرب لما تعتقد أن المواطنين رأوه.\n` +
+        'تذكير: أنت لا تعرف الكلمة الحقيقية إطلاقًا، فاختيارك لازم يكون تخمين مبني على إشارات الحوار فقط.\n' +
+        `الخيارات:\n${optionList}\n\n` +
         'أعد فقط JSON بالشكل: {"choice":"<option>","confidence":<0-100>,"why":"سبب تكتيكي قصير"} حيث <option> يساوي خيارًا واحدًا حرفيًا من القائمة.',
     },
   ];
 
   const text = await chatComplete({ ...config, messages, temperature: depth === 3 ? 0.28 : 0.3, maxTokens: depth === 3 ? 170 : 130 });
-  const parsed = parseJsonObject(text);
-  if (parsed && typeof parsed === 'object' && parsed !== null && 'choice' in parsed) {
-    const choice = (parsed as { choice?: unknown }).choice;
-    if (typeof choice === 'string') {
-      const exact = options.find((opt) => normalizeWord(opt) === normalizeWord(choice));
-      if (exact) {
-        return exact;
+  const parsed = parseGuessDecision(text, options);
+  const heuristic = pickSpyGuessFromEvidence(options, context, thread);
+
+  if (context.role === 'spy') {
+    if (parsed.choice) {
+      const evidenceByOption = new Map(heuristic.ranked.map((item) => [item.option, item.score]));
+      const bestScore = heuristic.ranked[0]?.score ?? 0;
+      const modelScore = evidenceByOption.get(parsed.choice) ?? 0;
+      const modelSupported = modelScore >= bestScore - 0.12;
+      const confidenceHighEnough = parsed.confidence >= 68;
+
+      // Spy should not behave as if they know the word with certainty.
+      // In ambiguous evidence, prefer heuristic uncertainty over overconfident model picks.
+      if (!heuristic.ambiguous && modelSupported && confidenceHighEnough) {
+        return parsed.choice;
       }
     }
+    return heuristic.choice;
   }
 
-  const fallback = parseOptionFromText(options, text);
-  if (fallback) {
-    return fallback;
+  if (parsed.choice) {
+    return parsed.choice;
   }
 
   throw new DeepSeekError('Invalid guess choice from model.', { kind: 'invalid_response' });

@@ -172,7 +172,13 @@ describe('ai agent', () => {
   });
 
   it('decides a guess from the options list', async () => {
-    const thread: AiThreadState = { messages: [], summary: '' };
+    const thread: AiThreadState = {
+      messages: [
+        { at: 1, from: 'user', text: 'محمد: واضح إنها مرتبطة بالمواصلات وزحمة المترو.' },
+        { at: 2, from: 'user', text: 'سارة: غالبًا مكان فيه محطة مترو.' },
+      ],
+      summary: 'النقاش بيميل لمواصلات عامة ومحطات.',
+    };
     const context = {
       language: 'ar' as const,
       aiPlayer: { id: 'ai1', name: 'العميل صقر' },
@@ -182,10 +188,56 @@ describe('ai agent', () => {
       spyTeammateNames: [],
     };
 
-    chatCompleteMock.mockResolvedValueOnce('{"choice":"محطة مترو"}');
+    chatCompleteMock.mockResolvedValueOnce('{"choice":"محطة مترو","confidence":84,"why":"إشارات اللاعبين كانت على النقل"}');
 
     const guess = await decideGuess(config, context, thread, ['ميدان عام', 'محطة مترو', 'شارع جانبي']);
     expect(guess).toBe('محطة مترو');
+  });
+
+  it('uses evidence-based fallback when spy guess response is invalid', async () => {
+    const thread: AiThreadState = {
+      messages: [
+        { at: 1, from: 'user', text: 'رامي: غالبًا الكلام على المطار والسفر.' },
+        { at: 2, from: 'user', text: 'نهى: أنا حاسة إنها قاعة انتظار في مطار.' },
+      ],
+      summary: 'السياق كله عن سفر وطيران.',
+    };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'spy' as const,
+      category: 'أماكن',
+      spyHintText: 'مكان مرتبط بالتنقل.',
+      spyTeammateNames: [],
+    };
+
+    chatCompleteMock.mockResolvedValueOnce('مش عارف بصراحة');
+
+    const guess = await decideGuess(config, context, thread, ['ملعب كرة', 'مطار دولي', 'متحف فني']);
+    expect(guess).toBe('مطار دولي');
+  });
+
+  it('does not trust overconfident spy guess when evidence points elsewhere', async () => {
+    const thread: AiThreadState = {
+      messages: [
+        { at: 1, from: 'user', text: 'سلمى: كل الكلام عن مكتبة وكتب وقراءة.' },
+        { at: 2, from: 'user', text: 'كريم: أكيد حاجة شبه مكتبة عامة.' },
+      ],
+      summary: 'المجموعة مركزة على القراءة والكتب.',
+    };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'spy' as const,
+      category: 'أماكن',
+      spyHintText: 'مكان هادي.',
+      spyTeammateNames: [],
+    };
+
+    chatCompleteMock.mockResolvedValueOnce('{"choice":"سوق شعبي","confidence":97,"why":"تخمين سريع"}');
+
+    const guess = await decideGuess(config, context, thread, ['مكتبة عامة', 'سوق شعبي', 'محطة وقود']);
+    expect(guess).toBe('مكتبة عامة');
   });
 
   it('returns strict yes/no decisions for binary questions', async () => {
