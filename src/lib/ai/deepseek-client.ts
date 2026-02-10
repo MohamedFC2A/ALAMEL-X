@@ -24,8 +24,8 @@ export class DeepSeekError extends Error {
 }
 
 export interface DeepSeekChatCompleteOptions {
-  baseUrl: string;
-  apiKey: string;
+  baseUrl?: string;
+  apiKey?: string;
   model: string;
   messages: DeepSeekChatMessage[];
   temperature?: number;
@@ -38,40 +38,33 @@ interface DeepSeekChatCompletionResponse {
   error?: { message?: string; type?: string; code?: string };
 }
 
-function normalizeBaseUrl(baseUrl: string): string {
-  return baseUrl.replace(/\/+$/, '');
-}
+const VERCEL_PROXY_CHAT_ENDPOINT = '/api/deepseek/chat';
 
-export async function chatComplete({
-  baseUrl,
-  apiKey,
-  model,
-  messages,
-  temperature = 0.65,
-  maxTokens = 280,
-  timeoutMs = 15_000,
-}: DeepSeekChatCompleteOptions): Promise<string> {
-  if (!apiKey?.trim()) {
-    throw new DeepSeekError('Missing DeepSeek API key.', { kind: 'auth' });
+export async function chatComplete(options: DeepSeekChatCompleteOptions): Promise<string> {
+  const {
+    model,
+    messages,
+    temperature = 0.65,
+    maxTokens = 280,
+    timeoutMs = 15_000,
+  } = options;
+
+  if (!model?.trim()) {
+    throw new DeepSeekError('Missing DeepSeek model name.', { kind: 'invalid_response' });
   }
 
-  const url = `${normalizeBaseUrl(baseUrl)}/chat/completions`;
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(VERCEL_PROXY_CHAT_ENDPOINT, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model,
         messages,
         temperature,
-        max_tokens: maxTokens,
-        stream: false,
+        maxTokens,
       }),
       signal: controller.signal,
     });
@@ -108,4 +101,3 @@ export async function chatComplete({
     window.clearTimeout(timer);
   }
 }
-

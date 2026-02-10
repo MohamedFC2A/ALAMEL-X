@@ -331,3 +331,71 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - `npm run lint`: pass (only existing warnings in `src/screens/ResolutionScreen.tsx`).
 - `npm run test`: pass (35 tests).
 - `npm run build`: pass (existing bundle-size warning unchanged).
+
+## Progress Log
+- Switched Arabic speech preference to Egyptian Arabic in `src/components/AiDeskModal.tsx`.
+- Added strict `ar-EG` preference scoring and stronger penalties for non-Egyptian Arabic alternatives.
+- Updated speech output locale to `ar-EG` and voice input locale to `ar-EG` for consistent Egyptian voice interaction.
+- Expanded voice-name hints to better catch Egyptian female voice packs when available on the device/browser.
+
+## Validation Update (Egyptian Arabic Voice Preference)
+- `npm run lint`: pass (same pre-existing warnings in `src/screens/ResolutionScreen.tsx`).
+- `npm run test`: pass (35 tests).
+## Progress Log
+- Completed AI intelligence/settings upgrade validation pass and fixed the remaining failing unit test expectation for configurable reply length behavior.
+- Updated `src/lib/ai/agent.test.ts` to align default concise-mode expectation with new `balanced` output limit and added explicit coverage for `aiReplyLength: short` enforcing a 2-sentence cap.
+- Re-ran full quality gates after changes: tests/lint/build all passing (lint warnings remain pre-existing in `ResolutionScreen.tsx`).
+- Ran develop-web-game Playwright client smoke run against local dev server and reviewed latest artifacts:
+  - `output/web-game/shot-0.png`
+  - `output/web-game/state-0.json`
+- Confirmed no Playwright-captured console/page errors in this run.
+
+## Validation Update (AI Settings + Reliability)
+- `npm run test`: pass (36 tests).
+- `npm run lint`: pass with existing warnings only.
+- `npm run build`: pass.
+
+## Remaining TODOs / Suggestions
+- Optional next pass: tune ultra-human mode prompts further per role (citizen vs spy) with targeted A/B response samples for Egyptian Arabic tone quality.
+- Optional: expose quick AI presets in settings (e.g., Fast Tactical / Human Balanced / Ultra Human) mapped to current granular controls for easier user onboarding.
+## Progress Log
+- Implemented voice quality and transcript-intelligence upgrade in `src/components/AiDeskModal.tsx`.
+- Added stronger speech-text normalization pipeline (Arabic-friendly normalization + filler cleanup + wake phrase robustness).
+- Added multi-hypothesis recognition handling (`maxAlternatives=3`) with confidence-aware candidate scoring and best-transcript selection.
+- Added adaptive transcript refinement path via AI for low-confidence/noisy utterances before dispatching chat reply.
+- Added microphone preflight capture with browser audio constraints (`echoCancellation`, `noiseSuppression`, `autoGainControl`) to improve capture quality and reduce failed starts.
+- Added granular speech error mapping (no-speech / mic-access / network) for clearer recovery UX.
+- Added new localization key in `src/lib/i18n.ts`: `aiVoiceMicAccessError`.
+
+## Validation Update (Voice Quality + Smarter Analysis)
+- `npm run lint`: pass (only existing warnings in `src/screens/ResolutionScreen.tsx`).
+- `npm run test`: pass (36 tests).
+- `npm run build`: pass.
+- Ran develop-web-game Playwright smoke loop and reviewed artifacts:
+  - `output/web-game/voice-quality-v2/shot-0.png`
+  - `output/web-game/voice-quality-v2/state-0.json`
+- No Playwright-captured console/page errors in this run.
+
+## Remaining TODOs / Suggestions
+- Add targeted unit tests for transcript scoring/refinement helpers in `AiDeskModal` to lock behavior under noisy Arabic input examples.
+- Optional: add a user-facing "Voice Sensitivity" slider that tunes refine-threshold/confidence cutoffs.
+## Progress Log
+- Migrated DeepSeek client usage to a server-managed Vercel proxy path (`/api/deepseek/chat`) so the browser no longer sends or stores API keys.
+- Added Vercel serverless function `api/deepseek/chat.js` to securely forward chat completion requests using `process.env.DEEPSEEK_API_KEY`.
+- Updated settings UX to remove all API-key input/clear/show controls and replaced it with server-managed status messaging.
+- Updated runtime gating so AI readiness depends on `aiEnabled` only (no user key requirement) in setup/discussion/resolution flows.
+- Updated tests to reflect keyless UX and server-managed behavior:
+  - `src/screens/SettingsScreen.ai.test.tsx`
+  - `src/screens/ResolutionScreen.ai.test.tsx`
+
+## Validation Update (Vercel-managed Key)
+- `npm run lint`: pass (only existing warnings in `src/screens/ResolutionScreen.tsx`).
+- `npm run test`: pass (36 tests).
+- `npm run build`: pass.
+- Ran develop-web-game Playwright smoke run and reviewed artifacts:
+  - `output/web-game/vercel-proxy-ai/shot-0.png`
+  - `output/web-game/vercel-proxy-ai/state-0.json`
+- No Playwright-captured console/page errors in this run.
+
+## Deployment Note
+- Vercel environment variable required: `DEEPSEEK_API_KEY`.

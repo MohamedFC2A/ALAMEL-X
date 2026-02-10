@@ -271,7 +271,7 @@ export function ResolutionScreen() {
   }, [activeMatch]);
 
   useEffect(() => {
-    if (!settings?.aiEnabled || !settings.aiApiKey?.trim()) {
+    if (!settings?.aiEnabled) {
       return;
     }
 
@@ -370,7 +370,7 @@ export function ResolutionScreen() {
       return;
     }
 
-    if (!settings?.aiEnabled || !settings.aiApiKey?.trim()) {
+    if (!settings?.aiEnabled) {
       return;
     }
 
@@ -506,7 +506,7 @@ export function ResolutionScreen() {
               <p className="subtle">
                 {t('voteProgress', { current: voteState.voterIndex + 1, total: currentMatch.match.playerIds.length })}
               </p>
-              {settings?.aiEnabled && settings.aiApiKey?.trim() ? (
+              {settings?.aiEnabled ? (
                 aiVoteError?.key === voteStateKey ? (
                   <StatusBanner tone="danger">{aiVoteError.message}</StatusBanner>
                 ) : (
@@ -516,7 +516,7 @@ export function ResolutionScreen() {
                 <StatusBanner tone="danger">{t('aiSetupRequired')}</StatusBanner>
               )}
               <div className="actions-row">
-                {settings?.aiEnabled && settings.aiApiKey?.trim() && aiVoteError?.key === voteStateKey ? (
+                {settings?.aiEnabled && aiVoteError?.key === voteStateKey ? (
                   <GameButton
                     variant="ghost"
                     size="md"
@@ -642,7 +642,7 @@ export function ResolutionScreen() {
             <h2>{t('aiGuessInProgress')}</h2>
             <p className="subtle">{t('spyGuessPrompt')}</p>
             <h2 className="countdown-value">{guessRemaining}</h2>
-            {settings?.aiEnabled && settings.aiApiKey?.trim() ? (
+            {settings?.aiEnabled ? (
               aiGuessErrorMessage ? (
                 <StatusBanner tone="danger">{aiGuessErrorMessage}</StatusBanner>
               ) : (
@@ -652,7 +652,7 @@ export function ResolutionScreen() {
               <StatusBanner tone="danger">{t('aiSetupRequired')}</StatusBanner>
             )}
             <div className="actions-row">
-              {settings?.aiEnabled && settings.aiApiKey?.trim() && aiGuessErrorMessage ? (
+              {settings?.aiEnabled && aiGuessErrorMessage ? (
                 <GameButton
                   variant="ghost"
                   size="md"

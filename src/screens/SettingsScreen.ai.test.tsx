@@ -29,7 +29,7 @@ describe('settings screen AI section', () => {
     await resetState();
   });
 
-  it('persists AI toggles and key input to IndexedDB', async () => {
+  it('persists AI toggles without exposing key input', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -54,21 +54,7 @@ describe('settings screen AI section', () => {
       expect(settings?.aiVoiceOutputEnabled).toBe(false);
     });
 
-    const keyInput = await screen.findByPlaceholderText(/ضع المفتاح هنا/i);
-    await user.type(keyInput, 'abc123');
-
-    await waitFor(async () => {
-      const settings = await db.settings.get('global');
-      expect(settings?.aiApiKey).toBe('abc123');
-    });
-
-    const clearKey = await screen.findByRole('button', { name: /مسح المفتاح/i });
-    await user.click(clearKey);
-
-    await waitFor(async () => {
-      const settings = await db.settings.get('global');
-      expect(settings?.aiApiKey).toBe('');
-    });
+    expect(screen.queryByPlaceholderText(/ضع المفتاح هنا/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/مفتاح deepseek غير ظاهر للمستخدم/i)).toBeInTheDocument();
   });
 });
-

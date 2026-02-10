@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw } from 'lucide-react';
 import { db, ensureSettings } from '../lib/db';
@@ -9,7 +9,7 @@ import { ScreenScaffold } from '../components/ScreenScaffold';
 import { GameButton } from '../components/GameButton';
 import { StatusBanner } from '../components/StatusBanner';
 import { usePWAUpdate } from '../hooks/usePWAUpdate';
-import type { ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
+import type { AiHumanMode, AiReplyLength, ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date';
 
@@ -17,25 +17,12 @@ export function SettingsScreen() {
   const { t } = useTranslation();
   const settings = useLiveQuery(() => db.settings.get('global'), []);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
-  const [aiKeyVisible, setAiKeyVisible] = useState(false);
-  const [aiApiKeyDraft, setAiApiKeyDraft] = useState('');
-  const [aiApiKeyEditing, setAiApiKeyEditing] = useState(false);
-  const aiKeySaveTimerRef = useRef<number | null>(null);
   const [aiTestStatus, setAiTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [aiTestMessage, setAiTestMessage] = useState('');
   const { needRefresh, updateServiceWorker } = usePWAUpdate();
 
   useEffect(() => {
     void ensureSettings();
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (aiKeySaveTimerRef.current !== null) {
-        window.clearTimeout(aiKeySaveTimerRef.current);
-        aiKeySaveTimerRef.current = null;
-      }
-    };
   }, []);
 
   // Auto-check for updates when entering settings
@@ -88,17 +75,9 @@ export function SettingsScreen() {
       return;
     }
 
-    const apiKey = aiApiKeyEditing ? aiApiKeyDraft : settings.aiApiKey;
-
     if (!settings.aiEnabled) {
       setAiTestStatus('error');
       setAiTestMessage(t('aiDisabled'));
-      return;
-    }
-
-    if (!apiKey.trim()) {
-      setAiTestStatus('error');
-      setAiTestMessage(t('aiMissingKey'));
       return;
     }
 
@@ -107,8 +86,6 @@ export function SettingsScreen() {
 
     try {
       const text = await chatComplete({
-        baseUrl: settings.aiBaseUrl,
-        apiKey,
         model: settings.aiModel,
         messages: [
           { role: 'system', content: 'Reply only with "pong".' },
@@ -143,7 +120,7 @@ export function SettingsScreen() {
         setAiTestMessage(t('aiUnknownError'));
       }
     }
-  }, [aiApiKeyDraft, aiApiKeyEditing, settings, t]);
+  }, [settings, t]);
 
   if (!settings) {
     return null;
@@ -324,43 +301,75 @@ export function SettingsScreen() {
 
         <div className="glass-card setting-card cinematic-panel section-card">
           <label className="form-field">
-            <span>{t('aiApiKey')}</span>
-            <div className="input-row">
-              <input
-                type={aiKeyVisible ? 'text' : 'password'}
-                value={aiApiKeyEditing ? aiApiKeyDraft : settings.aiApiKey}
-                onFocus={() => {
-                  setAiApiKeyEditing(true);
-                  setAiApiKeyDraft(settings.aiApiKey ?? '');
-                }}
-                onBlur={() => {
-                  setAiApiKeyEditing(false);
-                }}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-                  if (!aiApiKeyEditing) {
-                    setAiApiKeyEditing(true);
-                  }
-                  setAiApiKeyDraft(nextValue);
-                  if (aiKeySaveTimerRef.current !== null) {
-                    window.clearTimeout(aiKeySaveTimerRef.current);
-                  }
-                  aiKeySaveTimerRef.current = window.setTimeout(() => {
-                    aiKeySaveTimerRef.current = null;
-                    void updateGlobalSettings({ aiApiKey: nextValue });
-                  }, 150);
-                }}
-                placeholder={t('aiApiKeyPlaceholder')}
-                autoComplete="off"
-                spellCheck={false}
-              />
-              <GameButton variant="ghost" size="md" onClick={() => setAiKeyVisible((prev) => !prev)}>
-                {aiKeyVisible ? t('aiHideKey') : t('aiShowKey')}
-              </GameButton>
-            </div>
+            <span>{t('aiHumanMode')}</span>
+            <select value={settings.aiHumanMode} onChange={(event) => void updateGlobalSettings({ aiHumanMode: event.target.value as AiHumanMode })}>
+              <option value="strategic">{t('aiHumanModeStrategic')}</option>
+              <option value="natural">{t('aiHumanModeNatural')}</option>
+              <option value="ultra">{t('aiHumanModeUltra')}</option>
+            </select>
           </label>
-          <p className="subtle">{t('aiKeyStoredNote')}</p>
         </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="form-field">
+            <span>
+              {t('aiReasoningDepth')} ({t('aiDepthLevel', { level: settings.aiReasoningDepth })})
+            </span>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={1}
+              value={settings.aiReasoningDepth}
+              onChange={(event) => void updateGlobalSettings({ aiReasoningDepth: Number(event.target.value) as 1 | 2 | 3 })}
+            />
+          </label>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="form-field">
+            <span>{t('aiReplyLength')}</span>
+            <select value={settings.aiReplyLength} onChange={(event) => void updateGlobalSettings({ aiReplyLength: event.target.value as AiReplyLength })}>
+              <option value="short">{t('aiReplyLengthShort')}</option>
+              <option value="balanced">{t('aiReplyLengthBalanced')}</option>
+              <option value="detailed">{t('aiReplyLengthDetailed')}</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="form-field">
+            <span>
+              {t('aiInitiativeLevel')} ({t('aiInitiativeValue', { value: settings.aiInitiativeLevel })})
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={settings.aiInitiativeLevel}
+              onChange={(event) => void updateGlobalSettings({ aiInitiativeLevel: Number(event.target.value) })}
+            />
+          </label>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="form-field">
+            <span>
+              {t('aiMemoryDepth')} ({t('aiMemoryTurns', { value: settings.aiMemoryDepth })})
+            </span>
+            <input
+              type="range"
+              min={8}
+              max={24}
+              step={2}
+              value={settings.aiMemoryDepth}
+              onChange={(event) => void updateGlobalSettings({ aiMemoryDepth: Number(event.target.value) })}
+            />
+          </label>
+        </div>
+
+        <StatusBanner tone="default">{t('aiServerManaged')}</StatusBanner>
 
         <div className="glass-card setting-card cinematic-panel section-card">
           <div className="actions-row">
@@ -368,25 +377,9 @@ export function SettingsScreen() {
               variant="primary"
               size="md"
               onClick={() => void testAiConnection()}
-              disabled={aiTestStatus === 'testing' || !(aiApiKeyEditing ? aiApiKeyDraft : settings.aiApiKey).trim() || !settings.aiEnabled}
+              disabled={aiTestStatus === 'testing' || !settings.aiEnabled}
             >
               {aiTestStatus === 'testing' ? t('aiTesting') : t('aiTestConnection')}
-            </GameButton>
-            <GameButton
-              variant="danger"
-              size="md"
-              onClick={() => {
-                if (aiKeySaveTimerRef.current !== null) {
-                  window.clearTimeout(aiKeySaveTimerRef.current);
-                  aiKeySaveTimerRef.current = null;
-                }
-                setAiApiKeyEditing(true);
-                setAiApiKeyDraft('');
-                void updateGlobalSettings({ aiApiKey: '' });
-              }}
-              disabled={!(aiApiKeyEditing ? aiApiKeyDraft : settings.aiApiKey).trim()}
-            >
-              {t('aiClearKey')}
             </GameButton>
           </div>
 

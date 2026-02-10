@@ -29,6 +29,11 @@ export const defaultSettings: GlobalSettings = {
   aiBaseUrl: 'https://api.deepseek.com/v1',
   aiModel: 'deepseek-chat',
   aiApiKey: '',
+  aiHumanMode: 'natural',
+  aiReasoningDepth: 2,
+  aiReplyLength: 'balanced',
+  aiInitiativeLevel: 35,
+  aiMemoryDepth: 14,
   aiVoiceInputEnabled: true,
   aiVoiceOutputEnabled: true,
 };

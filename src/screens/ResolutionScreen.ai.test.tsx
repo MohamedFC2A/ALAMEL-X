@@ -12,9 +12,8 @@ const decideGuessMock = vi.hoisted(() => vi.fn());
 vi.mock('../lib/ai/agent', () => ({
   decideVote: decideVoteMock,
   decideGuess: decideGuessMock,
-  runtimeConfigFromSettings: (settings: { aiBaseUrl: string; aiApiKey: string; aiModel: string }) => ({
+  runtimeConfigFromSettings: (settings: { aiBaseUrl: string; aiModel: string }) => ({
     baseUrl: settings.aiBaseUrl,
-    apiKey: settings.aiApiKey,
     model: settings.aiModel,
   }),
 }));
@@ -140,7 +139,7 @@ async function resetState() {
   await db.settings.clear();
   await db.wordUsage.clear();
   await db.teaser.clear();
-  await db.settings.put({ ...defaultSettings, aiEnabled: true, aiApiKey: 'test-key' });
+  await db.settings.put({ ...defaultSettings, aiEnabled: true });
 }
 
 afterEach(() => {

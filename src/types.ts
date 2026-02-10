@@ -3,6 +3,8 @@ export type Language = 'en' | 'ar';
 export type ThemeName = 'aurora' | 'solar' | 'onyx';
 export type ContrastPreset = 'normal' | 'high';
 export type UiDensity = 'comfortable' | 'compact';
+export type AiHumanMode = 'strategic' | 'natural' | 'ultra';
+export type AiReplyLength = 'short' | 'balanced' | 'detailed';
 
 export type PlayerKind = 'human' | 'ai';
 
@@ -58,6 +60,11 @@ export interface GlobalSettings {
   aiBaseUrl: string;
   aiModel: string;
   aiApiKey: string;
+  aiHumanMode: AiHumanMode;
+  aiReasoningDepth: 1 | 2 | 3;
+  aiReplyLength: AiReplyLength;
+  aiInitiativeLevel: number;
+  aiMemoryDepth: number;
   aiVoiceInputEnabled: boolean;
   aiVoiceOutputEnabled: boolean;
 }

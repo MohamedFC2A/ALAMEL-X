@@ -4,14 +4,24 @@ import { Bot, Mic, Volume2, X } from 'lucide-react';
 import type { ActiveMatch, AiThreadState, GlobalSettings, Language, Player } from '../types';
 import { db } from '../lib/db';
 import { updateActiveMatch } from '../lib/game-repository';
-import { DeepSeekError } from '../lib/ai/deepseek-client';
-import { generateChatReply, runtimeConfigFromSettings } from '../lib/ai/agent';
+import { chatComplete, DeepSeekError } from '../lib/ai/deepseek-client';
+import { generateChatReply, runtimeConfigFromSettings, type AiRuntimeConfig } from '../lib/ai/agent';
 import { StatusBanner } from './StatusBanner';
 import { GameButton } from './GameButton';
 
+type SpeechRecognitionAlternativeLike = {
+  transcript?: string;
+  confidence?: number;
+};
+
+type SpeechRecognitionResultLike = ArrayLike<SpeechRecognitionAlternativeLike> & {
+  isFinal?: boolean;
+};
+
 type SpeechRecognitionEventLike = {
   resultIndex?: number;
-  results?: ArrayLike<ArrayLike<{ transcript?: string }>>;
+  results?: ArrayLike<SpeechRecognitionResultLike>;
+  error?: string;
 };
 
 type SpeechRecognitionLike = {
@@ -22,7 +32,7 @@ type SpeechRecognitionLike = {
   start: () => void;
   stop: () => void;
   onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: SpeechRecognitionEventLike) => void) | null;
   onend: (() => void) | null;
 };
 
@@ -43,8 +53,72 @@ interface AiDeskModalProps {
   language: Language;
 }
 
+interface TranscriptHypothesis {
+  text: string;
+  confidence: number;
+  isFinal: boolean;
+}
+
+interface TranscriptSelection {
+  text: string;
+  confidence: number;
+}
+
 function buildEmptyThread(): AiThreadState {
   return { messages: [], summary: '' };
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const LEADING_WAKE_FILLERS_PATTERN =
+  /^(?:يا\s+)?(?:لو\s+سمحت(?:ي)?\s+|بعد\s+اذنك\s+|اسمع(?:ني)?\s+|بص(?:ي)?\s+|طيب\s+|ممكن\s+|please\s+|hey\s+|hi\s+)+/i;
+
+const SPEECH_CORRECTIONS: Array<[RegExp, string]> = [
+  [/\b(إي|اي|اى)\s*[- ]?\s*(آي|اي|اى)\b/giu, 'AI'],
+  [/\b(إكس|اكس)\b/giu, 'X'],
+];
+
+function cleanTranscriptText(text: string): string {
+  let cleaned = text
+    .replace(/[\u200f\u200e]/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/([،,؛:.!?؟]){2,}/g, '$1')
+    .trim();
+
+  for (const [pattern, replacement] of SPEECH_CORRECTIONS) {
+    cleaned = cleaned.replace(pattern, replacement);
+  }
+
+  let guard = 0;
+  while (guard < 3) {
+    const next = cleaned.replace(LEADING_WAKE_FILLERS_PATTERN, '').trim();
+    if (next === cleaned) {
+      break;
+    }
+    cleaned = next;
+    guard += 1;
+  }
+
+  return cleaned.replace(/\s+/g, ' ').trim();
+}
+
+function buildThreadSummary(messages: Array<{ from: 'user' | 'ai'; text: string; at?: number }>): string {
+  const recent = messages.slice(-8);
+  if (!recent.length) {
+    return '';
+  }
+
+  const compact = recent
+    .map((msg) => {
+      const speaker = msg.from === 'user' ? 'المستخدم' : 'العميل';
+      const text = msg.text.replace(/\s+/g, ' ').trim();
+      return `${speaker}: ${text}`;
+    })
+    .join(' | ');
+
+  return compact.length > 520 ? `${compact.slice(0, 520)}…` : compact;
 }
 
 function formatAiError(error: unknown, t: (key: string) => string): string {
@@ -81,8 +155,12 @@ function buildContext(activeMatch: ActiveMatch, aiPlayer: Player, language: Lang
 }
 
 function normalizeSpeechText(text: string): string {
-  return text
+  return cleanTranscriptText(text)
     .toLowerCase()
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/[ؤ]/g, 'و')
+    .replace(/[ئ]/g, 'ي')
     .replace(/[\u064b-\u065f\u0610-\u061a\u06d6-\u06ed]/g, '')
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
@@ -90,8 +168,10 @@ function normalizeSpeechText(text: string): string {
 }
 
 function stripWakePhrase(text: string, aiName: string): string {
-  const escaped = aiName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return text.replace(new RegExp(`^\\s*(يا\\s*)?${escaped}[،,:\\-\\s]*`, 'i'), '').trim();
+  const escaped = escapeRegExp(aiName.trim());
+  let stripped = text.replace(new RegExp(`^\\s*(?:يا\\s*)?${escaped}[،,:\\-\\s]*`, 'i'), '').trim();
+  stripped = stripped.replace(/^\s*(?:يا\s*)?(?:ال)?عميل(?:\s+[xX])?[،,:\-\s]*/i, '').trim();
+  return cleanTranscriptText(stripped).trim();
 }
 
 function resolveAiTarget(utterance: string, aiPlayers: Player[]): Player | null {
@@ -135,50 +215,170 @@ function resolveAiTarget(utterance: string, aiPlayers: Player[]): Player | null 
   return aiPlayers[0];
 }
 
+function scoreTranscriptHypothesis(candidate: TranscriptHypothesis, aiPlayers: Player[]): number {
+  const normalized = normalizeSpeechText(candidate.text);
+  const hasArabic = /[\u0600-\u06FF]/.test(candidate.text);
+  const mentionsAgent = aiPlayers.some((player) => normalized.includes(normalizeSpeechText(player.name)));
+  const maybeWakeWord = /^(?:يا|agent|العميل|عميل)\b/i.test(candidate.text.trim());
+  const wordCount = normalized.split(' ').filter(Boolean).length;
+
+  let score = candidate.confidence * 100;
+  if (candidate.isFinal) score += 24;
+  if (hasArabic) score += 6;
+  if (mentionsAgent) score += 18;
+  if (maybeWakeWord) score += 10;
+  if (candidate.text.length >= 6) score += 8;
+  if (candidate.text.length > 220) score -= 20;
+  if (wordCount <= 1) score -= 22;
+
+  return score;
+}
+
+function pickBestTranscript(hypotheses: TranscriptHypothesis[], aiPlayers: Player[]): TranscriptSelection {
+  const usable = hypotheses
+    .map((item) => ({
+      text: cleanTranscriptText(item.text),
+      confidence: Math.max(0, Math.min(1, item.confidence)),
+      isFinal: item.isFinal,
+    }))
+    .filter((item) => item.text.length >= 2);
+
+  if (!usable.length) {
+    return { text: '', confidence: 0 };
+  }
+
+  let winner = usable[0];
+  let winnerScore = scoreTranscriptHypothesis(winner, aiPlayers);
+  for (const candidate of usable.slice(1)) {
+    const score = scoreTranscriptHypothesis(candidate, aiPlayers);
+    if (score > winnerScore) {
+      winner = candidate;
+      winnerScore = score;
+    }
+  }
+
+  return { text: winner.text, confidence: winner.confidence };
+}
+
+function shouldRunTranscriptRefine(text: string, confidence: number): boolean {
+  const words = text.split(/\s+/).filter(Boolean).length;
+  const hasGarbage = /[^\p{L}\p{N}\s،,.!?:؛؟-]/u.test(text);
+  return confidence < 0.84 || words <= 1 || hasGarbage;
+}
+
+function sanitizeRefinedTranscript(refined: string, fallback: string): string {
+  const compact = cleanTranscriptText(
+    refined
+      .replace(/^["'`]+|["'`]+$/g, '')
+      .replace(/^(?:النص المصحح|corrected text|transcript)\s*[:：-]\s*/i, '')
+      .trim(),
+  );
+
+  if (!compact) {
+    return fallback;
+  }
+
+  if (compact.length > Math.max(260, fallback.length * 2)) {
+    return fallback;
+  }
+
+  return compact;
+}
+
+async function refineTranscriptWithAi(
+  config: AiRuntimeConfig,
+  language: Language,
+  rawText: string,
+  agentName: string,
+): Promise<string> {
+  const localeGuide =
+    language === 'ar'
+      ? 'عامية مصرية مفهومة. صحّح الأخطاء السمعية فقط بدون تغيير القصد.'
+      : 'Clear spoken English. Correct speech-to-text mistakes only without changing intent.';
+
+  const response = await chatComplete({
+    ...config,
+    temperature: 0.1,
+    maxTokens: 120,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You correct voice transcripts. Return only the corrected user utterance as plain text with no explanations.',
+      },
+      {
+        role: 'user',
+        content: `Agent name: ${agentName}\nLanguage style: ${localeGuide}\nTranscript: ${rawText}`,
+      },
+    ],
+  });
+
+  return sanitizeRefinedTranscript(response, rawText);
+}
+
+function mapSpeechRecognitionError(errorCode: string | undefined, t: (key: string) => string): string {
+  switch (errorCode) {
+    case 'no-speech':
+      return t('aiVoiceNoSpeech');
+    case 'audio-capture':
+    case 'not-allowed':
+    case 'service-not-allowed':
+      return t('aiVoiceMicAccessError');
+    case 'network':
+      return t('aiNetworkError');
+    default:
+      return t('aiVoiceError');
+  }
+}
+
+async function primeMicrophoneCapture(): Promise<boolean> {
+  if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    return true;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+      },
+    });
+    stream.getTracks().forEach((track) => track.stop());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const voiceCache: Partial<Record<Language, SpeechSynthesisVoice>> = {};
 let speechSessionNonce = 0;
-const FEMALE_VOICE_HINTS = [
-  'female',
-  'woman',
-  'girl',
-  'zira',
-  'hazel',
-  'susan',
-  'sara',
-  'salma',
-  'leila',
-  'layla',
-  'amira',
-  'mariam',
-  'maryam',
-  'hana',
+const ARABIC_EGYPTIAN_LOCALE = 'ar-EG';
+const EGYPTIAN_VOICE_HINTS = [
+  'egypt',
+  'egyptian',
+  'misr',
+  'masr',
+  'ar-eg',
   'hoda',
-  'noura',
-  'noora',
-  'fatima',
-  'fatma',
-];
-const MALE_VOICE_HINTS = [
-  'male',
-  'man',
-  'boy',
-  'david',
-  'mark',
-  'alex',
+  'salma',
   'maged',
-  'majid',
+  'naayf',
   'tarik',
   'tarek',
-  'naayf',
-  'fahad',
-  'omar',
-  'khalid',
-  'yousef',
-  'yusuf',
+  'amira',
 ];
+const HIGH_QUALITY_HINTS = ['natural', 'neural', 'wavenet', 'studio', 'enhanced', 'premium', 'online'];
 
 function hasNameHint(value: string, hints: string[]): boolean {
   return hints.some((hint) => value.includes(hint));
+}
+
+function isEgyptianVoice(voice: SpeechSynthesisVoice): boolean {
+  const lang = voice.lang.toLowerCase();
+  const name = voice.name.toLowerCase();
+  return lang === ARABIC_EGYPTIAN_LOCALE.toLowerCase() || /^ar-eg\b/.test(lang) || hasNameHint(name, EGYPTIAN_VOICE_HINTS);
 }
 
 function splitForSpeech(text: string): string[] {
@@ -241,16 +441,16 @@ function scoreVoice(voice: SpeechSynthesisVoice, language: Language): number {
 
   let score = 0;
   if (lang.startsWith(langPrefix)) score += 25;
-  if (language === 'ar' && /(ar-sa|ar-eg|ar-ae|ar-jo|ar)\b/.test(lang)) score += 8;
+  if (language === 'ar' && lang === ARABIC_EGYPTIAN_LOCALE.toLowerCase()) score += 64;
+  if (language === 'ar' && /^ar-eg\b/.test(lang)) score += 50;
+  if (language === 'ar' && /(ar-sa|ar-ae|ar-jo|ar)\b/.test(lang)) score += 4;
   if (voice.localService) score -= 1;
-  if (!voice.localService) score += 5;
+  if (!voice.localService) score += 7;
 
-  if (/(natural|neural|premium|enhanced|online|wavenet|studio)/.test(name)) score += 11;
+  if (hasNameHint(name, HIGH_QUALITY_HINTS)) score += 16;
   if (/(google|microsoft|samsung|apple)/.test(name)) score += 4;
-  if (language === 'ar' && /(arabic|arabi|hoda|salma|amira|leila|layla|maryam|mariam)/.test(name)) score += 4;
-  if (/(compact|espeak|festival|robot|siri compact)/.test(name)) score -= 14;
-  if (hasNameHint(name, FEMALE_VOICE_HINTS)) score += 22;
-  if (hasNameHint(name, MALE_VOICE_HINTS)) score -= 28;
+  if (language === 'ar' && hasNameHint(name, EGYPTIAN_VOICE_HINTS)) score += 12;
+  if (/(compact|espeak|festival|robot|siri compact|offline basic)/.test(name)) score -= 18;
 
   return score;
 }
@@ -294,10 +494,12 @@ async function pickBestVoice(language: Language): Promise<SpeechSynthesisVoice |
     return language === 'ar' ? lang.startsWith('ar') : lang.startsWith('en');
   });
   const pool = filtered.length ? filtered : voices;
+  const preferredEgyptianPool = language === 'ar' ? pool.filter((voice) => isEgyptianVoice(voice)) : pool;
+  const scoringPool = preferredEgyptianPool.length ? preferredEgyptianPool : pool;
 
   let best: SpeechSynthesisVoice | undefined;
   let bestScore = -Infinity;
-  for (const voice of pool) {
+  for (const voice of scoringPool) {
     const score = scoreVoice(voice, language);
     if (score > bestScore) {
       bestScore = score;
@@ -314,10 +516,10 @@ async function pickBestVoice(language: Language): Promise<SpeechSynthesisVoice |
 function speakChunk(chunk: string, language: Language, voice?: SpeechSynthesisVoice): Promise<void> {
   return new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
+    utterance.lang = language === 'ar' ? ARABIC_EGYPTIAN_LOCALE : 'en-US';
     utterance.voice = voice ?? null;
-    utterance.rate = language === 'ar' ? 0.95 : 0.98;
-    utterance.pitch = language === 'ar' ? 1.05 : 1.02;
+    utterance.rate = language === 'ar' ? 0.9 : 0.98;
+    utterance.pitch = language === 'ar' ? 1 : 1.02;
     utterance.volume = 1;
     utterance.onend = () => resolve();
     utterance.onerror = () => resolve();
@@ -439,7 +641,7 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     })();
   }, [aiPlayers, open]);
 
-  const canUseAi = Boolean(settings?.aiEnabled && settings.aiApiKey?.trim());
+  const canUseAi = Boolean(settings?.aiEnabled);
   const canVoiceIn = Boolean(settings?.aiVoiceInputEnabled);
   const canVoiceOut = Boolean(settings?.aiVoiceOutputEnabled && settings?.soundEnabled);
 
@@ -453,9 +655,11 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     const existingThreads = current.ai?.threads ?? {};
     const baseThread = existingThreads[aiId] ?? buildEmptyThread();
     const appended = messagesToAppend.map((message) => ({ ...message, at: Date.now() }));
+    const mergedMessages = [...(baseThread.messages ?? []), ...appended];
     const nextThread: AiThreadState = {
       ...baseThread,
-      messages: [...(baseThread.messages ?? []), ...appended],
+      messages: mergedMessages,
+      summary: buildThreadSummary(mergedMessages),
     };
 
     await updateActiveMatch({
@@ -469,7 +673,7 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     });
   }
 
-  async function handleVoiceCommand(utterance: string) {
+  async function handleVoiceCommand(utterance: string, recognitionConfidence = 0.75) {
     const targetAi = resolveAiTarget(utterance, aiPlayers);
     if (!targetAi) {
       return;
@@ -486,7 +690,8 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
       return;
     }
 
-    const cleanedText = stripWakePhrase(utterance, targetAi.name);
+    const config = runtimeConfigFromSettings(settings);
+    let cleanedText = stripWakePhrase(utterance, targetAi.name);
     if (!cleanedText) {
       setError(t('aiVoiceNeedPrompt'));
       return;
@@ -495,8 +700,15 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     setError('');
     setStatus('processing');
 
+    if (shouldRunTranscriptRefine(cleanedText, recognitionConfidence)) {
+      try {
+        cleanedText = await refineTranscriptWithAi(config, language, cleanedText, targetAi.name);
+      } catch {
+        // ignore transcript refine failures to keep the voice loop fast.
+      }
+    }
+
     try {
-      const config = runtimeConfigFromSettings(settings);
       const context = buildContext(activeMatch, targetAi, language, playerMap);
       const baseThread = activeMatch.ai?.threads?.[targetAi.id] ?? buildEmptyThread();
 
@@ -515,7 +727,7 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     }
   }
 
-  function startListening() {
+  async function startListening() {
     if (!canVoiceIn) {
       setError(t('aiVoiceInputDisabled'));
       return;
@@ -532,40 +744,92 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     }
 
     setError('');
+    setStatus('processing');
+
+    const micReady = await primeMicrophoneCapture();
+    if (!micReady) {
+      setStatus('idle');
+      setError(t('aiVoiceMicAccessError'));
+      return;
+    }
+
     setStatus('listening');
 
     const recognition = new SpeechRecognitionCtor();
     recognitionRef.current = recognition;
-    recognition.lang = language === 'ar' ? 'ar-SA' : 'en-US';
+    recognition.lang = language === 'ar' ? ARABIC_EGYPTIAN_LOCALE : 'en-US';
     recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
+    recognition.maxAlternatives = 3;
     recognition.continuous = false;
-    let finalText = '';
+    const hypotheses: TranscriptHypothesis[] = [];
+    const finalSegments: string[] = [];
+    let finalConfidenceSum = 0;
+    let finalCount = 0;
+    let latestInterim = '';
 
     recognition.onresult = (event: SpeechRecognitionEventLike) => {
       const startIndex = event.resultIndex ?? 0;
       const results = event.results ?? [];
       for (let i = startIndex; i < results.length; i += 1) {
-        const transcript = results[i]?.[0]?.transcript?.toString().trim() ?? '';
-        if (!transcript) {
+        const result = results[i];
+        const isFinal = Boolean(result?.isFinal);
+        const alternatives = Math.min(result?.length ?? 0, 3);
+
+        for (let altIndex = 0; altIndex < alternatives; altIndex += 1) {
+          const alternative = result?.[altIndex];
+          const transcript = cleanTranscriptText(alternative?.transcript?.toString().trim() ?? '');
+          if (!transcript) {
+            continue;
+          }
+          const rawConfidence = alternative?.confidence;
+          const fallbackConfidence = isFinal ? 0.78 - altIndex * 0.08 : 0.56 - altIndex * 0.06;
+          const confidence =
+            typeof rawConfidence === 'number' && Number.isFinite(rawConfidence)
+              ? Math.max(0, Math.min(1, rawConfidence))
+              : Math.max(0.1, fallbackConfidence);
+
+          hypotheses.push({ text: transcript, confidence, isFinal });
+        }
+
+        const primary = cleanTranscriptText(result?.[0]?.transcript?.toString().trim() ?? '');
+        if (!primary) {
           continue;
         }
-        const isFinal = Boolean((results as unknown as ArrayLike<{ isFinal?: boolean }>)[i]?.isFinal);
+
         if (isFinal) {
-          finalText = `${finalText} ${transcript}`.trim();
+          finalSegments.push(primary);
+          const primaryConfidence = result?.[0]?.confidence;
+          finalConfidenceSum +=
+            typeof primaryConfidence === 'number' && Number.isFinite(primaryConfidence)
+              ? Math.max(0, Math.min(1, primaryConfidence))
+              : 0.78;
+          finalCount += 1;
+        } else {
+          latestInterim = primary;
         }
       }
     };
 
-    recognition.onerror = () => {
-      setError(t('aiVoiceError'));
+    recognition.onerror = (event: SpeechRecognitionEventLike) => {
+      setError(mapSpeechRecognitionError(event.error, t));
       setStatus('idle');
     };
 
     recognition.onend = () => {
       setStatus('idle');
-      if (finalText.trim()) {
-        void handleVoiceCommand(finalText.trim());
+
+      const joinedFinal = cleanTranscriptText(finalSegments.join(' '));
+      if (joinedFinal) {
+        const averagedConfidence = finalCount ? finalConfidenceSum / finalCount : 0.78;
+        hypotheses.push({ text: joinedFinal, confidence: averagedConfidence, isFinal: true });
+      }
+      if (latestInterim) {
+        hypotheses.push({ text: latestInterim, confidence: 0.58, isFinal: false });
+      }
+
+      const picked = pickBestTranscript(hypotheses, aiPlayers);
+      if (picked.text.trim()) {
+        void handleVoiceCommand(picked.text.trim(), picked.confidence);
         return;
       }
       setError(t('aiVoiceNoSpeech'));
@@ -676,12 +940,12 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
                 stopListening();
                 return;
               }
-              if (speaking) {
-                stopSpeaking();
-                return;
-              }
-              startListening();
-            }}
+      if (speaking) {
+        stopSpeaking();
+        return;
+      }
+      void startListening();
+    }}
             disabled={!canVoiceIn || status === 'processing'}
           >
             {status === 'processing'

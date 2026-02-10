@@ -52,7 +52,7 @@ export function PlaySetupScreen() {
   }, [players]);
 
   const hasAiSelected = selectedPlayers.some((id) => playerMap.get(id)?.kind === 'ai');
-  const aiReady = !hasAiSelected || (settings?.aiEnabled && Boolean(settings.aiApiKey?.trim()));
+  const aiReady = !hasAiSelected || Boolean(settings?.aiEnabled);
 
   useEffect(() => {
     void wordsUsageSummary().then(setUsageSummary);

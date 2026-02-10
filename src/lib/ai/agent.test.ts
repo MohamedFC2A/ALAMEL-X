@@ -94,7 +94,7 @@ describe('ai agent', () => {
     expect(choice).toBe('p2');
   });
 
-  it('keeps chat replies concise and tactical', async () => {
+  it('keeps chat replies concise and tactical by default', async () => {
     const thread: AiThreadState = { messages: [], summary: '' };
     const context = {
       language: 'ar' as const,
@@ -107,6 +107,23 @@ describe('ai agent', () => {
     chatCompleteMock.mockResolvedValueOnce('الأثر واضح جدًا. راقب طريقة الوصف. واسحب النقاش بعيدًا عن السؤال المباشر.');
 
     const result = await generateChatReply(config, context, thread, 'قول حاجة قوية');
+    const sentenceCount = result.reply.split(/(?<=[.!؟])/u).filter(Boolean).length;
+    expect(sentenceCount).toBeLessThanOrEqual(3);
+  });
+
+  it('respects short reply length setting for tighter output', async () => {
+    const thread: AiThreadState = { messages: [], summary: '' };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'citizen' as const,
+      category: 'أماكن',
+      secretWord: 'ميدان عام',
+    };
+
+    chatCompleteMock.mockResolvedValueOnce('الأثر واضح جدًا. راقب طريقة الوصف. واسحب النقاش بعيدًا عن السؤال المباشر.');
+
+    const result = await generateChatReply({ ...config, aiReplyLength: 'short' }, context, thread, 'قول حاجة قوية');
     const sentenceCount = result.reply.split(/(?<=[.!؟])/u).filter(Boolean).length;
     expect(sentenceCount).toBeLessThanOrEqual(2);
   });
