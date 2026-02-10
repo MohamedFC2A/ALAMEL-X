@@ -588,3 +588,19 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - Updated existing guess test to use realistic thread evidence + confidence.
 - Added test: invalid model guess response falls back to evidence-based option.
 - Added test: overconfident but weakly supported model guess is ignored in favor of evidence-backed choice.
+## Progress Log
+- Added persistent adaptive AI memory in settings (`GlobalSettings.aiAdaptiveStats`) to accumulate match-level performance and tactical memory.
+- Updated match finalization (`completeActiveMatch`) to auto-learn from each finished round: win stats, capture/guess outcomes, signal strength, and memory snippets from the round.
+- Upgraded agent prompt/runtime to use adaptive stats directly, including historical tactical memory and dynamic memory-depth boosts based on accumulated experience.
+- Added utterance-intent classification in discussion helpers (`classifyUtterance`) to distinguish question/answer/statement and whether AI is being addressed.
+- Integrated intent classification into `useAiDiscussionOrchestrator` so AI replies more human-like to real questions (including binary yes/no) and avoids random responses.
+
+## Validation Update (Adaptive Intelligence + Intent)
+- `npm run test -- src/lib/ai/agent.test.ts src/lib/ai/discussion-orchestrator.test.ts`: pass.
+- `npm run test`: pass (53 tests).
+- `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.
+
+## Added Tests
+- Added discussion intent classification tests (directed question vs short answer).
+- Added adaptive-memory prompt test to ensure historical directives are injected when stats exist.

@@ -40,6 +40,20 @@ export const defaultSettings: GlobalSettings = {
   aiAutoFacilitatorEnabled: true,
   aiSilenceThresholdMs: 6000,
   aiInterventionRestMs: 9000,
+  aiAdaptiveStats: {
+    matchesPlayed: 0,
+    spyRounds: 0,
+    citizenRounds: 0,
+    spyWins: 0,
+    citizenWins: 0,
+    successfulSpyGuesses: 0,
+    failedSpyGuesses: 0,
+    successfulCaptures: 0,
+    missedCaptures: 0,
+    averageSignalStrength: 0,
+    memoryBank: [],
+    updatedAt: Date.now(),
+  },
 };
 
 export const defaultAccessibility = {

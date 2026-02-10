@@ -15,6 +15,21 @@ export type HintMode = 'weak' | 'normal' | 'off';
 
 export type Winner = 'citizens' | 'spies';
 
+export interface AiAdaptiveStats {
+  matchesPlayed: number;
+  spyRounds: number;
+  citizenRounds: number;
+  spyWins: number;
+  citizenWins: number;
+  successfulSpyGuesses: number;
+  failedSpyGuesses: number;
+  successfulCaptures: number;
+  missedCaptures: number;
+  averageSignalStrength: number;
+  memoryBank: string[];
+  updatedAt: number;
+}
+
 export interface PlayerAccessibility {
   shortSightedMode: boolean;
   longSightedMode: boolean;
@@ -72,6 +87,7 @@ export interface GlobalSettings {
   aiAutoFacilitatorEnabled: boolean;
   aiSilenceThresholdMs: number;
   aiInterventionRestMs: number;
+  aiAdaptiveStats: AiAdaptiveStats;
 }
 
 export interface WordEntry {

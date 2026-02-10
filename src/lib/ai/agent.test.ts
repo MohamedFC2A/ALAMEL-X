@@ -276,4 +276,49 @@ describe('ai agent', () => {
     expect(result.reply).toContain('مش متأكد');
     expect(result.reply).not.toMatch(/أكيد|مؤكد/u);
   });
+
+  it('injects adaptive memory instructions when historical stats exist', async () => {
+    const thread: AiThreadState = { messages: [], summary: '' };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'citizen' as const,
+      category: 'أماكن',
+      secretWord: 'ميدان عام',
+    };
+
+    chatCompleteMock.mockResolvedValueOnce('تمام، خلينا نركز في التفاصيل.');
+
+    await generateChatReply(
+      {
+        ...config,
+        aiAdaptiveStats: {
+          matchesPlayed: 9,
+          spyRounds: 12,
+          citizenRounds: 21,
+          spyWins: 4,
+          citizenWins: 5,
+          successfulSpyGuesses: 2,
+          failedSpyGuesses: 3,
+          successfulCaptures: 5,
+          missedCaptures: 4,
+          averageSignalStrength: 58,
+          memoryBank: ['أماكن | التصويت قدر يحدد الجاسوس | الجاسوس خمّن غلط | الفائز: citizens'],
+          updatedAt: Date.now(),
+        },
+      },
+      context,
+      thread,
+      'قول ملاحظة سريعة',
+    );
+
+    const payload = chatCompleteMock.mock.calls[0]?.[0];
+    const combinedSystem = payload.messages
+      .filter((entry: { role: string; content: string }) => entry.role === 'system')
+      .map((entry: { content: string }) => entry.content)
+      .join('\n');
+
+    expect(combinedSystem).toContain('خبرة تراكمية: لعبت 9 جولة سابقة.');
+    expect(combinedSystem).toContain('ذاكرة تكتيكية من جولات سابقة');
+  });
 });

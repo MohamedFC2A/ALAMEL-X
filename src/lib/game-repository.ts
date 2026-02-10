@@ -1,6 +1,7 @@
 import type {
   ActiveMatch,
   ActiveMatchAiState,
+  AiAdaptiveStats,
   GlobalSettings,
   Match,
   MatchRecord,
@@ -9,7 +10,7 @@ import type {
   Player,
   Winner,
 } from '../types';
-import { defaultAccessibility, db, ensureSettings } from './db';
+import { defaultAccessibility, db, defaultSettings, ensureSettings } from './db';
 import { createId, shuffle } from './utils';
 import { loadWordPack, pickBalancedUnusedWord } from './word-engine';
 import { extractCoreWord, formatWordForDisplay, normalizeWord } from './word-format';
@@ -190,6 +191,99 @@ function similarityScore(candidate: string, reference: string): number {
 
   const prefixBonus = leftTokens[0] === rightTokens[0] ? 0.35 : 0;
   return shared / Math.max(leftTokens.length, rightTokens.length) + prefixBonus;
+}
+
+function normalizeAdaptiveStats(stats: AiAdaptiveStats | undefined): AiAdaptiveStats {
+  const fallback = defaultSettings.aiAdaptiveStats;
+  if (!stats) {
+    return { ...fallback, memoryBank: [...fallback.memoryBank], updatedAt: Date.now() };
+  }
+  return {
+    matchesPlayed: Number.isFinite(stats.matchesPlayed) ? Math.max(0, stats.matchesPlayed) : 0,
+    spyRounds: Number.isFinite(stats.spyRounds) ? Math.max(0, stats.spyRounds) : 0,
+    citizenRounds: Number.isFinite(stats.citizenRounds) ? Math.max(0, stats.citizenRounds) : 0,
+    spyWins: Number.isFinite(stats.spyWins) ? Math.max(0, stats.spyWins) : 0,
+    citizenWins: Number.isFinite(stats.citizenWins) ? Math.max(0, stats.citizenWins) : 0,
+    successfulSpyGuesses: Number.isFinite(stats.successfulSpyGuesses) ? Math.max(0, stats.successfulSpyGuesses) : 0,
+    failedSpyGuesses: Number.isFinite(stats.failedSpyGuesses) ? Math.max(0, stats.failedSpyGuesses) : 0,
+    successfulCaptures: Number.isFinite(stats.successfulCaptures) ? Math.max(0, stats.successfulCaptures) : 0,
+    missedCaptures: Number.isFinite(stats.missedCaptures) ? Math.max(0, stats.missedCaptures) : 0,
+    averageSignalStrength: Number.isFinite(stats.averageSignalStrength) ? Math.max(0, stats.averageSignalStrength) : 0,
+    memoryBank: Array.isArray(stats.memoryBank) ? stats.memoryBank.slice(0, 36) : [],
+    updatedAt: Number.isFinite(stats.updatedAt) ? stats.updatedAt : Date.now(),
+  };
+}
+
+function estimateMatchSignalStrength(active: ActiveMatch): number {
+  const aiThreads = Object.values(active.ai?.threads ?? {});
+  if (!aiThreads.length) {
+    return 0;
+  }
+
+  let total = 0;
+  for (const thread of aiThreads) {
+    const userMessages = (thread.messages ?? []).filter((entry) => entry.from === 'user').length;
+    const aiMessages = (thread.messages ?? []).filter((entry) => entry.from === 'ai').length;
+    const summaryLen = (thread.summary ?? '').trim().length;
+    total += Math.min(10, userMessages) * 4 + Math.min(10, aiMessages) * 2 + Math.min(120, summaryLen) * 0.1;
+  }
+  return Math.round(total / aiThreads.length);
+}
+
+function buildAdaptiveMemoryEntry(active: ActiveMatch, winner: Winner): string {
+  const roleSummary =
+    active.match.spyIds.length > 1
+      ? `عدد الجواسيس كان ${active.match.spyIds.length}`
+      : 'كان في جاسوس واحد';
+  const voteSummary =
+    active.voteOutcome === 'captured'
+      ? 'التصويت قدر يحدد الجاسوس'
+      : active.voteOutcome === 'missed'
+        ? 'التصويت فشل في تحديد الجاسوس'
+        : 'مرحلة التصويت انتهت';
+  const guessSummary = active.spyGuess
+    ? active.spyGuessCorrect
+      ? 'الجاسوس خمّن صح'
+      : 'الجاسوس خمّن غلط'
+    : active.guessTimedOut
+      ? 'الجاسوس ما خمّنش في الوقت'
+      : 'مافيش تخمين واضح';
+
+  return `${active.match.category} | ${roleSummary} | ${voteSummary} | ${guessSummary} | الفائز: ${winner}`;
+}
+
+function mergeAdaptiveStats(
+  current: AiAdaptiveStats | undefined,
+  active: ActiveMatch,
+  winner: Winner,
+): AiAdaptiveStats {
+  const base = normalizeAdaptiveStats(current);
+  const isSpyWin = winner === 'spies';
+  const spyCount = active.match.spyIds.length;
+  const signal = estimateMatchSignalStrength(active);
+  const nextMatches = base.matchesPlayed + 1;
+
+  const memoryEntry = buildAdaptiveMemoryEntry(active, winner);
+  const nextMemoryBank = [memoryEntry, ...base.memoryBank].slice(0, 30);
+
+  const spyGuessAttempted = active.resolutionStage === 'result' || Boolean(active.spyGuess) || Boolean(active.guessTimedOut);
+  const guessSuccess = Boolean(active.spyGuess) && active.spyGuessCorrect;
+
+  return {
+    ...base,
+    matchesPlayed: nextMatches,
+    spyRounds: base.spyRounds + spyCount,
+    citizenRounds: base.citizenRounds + Math.max(0, active.match.playerIds.length - spyCount),
+    spyWins: base.spyWins + (isSpyWin ? 1 : 0),
+    citizenWins: base.citizenWins + (!isSpyWin ? 1 : 0),
+    successfulSpyGuesses: base.successfulSpyGuesses + (guessSuccess ? 1 : 0),
+    failedSpyGuesses: base.failedSpyGuesses + (spyGuessAttempted && !guessSuccess ? 1 : 0),
+    successfulCaptures: base.successfulCaptures + (active.voteOutcome === 'captured' ? 1 : 0),
+    missedCaptures: base.missedCaptures + (active.voteOutcome === 'missed' ? 1 : 0),
+    averageSignalStrength: Number(((base.averageSignalStrength * base.matchesPlayed + signal) / nextMatches).toFixed(2)),
+    memoryBank: nextMemoryBank,
+    updatedAt: Date.now(),
+  };
 }
 
 function mapRelatedWords(words: string[], relatedList: string[]): string[] {
@@ -465,6 +559,8 @@ export async function completeActiveMatch(): Promise<MatchRecord> {
     throw new Error('NO_ACTIVE_MATCH');
   }
 
+  const settings = await ensureSettings();
+
   const citizensIdentified = computeVoteOutcome(active);
   const winner = resolveWinner(citizensIdentified, active.spyGuessCorrect);
 
@@ -490,9 +586,17 @@ export async function completeActiveMatch(): Promise<MatchRecord> {
     decoysAr: active.decoysAr,
   };
 
-  await db.transaction('rw', db.matches, db.activeMatch, db.players, async () => {
+  const nextAdaptiveStats = mergeAdaptiveStats(settings.aiAdaptiveStats, active, winner);
+
+  await db.transaction('rw', db.matches, db.activeMatch, db.players, db.settings, async () => {
     await db.matches.put(record);
     await updatePlayerStats(active.match, winner);
+    await db.settings.put({
+      ...settings,
+      aiAdaptiveStats: nextAdaptiveStats,
+      id: 'global',
+      theme: 'onyx',
+    });
     await db.activeMatch.delete('active');
   });
 

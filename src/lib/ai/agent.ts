@@ -1,6 +1,6 @@
 import { chatComplete, DeepSeekError } from './deepseek-client';
 import { extractCoreWord, normalizeWord } from '../word-format';
-import type { AiHumanMode, AiReplyLength, AiThreadState, GlobalSettings, Language, Player } from '../../types';
+import type { AiAdaptiveStats, AiHumanMode, AiReplyLength, AiThreadState, GlobalSettings, Language, Player } from '../../types';
 
 export type AiRole = 'citizen' | 'spy';
 
@@ -13,6 +13,7 @@ export interface AiRuntimeConfig {
   aiReplyLength?: AiReplyLength;
   aiInitiativeLevel?: number;
   aiMemoryDepth?: number;
+  aiAdaptiveStats?: AiAdaptiveStats;
 }
 
 export interface AiMatchContext {
@@ -107,7 +108,49 @@ function getInitiativeLevel(config: AiRuntimeConfig): number {
 }
 
 function getMemoryDepth(config: AiRuntimeConfig): number {
-  return clampNumber(config.aiMemoryDepth, 8, 24, 14);
+  const base = clampNumber(config.aiMemoryDepth, 8, 24, 14);
+  const adaptive = config.aiAdaptiveStats;
+  if (!adaptive) {
+    return base;
+  }
+  const matchBoost = Math.min(6, Math.floor(Math.max(0, adaptive.matchesPlayed) / 4));
+  const signalBoost = Math.min(4, Math.floor(Math.max(0, adaptive.averageSignalStrength) / 32));
+  return Math.max(8, Math.min(30, base + matchBoost + signalBoost));
+}
+
+function buildAdaptiveDirective(stats: AiAdaptiveStats | undefined): string[] {
+  if (!stats || stats.matchesPlayed <= 0) {
+    return [];
+  }
+
+  const spyWinRate = stats.matchesPlayed > 0 ? Math.round((stats.spyWins / stats.matchesPlayed) * 100) : 0;
+  const captureRate =
+    stats.successfulCaptures + stats.missedCaptures > 0
+      ? Math.round((stats.successfulCaptures / (stats.successfulCaptures + stats.missedCaptures)) * 100)
+      : 0;
+  const guessAccuracy =
+    stats.successfulSpyGuesses + stats.failedSpyGuesses > 0
+      ? Math.round((stats.successfulSpyGuesses / (stats.successfulSpyGuesses + stats.failedSpyGuesses)) * 100)
+      : 0;
+
+  const memoryLines = (stats.memoryBank ?? [])
+    .slice(0, 4)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .map((line) => `- ${line}`);
+
+  const lines = [
+    `خبرة تراكمية: لعبت ${stats.matchesPlayed} جولة سابقة.`,
+    `مؤشرات الأداء: SpyWin=${spyWinRate}% | CaptureRate=${captureRate}% | SpyGuessAcc=${guessAccuracy}% | Signal=${Math.round(stats.averageSignalStrength)}.`,
+    'طوّر طريقتك كل جولة: لو الإشارات ضعيفة اسأل أوضح؛ لو الإشارات قوية كن أكثر حسماً.',
+  ];
+
+  if (memoryLines.length > 0) {
+    lines.push('ذاكرة تكتيكية من جولات سابقة:');
+    lines.push(...memoryLines);
+  }
+
+  return lines;
 }
 
 function buildHumanModeDirective(mode: AiHumanMode): string {
@@ -156,6 +199,7 @@ function systemPrompt(context: AiMatchContext, config: AiRuntimeConfig): string 
     buildInitiativeDirective(initiativeLevel),
     'تعاون مع الفريق بطريقة غير مباشرة: قدّم إشارات ذكية بدل الشرح المكشوف.',
     'اعتبر أن مدخلات المستخدم صوتية وقد تحتوي أخطاء نطق/إملاء: استنتج المقصود وصحّح الفهم ضمنيًا.',
+    ...buildAdaptiveDirective(config.aiAdaptiveStats),
   ];
 
   if (context.role === 'citizen') {
@@ -212,6 +256,7 @@ export function runtimeConfigFromSettings(settings: GlobalSettings): AiRuntimeCo
     aiReplyLength: settings.aiReplyLength,
     aiInitiativeLevel: settings.aiInitiativeLevel,
     aiMemoryDepth: settings.aiMemoryDepth,
+    aiAdaptiveStats: settings.aiAdaptiveStats,
   };
 }
 

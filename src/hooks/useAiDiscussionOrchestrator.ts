@@ -7,9 +7,9 @@ import { updateActiveMatch } from '../lib/game-repository';
 import { DeepSeekError } from '../lib/ai/deepseek-client';
 import {
   asNamedLine,
+  classifyUtterance,
   DEFAULT_POST_QUESTION_ANSWER_WINDOW_MS,
   DEFAULT_SILENCE_THRESHOLD_MS,
-  isYesNoQuestion,
   pickNextTargetPlayerId,
   scoreSuspicionFromTranscript,
   shouldTriggerSilenceIntervention,
@@ -403,7 +403,15 @@ export function useAiDiscussionOrchestrator({
         return;
       }
 
-      if (isYesNoQuestion(transcript)) {
+      const utterance = classifyUtterance(transcript, {
+        activeAiName: aiPlayer.name,
+        pendingTargetName: pendingTargetId ? speakerName : undefined,
+      });
+      const shouldAiReplyToQuestion =
+        utterance.kind === 'question' &&
+        (utterance.addressedToAi || !pendingTargetId || utterance.expectsReplyFromAi);
+
+      if (utterance.isBinaryQuestion && shouldAiReplyToQuestion) {
         const config = runtimeConfigFromSettings(settingsValue);
         const context = buildContext(active, aiPlayer, languageRef.current, playerMapRef.current);
         const thread = active.ai?.threads?.[aiPlayer.id] ?? buildEmptyThread();
@@ -414,6 +422,23 @@ export function useAiDiscussionOrchestrator({
         updateState({ lastIntervention: line });
         if (isDiscussionLive()) {
           await speakWithFallback(spoken);
+        }
+        pendingTargetRef.current = null;
+        pendingDeadlineRef.current = 0;
+        updateState({ pendingTargetPlayerId: '', pendingTargetName: '', status: 'listening' });
+        return;
+      }
+
+      if (shouldAiReplyToQuestion) {
+        const config = runtimeConfigFromSettings(settingsValue);
+        const context = buildContext(active, aiPlayer, languageRef.current, playerMapRef.current);
+        const thread = active.ai?.threads?.[aiPlayer.id] ?? buildEmptyThread();
+        const { reply } = await generateChatReply(config, context, thread, transcript);
+        const line = asNamedLine(aiPlayer.name, reply);
+        await appendMessages(aiPlayer.id, [{ from: 'ai', text: line }]);
+        updateState({ lastIntervention: line });
+        if (isDiscussionLive()) {
+          await speakWithFallback(reply);
         }
         pendingTargetRef.current = null;
         pendingDeadlineRef.current = 0;

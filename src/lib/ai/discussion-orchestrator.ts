@@ -111,6 +111,75 @@ export function isYesNoQuestion(text: string): boolean {
   return binaryPatterns.some((pattern) => pattern.test(normalized));
 }
 
+function isInterrogative(text: string): boolean {
+  const normalized = normalizeSpeechText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  if (/[؟?]\s*$/.test(text.trim())) {
+    return true;
+  }
+
+  return /(^|\s)(ايه|ازاي|امتي|متى|فين|ليه|لماذا|هل|what|why|how|when|where|who)(\s|$)/i.test(normalized);
+}
+
+function isLikelyAnswer(text: string): boolean {
+  const normalized = normalizeSpeechText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  const words = normalized.split(' ').filter(Boolean);
+  if (words.length <= 2) {
+    return true;
+  }
+
+  return /(^|\s)(اه|ايوه|لا|مش|يمكن|تقريبا|غالبا|غالبًا|مش متاكد|مش متأكد|مش عارف|yes|no|maybe|probably)(\s|$)/u.test(
+    normalized,
+  );
+}
+
+function isDirectedToName(text: string, name: string | undefined): boolean {
+  if (!name?.trim()) {
+    return false;
+  }
+  const normalizedText = normalizeSpeechText(text);
+  const normalizedName = normalizeSpeechText(name);
+  if (!normalizedText || !normalizedName) {
+    return false;
+  }
+  return new RegExp(`(^|\\s)${normalizedName}(\\s|$)`, 'u').test(normalizedText);
+}
+
+export interface UtteranceClassification {
+  kind: 'question' | 'answer' | 'statement';
+  isBinaryQuestion: boolean;
+  addressedToAi: boolean;
+  expectsReplyFromAi: boolean;
+}
+
+export function classifyUtterance(
+  text: string,
+  options?: { activeAiName?: string; pendingTargetName?: string },
+): UtteranceClassification {
+  const interrogative = isInterrogative(text);
+  const binary = isYesNoQuestion(text);
+  const answerLike = isLikelyAnswer(text);
+  const addressedToAi = isDirectedToName(text, options?.activeAiName);
+  const pendingTargetNamed = isDirectedToName(text, options?.pendingTargetName);
+
+  const kind: UtteranceClassification['kind'] = interrogative ? 'question' : answerLike ? 'answer' : 'statement';
+  const expectsReplyFromAi = kind === 'question' && (addressedToAi || (!pendingTargetNamed && !options?.pendingTargetName));
+
+  return {
+    kind,
+    isBinaryQuestion: binary,
+    addressedToAi,
+    expectsReplyFromAi,
+  };
+}
+
 export function scoreSuspicionFromTranscript(text: string): number {
   const normalized = normalizeSpeechText(text);
   if (!normalized) {

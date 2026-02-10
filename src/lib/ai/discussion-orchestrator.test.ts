@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   asNamedLine,
+  classifyUtterance,
   isYesNoQuestion,
   pickNextTargetPlayerId,
   scoreSuspicionFromTranscript,
@@ -74,5 +75,27 @@ describe('discussion orchestrator helpers', () => {
 
   it('formats transcript lines with speaker name', () => {
     expect(asNamedLine('محمد', 'مش متأكد')).toBe('محمد: مش متأكد');
+  });
+
+  it('classifies directed ai questions correctly', () => {
+    const result = classifyUtterance('يا العميل صقر هل المكان ده مغلق؟', {
+      activeAiName: 'العميل صقر',
+      pendingTargetName: 'محمد',
+    });
+
+    expect(result.kind).toBe('question');
+    expect(result.addressedToAi).toBe(true);
+    expect(result.expectsReplyFromAi).toBe(true);
+    expect(result.isBinaryQuestion).toBe(true);
+  });
+
+  it('classifies short direct responses as answers', () => {
+    const result = classifyUtterance('أه غالبًا', {
+      activeAiName: 'العميل صقر',
+      pendingTargetName: 'محمد',
+    });
+
+    expect(result.kind).toBe('answer');
+    expect(result.expectsReplyFromAi).toBe(false);
   });
 });
