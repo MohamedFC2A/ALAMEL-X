@@ -90,7 +90,7 @@ function AnimatedRoutes() {
         className="route-stage"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -16 }}
+        exit={{ opacity: 0, y: -16, pointerEvents: 'none' }}
         transition={{ duration: 0.22 }}
       >
         <Routes location={location}>

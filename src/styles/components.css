@@ -139,7 +139,7 @@
     position: absolute;
     inset-block: var(--space-2);
     inset-inline-start: var(--space-2);
-    width: 3px;
+    width: 4px;
     border-radius: 2px;
     background: var(--accent);
 }
@@ -177,7 +177,7 @@
     border: 1px solid var(--stroke-1);
     background: var(--surface-2);
     color: var(--text-primary);
-    padding: 0.625rem 1rem;
+    padding: 0.75rem 1.25rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -186,6 +186,12 @@
     font-family: var(--font-hud);
     text-transform: uppercase;
     transition: border-color 150ms ease, background-color 150ms ease;
+    /* 
+       CRITICAL: Force pointer events to auto to override any parent's pointer-events: none
+       CRITICAL: manipulation optimizes touch response by disabling double-tap zoom delay 
+    */
+    pointer-events: auto !important;
+    touch-action: manipulation;
 }
 
 .game-button:hover:not(:disabled) {
@@ -222,7 +228,8 @@
     padding-block: var(--space-3);
     padding-inline: var(--space-4);
     border-radius: var(--radius-2);
-    font-size: clamp(1rem, 3.5vw, 1.25rem);
+    /* Responsive hero text */
+    font-size: clamp(1.1rem, 4vw, 1.35rem);
     font-weight: 700;
     letter-spacing: 0.08em;
     border-color: var(--accent);
@@ -407,6 +414,8 @@
     inset-block-end: var(--space-2);
     z-index: var(--z-sticky);
     margin-top: auto;
+    /* Extra padding for floating action bars on mobile */
+    padding-block-end: calc(var(--space-2) + env(safe-area-inset-bottom));
 }
 
 .reveal-action-bar {
@@ -415,6 +424,8 @@
     z-index: var(--z-sticky);
     margin-top: auto;
     border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+    /* Extra padding for floating action bars on mobile */
+    padding-block-end: calc(var(--space-2) + env(safe-area-inset-bottom));
 }
 
 .reveal-action-bar .action-main {
@@ -820,6 +831,8 @@ input[type='range'] {
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-4);
+    overflow: hidden;
+    /* Prevent spillover */
     font-size: 1.2rem;
     text-align: center;
     user-select: none;
@@ -1013,6 +1026,10 @@ input[type='range'] {
     letter-spacing: 0.06em;
     font-size: clamp(2.1rem, 11vw, 3.4rem);
     font-weight: 700;
+    /* Ensure long words break on mobile */
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.1;
 }
 
 .reveal-mask {
@@ -1508,6 +1525,14 @@ html[dir='rtl'] .reveal-mask-progress-fill {
 }
 
 @media (max-width: 420px) {
+
+    /* Tighter spacing for very small screens */
+    :root {
+        --space-1: 0.4rem;
+        --space-2: 0.6rem;
+        --space-3: 0.8rem;
+        --space-4: 1rem;
+    }
 
     .choice-grid {
         grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
