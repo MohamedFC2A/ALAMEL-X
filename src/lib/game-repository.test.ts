@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { assignSpies, buildGuessOptions, computeSpyGuessCorrect, resolveWinner } from './game-repository';
+import {
+  assignSpies,
+  buildGuessOptions,
+  computeSpyGuessCorrect,
+  computeVoteOutcome,
+  pickWinnerFromLeaders,
+  resolveWinner,
+  tallyBallots,
+} from './game-repository';
 import type { ActiveMatch } from '../types';
 import { formatWordForDisplay, normalizeWord } from './word-format';
 
@@ -102,5 +110,74 @@ describe('game-repository logic', () => {
       expect(options.some((option) => normalizeWord(option) === expected)).toBe(true);
       expect(new Set(options).size).toBe(options.length);
     }
+  });
+
+  it('tallies ballots and returns a unique leader when one exists', () => {
+    const { counts, leaders } = tallyBallots({
+      voterA: 'p1',
+      voterB: 'p1',
+      voterC: 'p2',
+    });
+
+    expect(counts).toEqual({ p1: 2, p2: 1 });
+    expect(leaders).toEqual(['p1']);
+  });
+
+  it('tallies ballots and returns multiple leaders on a tie', () => {
+    const { counts, leaders } = tallyBallots({
+      voterA: 'p1',
+      voterB: 'p2',
+    });
+
+    expect(counts).toEqual({ p1: 1, p2: 1 });
+    expect(leaders).toEqual(['p1', 'p2']);
+  });
+
+  it('breaks ties deterministically based on match id and round', () => {
+    const leaders = ['a', 'b', 'c'];
+    const winner1 = pickWinnerFromLeaders(leaders, 'match_123', 2);
+    const winner2 = pickWinnerFromLeaders(leaders, 'match_123', 2);
+    expect(leaders).toContain(winner1);
+    expect(winner1).toBe(winner2);
+  });
+
+  it('considers vote a capture only when the chosen winner is a spy', () => {
+    const activeMatch = {
+      id: 'active',
+      match: {
+        id: 'm1',
+        createdAt: Date.now(),
+        playerIds: ['p1', 'p2', 'p3', 'p4'],
+        spyIds: ['p2'],
+        wordId: 'w1',
+        category: 'Places',
+        status: 'resolution',
+      },
+      revealState: {
+        matchId: 'm1',
+        currentRevealIndex: 0,
+        revealedPlayerIds: [],
+        canBack: false,
+        phase: 'handoff',
+      },
+      uiPhaseLabel: 'resolution',
+      transitionLock: false,
+      resolutionStage: 'vote',
+      votedSpyIds: ['p2'],
+      spyGuess: '',
+      spyGuessCorrect: false,
+      spyGuessOptionsEn: [],
+      spyGuessOptionsAr: [],
+      wordTextEn: 'Golden Harbor',
+      wordTextAr: 'مكان 1',
+      spyHintEn: 'hint',
+      spyHintAr: 'تلميح',
+      decoysEn: [],
+      decoysAr: [],
+    } satisfies ActiveMatch;
+
+    expect(computeVoteOutcome(activeMatch)).toBe(true);
+    expect(computeVoteOutcome({ ...activeMatch, votedSpyIds: ['p1'] })).toBe(false);
+    expect(computeVoteOutcome({ ...activeMatch, votedSpyIds: [] })).toBe(false);
   });
 });

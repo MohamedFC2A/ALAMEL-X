@@ -53,6 +53,25 @@
     padding-inline: var(--space-2);
 }
 
+@media (max-height: 740px) {
+    .app-shell__content {
+        padding-block-start: var(--space-2);
+        padding-block-end: var(--space-2);
+    }
+
+    .screen-header {
+        padding: var(--space-2);
+    }
+
+    .screen-shell {
+        gap: var(--space-1);
+    }
+
+    .screen-scroll-region {
+        gap: var(--space-1);
+    }
+}
+
 .route-stage {
     width: var(--content-width);
     height: 100%;
@@ -105,27 +124,49 @@ main {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    overflow-y: auto;
     flex: 1;
     min-height: 0;
     padding-inline: var(--space-2);
-    padding-block-end: calc(80px + var(--space-3));
-    /* Height of Action Bar + extra padding */
+    overscroll-behavior: contain;
+}
+
+.screen-scroll-region--auto {
+    overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
 
-.screen-scroll-region::-webkit-scrollbar {
+.screen-scroll-region--none {
+    overflow: hidden;
+}
+
+.screen-scroll-region--reserve-footer {
+    padding-block-end: calc(80px + var(--space-3));
+    /* Height of Action Bar + extra padding */
+}
+
+.screen-scroll-region--auto::-webkit-scrollbar {
     width: 8px;
 }
 
-.screen-scroll-region::-webkit-scrollbar-track {
+.screen-scroll-region--auto::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.screen-scroll-region::-webkit-scrollbar-thumb {
+.screen-scroll-region--auto::-webkit-scrollbar-thumb {
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.24);
+}
+
+@media (max-width: 560px) {
+    .screen-scroll-region--auto {
+        scrollbar-width: none;
+    }
+
+    .screen-scroll-region--auto::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
 }
 
 .screen-shell input,

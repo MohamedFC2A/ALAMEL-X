@@ -311,6 +311,7 @@ export function RevealScreen() {
 
   return (
     <ScreenScaffold
+      scroll="none"
       title={t('roleHeader')}
       subtitle={t('handoff', { name: revealPlayer.name })}
       eyebrow={t('phaseRevealEyebrow')}

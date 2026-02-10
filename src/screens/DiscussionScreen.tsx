@@ -102,7 +102,7 @@ export function DiscussionScreen() {
   }
 
   return (
-    <ScreenScaffold title={t('discussion')} subtitle={t('discussionSubtitle')} eyebrow={t('phaseTalkEyebrow')}>
+    <ScreenScaffold scroll="none" title={t('discussion')} subtitle={t('discussionSubtitle')} eyebrow={t('phaseTalkEyebrow')}>
       <PhaseIndicator current={3} labels={[t('phaseSetup'), t('phaseReveal'), t('phaseTalk'), t('phaseResolve')]} />
 
       {activeMatch.match.status === 'ready' ? (
@@ -129,7 +129,7 @@ export function DiscussionScreen() {
         </section>
       )}
 
-      <PrimaryActionBar>
+      <PrimaryActionBar className="sticky-action-bar">
         <GameButton variant="ghost" onClick={() => void skipDiscussion()}>
           {t('skipTimer')}
         </GameButton>

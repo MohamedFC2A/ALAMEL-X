@@ -396,10 +396,18 @@
     animation: cardRise 360ms ease;
 }
 
+.sticky-action-bar {
+    position: sticky;
+    inset-block-end: var(--space-2);
+    z-index: var(--z-sticky);
+    margin-top: auto;
+}
+
 .reveal-action-bar {
     position: sticky;
     inset-block-end: var(--space-2);
     z-index: var(--z-sticky);
+    margin-top: auto;
     border-color: color-mix(in oklab, var(--accent) 40%, transparent);
 }
 
@@ -424,6 +432,7 @@
     display: flex;
     justify-content: flex-end;
     flex: 1;
+    gap: var(--space-2);
 }
 
 .actions-row {
@@ -1425,10 +1434,8 @@ html[dir='rtl'] .reveal-mask-progress-fill {
 
 @media (max-width: 420px) {
 
-    .player-select-grid,
-    .player-select-grid.compact,
     .choice-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
     }
 
     .primary-action-bar .action-main button,
@@ -1450,5 +1457,15 @@ html[dir='rtl'] .reveal-mask-progress-fill {
     .case-badge {
         min-height: 1.85rem;
         font-size: 0.7rem;
+    }
+}
+
+@media (max-height: 740px) {
+    .metric-chip {
+        padding: 0.65rem 0.85rem;
+    }
+
+    .pick-card {
+        padding: var(--space-2);
     }
 }

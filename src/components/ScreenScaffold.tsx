@@ -8,6 +8,8 @@ interface ScreenScaffoldProps {
   subtitle?: string;
   eyebrow?: string;
   backHome?: boolean;
+  scroll?: 'auto' | 'none';
+  scrollClassName?: string;
   children: ReactNode;
   className?: string;
 }
@@ -17,10 +19,13 @@ export function ScreenScaffold({
   subtitle,
   eyebrow,
   backHome = true,
+  scroll = 'auto',
+  scrollClassName = '',
   children,
   className = '',
 }: ScreenScaffoldProps) {
   const { t } = useTranslation();
+  const scrollModeClass = scroll === 'none' ? 'screen-scroll-region--none' : 'screen-scroll-region--auto';
 
   return (
     <main className={`screen-frame ${className}`.trim()}>
@@ -44,7 +49,9 @@ export function ScreenScaffold({
             </div>
           </div>
         </GlassCard>
-        <section className="screen-scroll-region">{children}</section>
+        <section className={`screen-scroll-region ${scrollModeClass} ${scrollClassName}`.trim()}>
+          {children}
+        </section>
       </div>
     </main>
   );

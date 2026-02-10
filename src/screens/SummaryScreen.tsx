@@ -16,7 +16,7 @@ export function SummaryScreen() {
 
   if (!latestMatch) {
     return (
-      <ScreenScaffold title={t('roundSummary')} subtitle={t('summaryUnavailable')}>
+      <ScreenScaffold scroll="none" title={t('roundSummary')} subtitle={t('summaryUnavailable')}>
         <GameButton variant="primary" size="lg" onClick={() => navigate('/')}>
           {t('returnHome')}
         </GameButton>
@@ -25,7 +25,7 @@ export function SummaryScreen() {
   }
 
   return (
-    <ScreenScaffold title={t('roundSummary')} subtitle={t('summarySubtitle')} eyebrow={t('phaseSummaryEyebrow')}>
+    <ScreenScaffold scroll="none" title={t('roundSummary')} subtitle={t('summarySubtitle')} eyebrow={t('phaseSummaryEyebrow')}>
       <PhaseIndicator current={4} labels={[t('phaseSetup'), t('phaseReveal'), t('phaseTalk'), t('phaseResolve')]} />
       <StatusBanner tone={latestMatch.result.winner === 'citizens' ? 'success' : 'danger'}>
         {latestMatch.result.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}
@@ -60,7 +60,7 @@ export function SummaryScreen() {
         </p>
       </section>
 
-      <PrimaryActionBar leading={<GameButton variant="ghost" onClick={() => navigate('/')}>{t('returnHome')}</GameButton>}>
+      <PrimaryActionBar className="sticky-action-bar" leading={<GameButton variant="ghost" onClick={() => navigate('/')}>{t('returnHome')}</GameButton>}>
         <GameButton variant="cta" size="lg" onClick={() => navigate('/play/setup')}>
           {t('quickReplay')}
         </GameButton>

@@ -207,6 +207,12 @@ export async function startMatch(playerIds: string[], spyCount: 1 | 2): Promise<
     transitionLock: false,
     resolutionStage: 'vote',
     votedSpyIds: [],
+    voteState: {
+      phase: 'handoff',
+      voterIndex: 0,
+      ballots: {},
+      round: 1,
+    },
     spyGuess: '',
     spyGuessCorrect: false,
     spyGuessOptionsEn: [],
@@ -284,9 +290,49 @@ export async function updateActiveMatch(patch: Partial<ActiveMatch>): Promise<vo
   });
 }
 
+export function tallyBallots(ballots: Record<string, string>): { counts: Record<string, number>; leaders: string[] } {
+  const counts: Record<string, number> = {};
+
+  for (const choice of Object.values(ballots)) {
+    if (!choice) {
+      continue;
+    }
+    counts[choice] = (counts[choice] ?? 0) + 1;
+  }
+
+  const values = Object.values(counts);
+  const max = values.length > 0 ? Math.max(...values) : 0;
+  const leaders = Object.entries(counts)
+    .filter(([, count]) => count === max)
+    .map(([id]) => id)
+    .sort();
+
+  return { counts, leaders };
+}
+
+function hashToUint32(input: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+export function pickWinnerFromLeaders(leaders: string[], matchId: string, round: 1 | 2): string {
+  if (leaders.length === 0) {
+    return '';
+  }
+  const seed = hashToUint32(`${matchId}:${round}`);
+  return leaders[seed % leaders.length];
+}
+
 export function computeVoteOutcome(activeMatch: ActiveMatch): boolean {
-  const voted = new Set(activeMatch.votedSpyIds);
-  return activeMatch.match.spyIds.every((spyId) => voted.has(spyId));
+  const winnerId = activeMatch.votedSpyIds[0];
+  if (!winnerId) {
+    return false;
+  }
+  return activeMatch.match.spyIds.includes(winnerId);
 }
 
 export function computeSpyGuessCorrect(activeMatch: ActiveMatch, guess: string): boolean {

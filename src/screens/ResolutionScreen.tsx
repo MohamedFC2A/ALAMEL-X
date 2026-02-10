@@ -7,7 +7,8 @@ import { db } from '../lib/db';
 import {
   completeActiveMatch,
   computeSpyGuessCorrect,
-  computeVoteOutcome,
+  pickWinnerFromLeaders,
+  tallyBallots,
   updateActiveMatch,
 } from '../lib/game-repository';
 import { useClockNow } from '../hooks/useClockNow';
@@ -31,7 +32,19 @@ export function ResolutionScreen() {
   const now = useClockNow();
   const guessMs = Math.max(10_000, (settings?.guessSeconds ?? 30) * 1000);
 
-  const [selectedVotes, setSelectedVotes] = useState<string[]>([]);
+  const voteStateKey = `${activeMatch?.voteState?.round ?? 1}:${activeMatch?.voteState?.voterIndex ?? 0}:${activeMatch?.voteState?.phase ?? 'handoff'}`;
+  const [ballotPickState, setBallotPickState] = useState<{ key: string; value: string }>({ key: '', value: '' });
+  const ballotPick = ballotPickState.key === voteStateKey ? ballotPickState.value : '';
+  const [ballotPageState, setBallotPageState] = useState<{ key: string; value: number }>({ key: '', value: 0 });
+  const ballotPage = ballotPageState.key === voteStateKey ? ballotPageState.value : 0;
+  const setBallotPick = (value: string) => setBallotPickState({ key: voteStateKey, value });
+  const setBallotPage = (value: number | ((prev: number) => number)) => {
+    setBallotPageState((prev) => {
+      const base = prev.key === voteStateKey ? prev.value : 0;
+      const nextValue = typeof value === 'function' ? value(base) : value;
+      return { key: voteStateKey, value: nextValue };
+    });
+  };
   const [guessInput, setGuessInput] = useState('');
   const guessTimeoutHandled = useRef(false);
 
@@ -95,60 +108,146 @@ export function ResolutionScreen() {
     }
   }, [activeMatch?.resolutionStage]);
 
+  useEffect(() => {
+    if (!activeMatch || activeMatch.resolutionStage !== 'vote' || activeMatch.voteState) {
+      return;
+    }
+
+    void updateActiveMatch({
+      votedSpyIds: [],
+      voteOutcome: undefined,
+      voteState: {
+        phase: 'handoff',
+        voterIndex: 0,
+        ballots: {},
+        round: 1,
+      },
+    });
+  }, [activeMatch]);
+
   if (!activeMatch) {
     return null;
   }
 
   const currentMatch = activeMatch;
-  const spyCount = currentMatch.match.spyIds.length;
-  const voteDraft = selectedVotes.length > 0 ? selectedVotes : currentMatch.votedSpyIds;
   const guessDraft = guessInput || currentMatch.spyGuess;
 
-  function toggleVote(playerId: string) {
-    const workingVotes = [...voteDraft];
-    if (workingVotes.includes(playerId)) {
-      setSelectedVotes(workingVotes.filter((id) => id !== playerId));
+  async function startBallot() {
+    const refreshed = await db.activeMatch.get('active');
+    if (!refreshed || refreshed.match.status !== 'resolution' || refreshed.resolutionStage !== 'vote' || !refreshed.voteState) {
       return;
     }
-    if (workingVotes.length >= spyCount) {
-      setSelectedVotes(workingVotes);
-      return;
-    }
-    setSelectedVotes([...workingVotes, playerId]);
+
+    await updateActiveMatch({
+      voteState: {
+        ...refreshed.voteState,
+        phase: 'ballot',
+      },
+    });
   }
 
-  async function submitVote() {
-    await updateActiveMatch({ votedSpyIds: voteDraft });
-
-    // Compute vote outcome
-    const refreshed = await db.activeMatch.get('active');
-    if (!refreshed) {
+  async function submitBallot() {
+    if (!ballotPick) {
       return;
     }
-    const updatedMatch = { ...refreshed, votedSpyIds: voteDraft };
-    const captured = computeVoteOutcome(updatedMatch);
 
-    if (captured) {
-      // Citizens caught spies → spy gets a chance to guess
+    const refreshed = await db.activeMatch.get('active');
+    if (!refreshed || refreshed.match.status !== 'resolution' || refreshed.resolutionStage !== 'vote' || !refreshed.voteState) {
+      return;
+    }
+
+    const voteState = refreshed.voteState;
+    const voterId = refreshed.match.playerIds[voteState.voterIndex];
+    if (!voterId) {
+      return;
+    }
+
+    const nextBallots = { ...voteState.ballots, [voterId]: ballotPick };
+    const isLastVoter = voteState.voterIndex >= refreshed.match.playerIds.length - 1;
+
+    if (!isLastVoter) {
       await updateActiveMatch({
-        resolutionStage: 'guess',
-        votedSpyIds: voteDraft,
-        voteOutcome: 'captured',
-        guessEndsAt: nowMs() + guessMs,
-        spyGuess: '',
-        spyGuessCorrect: false,
+        voteState: {
+          ...voteState,
+          phase: 'handoff',
+          voterIndex: voteState.voterIndex + 1,
+          ballots: nextBallots,
+        },
       });
-    } else {
-      // Citizens missed → spies win immediately, skip guess
+      return;
+    }
+
+    const { counts, leaders } = tallyBallots(nextBallots);
+    if (leaders.length === 0) {
       await updateActiveMatch({
         resolutionStage: 'result',
-        votedSpyIds: voteDraft,
+        votedSpyIds: [],
         voteOutcome: 'missed',
         winner: 'spies',
         spyGuess: '',
         spyGuessCorrect: false,
+        guessTimedOut: false,
+        voteState: {
+          ...voteState,
+          ballots: nextBallots,
+          lastTally: counts,
+        },
       });
+      return;
     }
+
+    if (leaders.length > 1 && voteState.round === 1) {
+      await updateActiveMatch({
+        votedSpyIds: [],
+        voteOutcome: undefined,
+        voteState: {
+          phase: 'handoff',
+          voterIndex: 0,
+          ballots: {},
+          round: 2,
+          candidates: leaders,
+          lastTally: counts,
+        },
+      });
+      return;
+    }
+
+    const winnerId =
+      leaders.length === 1 ? leaders[0] : pickWinnerFromLeaders(leaders, refreshed.match.id, voteState.round);
+    const captured = refreshed.match.spyIds.includes(winnerId);
+
+    if (captured) {
+      await updateActiveMatch({
+        resolutionStage: 'guess',
+        votedSpyIds: [winnerId],
+        voteOutcome: 'captured',
+        guessEndsAt: nowMs() + guessMs,
+        spyGuess: '',
+        spyGuessCorrect: false,
+        guessTimedOut: false,
+        voteState: {
+          ...voteState,
+          ballots: nextBallots,
+          lastTally: counts,
+        },
+      });
+      return;
+    }
+
+    await updateActiveMatch({
+      resolutionStage: 'result',
+      votedSpyIds: [winnerId],
+      voteOutcome: 'missed',
+      winner: 'spies',
+      spyGuess: '',
+      spyGuessCorrect: false,
+      guessTimedOut: false,
+      voteState: {
+        ...voteState,
+        ballots: nextBallots,
+        lastTally: counts,
+      },
+    });
   }
 
   async function submitGuess(selectedGuess: string) {
@@ -173,8 +272,33 @@ export function ResolutionScreen() {
     navigate('/play/summary');
   }
 
+  const voteState = currentMatch.voteState;
+  const voterId = voteState ? currentMatch.match.playerIds[voteState.voterIndex] : '';
+  const voter = voterId ? playerMap.get(voterId) ?? null : null;
+  const candidatesPerPage = 6;
+  const ballotCandidateIds = (voteState?.candidates ?? currentMatch.match.playerIds).filter((id) => id !== voterId);
+  const totalBallotPages = Math.max(1, Math.ceil(ballotCandidateIds.length / candidatesPerPage));
+  const clampedBallotPage = Math.min(ballotPage, totalBallotPages - 1);
+  const pageCandidates = ballotCandidateIds.slice(
+    clampedBallotPage * candidatesPerPage,
+    (clampedBallotPage + 1) * candidatesPerPage,
+  );
+
+  const tieWasBroken = (() => {
+    if (currentMatch.resolutionStage === 'vote' || voteState?.round !== 2 || !voteState.lastTally) {
+      return false;
+    }
+    const values = Object.values(voteState.lastTally);
+    if (values.length === 0) {
+      return false;
+    }
+    const max = Math.max(...values);
+    const leaders = Object.entries(voteState.lastTally).filter(([, count]) => count === max);
+    return leaders.length > 1;
+  })();
+
   return (
-    <ScreenScaffold title={t('spiesRevealed')} subtitle={currentMatch.match.spyIds.map((id) => playerMap.get(id)?.name ?? id).join(', ')} eyebrow={t('phaseResolveEyebrow')}>
+    <ScreenScaffold scroll="none" title={t('spiesRevealed')} eyebrow={t('phaseResolveEyebrow')}>
       <PhaseIndicator current={4} labels={[t('phaseSetup'), t('phaseReveal'), t('phaseTalk'), t('phaseResolve')]} />
       <section className="resolution-stage-hud panel-grid glass-card">
         <div className={`stage-pill ${currentMatch.resolutionStage === 'vote' ? 'active' : ''}`}>{t('stageVote')}</div>
@@ -183,46 +307,95 @@ export function ResolutionScreen() {
       </section>
 
       {currentMatch.resolutionStage === 'vote' ? (
-        <section className="glass-card phase-card section-card cinematic-panel">
-          <h2>{t('votePhase')}</h2>
-          <p>{t('pickSuspects', { count: spyCount })}</p>
-          <div className="player-select-grid compact">
-            {currentMatch.match.playerIds.map((id) => {
-              const player = playerMap.get(id);
-              if (!player) {
-                return null;
-              }
-              const picked = voteDraft.includes(id);
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={`glass-card pick-card ${picked ? 'selected' : ''}`}
-                  onClick={() => {
-                    vibrate();
-                    toggleVote(id);
-                  }}
-                >
-                  <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={56} />
-                  <span>{player.name}</span>
-                </button>
-              );
-            })}
-          </div>
-          <PrimaryActionBar className="sticky-action-bar">
+        !voteState || !voter ? (
+          <StatusBanner>{t('votePhase')}</StatusBanner>
+        ) : voteState.phase === 'handoff' ? (
+          <section className="glass-card handoff-card section-card cinematic-panel">
+            {voteState.round === 2 ? <StatusBanner tone="warning">{t('voteRunoff')}</StatusBanner> : null}
+            <PlayerAvatar avatarId={voter.avatarId} alt={voter.name} size={104} />
+            <h2>{t('voteHandoff', { name: voter.name })}</h2>
+            <p className="subtle">
+              {t('voteProgress', { current: voteState.voterIndex + 1, total: currentMatch.match.playerIds.length })}
+            </p>
+            <p className="subtle">{t('handoffSafetyNote')}</p>
             <GameButton
               variant="cta"
               size="lg"
-              disabled={voteDraft.length !== spyCount}
               onClick={() => {
                 vibrate();
-                void submitVote()
+                void startBallot();
               }}
             >
-              {t('submitVote')}
+              {t('continue')}
             </GameButton>
-          </PrimaryActionBar>
-        </section>
+          </section>
+        ) : (
+          <section className="glass-card phase-card section-card cinematic-panel">
+            <h2>{t('votePhase')}</h2>
+            {voteState.round === 2 ? <StatusBanner tone="warning">{t('voteRunoff')}</StatusBanner> : null}
+            <p className="subtle">
+              {t('voteProgress', { current: voteState.voterIndex + 1, total: currentMatch.match.playerIds.length })}
+            </p>
+            <p>{t('votePickOne')}</p>
+            <div className="player-select-grid compact">
+              {pageCandidates.map((id) => {
+                const player = playerMap.get(id);
+                const label = player?.name ?? id;
+                const avatarId = player?.avatarId ?? 'boy_1';
+                const picked = ballotPick === id;
+
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`glass-card pick-card ${picked ? 'selected' : ''}`}
+                    onClick={() => {
+                      vibrate();
+                      setBallotPick(id);
+                    }}
+                  >
+                    <PlayerAvatar avatarId={avatarId} alt={label} size={56} />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {totalBallotPages > 1 ? (
+              <div className="actions-row">
+                <GameButton
+                  variant="ghost"
+                  onClick={() => setBallotPage((prev) => Math.max(0, prev - 1))}
+                  disabled={clampedBallotPage === 0}
+                >
+                  {t('back')}
+                </GameButton>
+                <span className="subtle">
+                  {clampedBallotPage + 1} / {totalBallotPages}
+                </span>
+                <GameButton
+                  variant="ghost"
+                  onClick={() => setBallotPage((prev) => Math.min(totalBallotPages - 1, prev + 1))}
+                  disabled={clampedBallotPage >= totalBallotPages - 1}
+                >
+                  {t('next')}
+                </GameButton>
+              </div>
+            ) : null}
+            <PrimaryActionBar className="sticky-action-bar">
+              <GameButton
+                variant="cta"
+                size="lg"
+                disabled={!ballotPick}
+                onClick={() => {
+                  vibrate();
+                  void submitBallot();
+                }}
+              >
+                {t('submitVote')}
+              </GameButton>
+            </PrimaryActionBar>
+          </section>
+        )
       ) : null}
 
       {currentMatch.resolutionStage === 'guess' ? (
@@ -230,6 +403,7 @@ export function ResolutionScreen() {
           <StatusBanner tone="success">
             {t('voteCapturedInfo')}
           </StatusBanner>
+          {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
           <p>{t('spyGuessPrompt')}</p>
           <h2 className="countdown-value">{guessRemaining}</h2>
           <p className="subtle">{t('spyGuessPick')}</p>
@@ -266,6 +440,7 @@ export function ResolutionScreen() {
                 <StatusBanner tone={currentMatch.winner === 'citizens' ? 'success' : 'danger'}>
                   {currentMatch.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}
                 </StatusBanner>
+                {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
                 {voteOutcome === 'missed' ? (
                   <StatusBanner tone="warning">
                     {t('voteFailed')}

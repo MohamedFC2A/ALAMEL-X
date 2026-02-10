@@ -20,8 +20,8 @@ export function PlaySetupScreen() {
   const navigate = useNavigate();
   const players = useLiveQuery(() => db.players.filter((player) => player.enabled).toArray(), []);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
-  const [spyCount, setSpyCount] = useState<1 | 2>(1);
-  const [overridden, setOverridden] = useState(false);
+  const [spyCountOverride, setSpyCountOverride] = useState<1 | 2 | null>(null);
+  const [playerPage, setPlayerPage] = useState(0);
   const [errorKey, setErrorKey] = useState<string>('');
   const [usageSummary, setUsageSummary] = useState<{ used: number; total: number }>({ used: 0, total: 0 });
 
@@ -32,6 +32,15 @@ export function PlaySetupScreen() {
     return Math.round((usageSummary.used / usageSummary.total) * 100);
   }, [usageSummary]);
   const remainingWords = Math.max(0, usageSummary.total - usageSummary.used);
+  const spyCount = spyCountOverride ?? recommendedSpyCount(selectedPlayers.length);
+  const overridden = spyCountOverride !== null;
+  const playersPerPage = 6;
+  const totalPlayerPages = Math.max(1, Math.ceil((players?.length ?? 0) / playersPerPage));
+  const clampedPlayerPage = Math.min(playerPage, totalPlayerPages - 1);
+  const pagePlayers = (players ?? []).slice(
+    clampedPlayerPage * playersPerPage,
+    (clampedPlayerPage + 1) * playersPerPage,
+  );
 
   useEffect(() => {
     void wordsUsageSummary().then(setUsageSummary);
@@ -46,12 +55,6 @@ export function PlaySetupScreen() {
       navigate('/players', { state: { reason: 'noPlayersRedirect' } });
     }
   }, [navigate, players]);
-
-  useEffect(() => {
-    if (!overridden) {
-      setSpyCount(recommendedSpyCount(selectedPlayers.length));
-    }
-  }, [selectedPlayers.length, overridden]);
 
   function togglePlayer(playerId: string) {
     setSelectedPlayers((prev) => {
@@ -97,7 +100,7 @@ export function PlaySetupScreen() {
   }
 
   return (
-    <ScreenScaffold title={t('setupMatch')} subtitle={t('selectPlayers')} eyebrow={t('phaseSetupEyebrow')}>
+    <ScreenScaffold scroll="none" title={t('setupMatch')} subtitle={t('selectPlayers')} eyebrow={t('phaseSetupEyebrow')}>
       <PhaseIndicator current={1} labels={[t('phaseSetup'), t('phaseReveal'), t('phaseTalk'), t('phaseResolve')]} />
 
       <section className="setup-insights panel-grid glass-card section-card cinematic-panel">
@@ -125,8 +128,8 @@ export function PlaySetupScreen() {
 
       {errorKey ? <StatusBanner tone="danger">{t(errorKey)}</StatusBanner> : null}
 
-      <section className="player-select-grid panel-grid section-card">
-        {(players ?? []).map((player) => {
+      <section className="player-select-grid compact panel-grid section-card">
+        {pagePlayers.map((player) => {
           const selected = selectedPlayers.includes(player.id);
           const maxReached = !selected && selectedPlayers.length >= 10;
           return (
@@ -144,19 +147,42 @@ export function PlaySetupScreen() {
         })}
       </section>
 
+      {totalPlayerPages > 1 ? (
+        <div className="actions-row">
+          <GameButton
+            variant="ghost"
+            onClick={() => setPlayerPage((prev) => Math.min(totalPlayerPages - 1, Math.max(0, prev - 1)))}
+            disabled={clampedPlayerPage === 0}
+          >
+            {t('back')}
+          </GameButton>
+          <span className="subtle">
+            {clampedPlayerPage + 1} / {totalPlayerPages}
+          </span>
+          <GameButton
+            variant="ghost"
+            onClick={() => setPlayerPage((prev) => Math.min(totalPlayerPages - 1, prev + 1))}
+            disabled={clampedPlayerPage >= totalPlayerPages - 1}
+          >
+            {t('next')}
+          </GameButton>
+        </div>
+      ) : null}
+
       <section className="glass-card spy-count-panel section-card cinematic-panel toggle-panel">
         <p>{t('spiesCount')}</p>
         <div className="pill-row" role="group" aria-label={t('spiesCount')}>
-          <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => { setSpyCount(1); setOverridden(true); }}>
+          <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => setSpyCountOverride(1)}>
             1 {!overridden && recommendedSpyCount(selectedPlayers.length) === 1 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
           </button>
-          <button type="button" className={`pill-btn ${spyCount === 2 ? 'active' : ''}`} onClick={() => { setSpyCount(2); setOverridden(true); }}>
+          <button type="button" className={`pill-btn ${spyCount === 2 ? 'active' : ''}`} onClick={() => setSpyCountOverride(2)}>
             2 {!overridden && recommendedSpyCount(selectedPlayers.length) === 2 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
           </button>
         </div>
       </section>
 
       <PrimaryActionBar
+        className="sticky-action-bar"
         leading={
           <span>
             {t('selectedCount')}: {selectedPlayers.length}/10
@@ -166,13 +192,10 @@ export function PlaySetupScreen() {
         <GameButton variant="cta" size="lg" onClick={() => void handleStart()} disabled={selectedPlayers.length < 4}>
           {t('startGame')}
         </GameButton>
-      </PrimaryActionBar>
-
-      <div className="actions-row">
         <GameButton variant="ghost" onClick={() => void handleResetWords()}>
           {t('resetWordLocks')}
         </GameButton>
-      </div>
+      </PrimaryActionBar>
     </ScreenScaffold>
   );
 }

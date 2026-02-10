@@ -97,6 +97,15 @@ export interface MatchResult {
   winner: Winner;
 }
 
+export interface ResolutionVoteState {
+  phase: 'handoff' | 'ballot';
+  voterIndex: number;
+  ballots: Record<string, string>;
+  round: 1 | 2;
+  candidates?: string[];
+  lastTally?: Record<string, number>;
+}
+
 export interface ActiveMatch {
   id: 'active';
   match: Match;
@@ -107,6 +116,7 @@ export interface ActiveMatch {
   discussionEndsAt?: number;
   guessEndsAt?: number;
   votedSpyIds: string[];
+  voteState?: ResolutionVoteState;
   spyGuess: string;
   spyGuessCorrect: boolean;
   voteOutcome?: 'captured' | 'missed';
