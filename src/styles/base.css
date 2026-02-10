@@ -286,3 +286,6 @@ select,
         --space-5: 1.6rem;
     }
 }
+
+/* Global UI Scale Application */
+html { font-size: calc(16px * var(--ui-scale, 1)); }
