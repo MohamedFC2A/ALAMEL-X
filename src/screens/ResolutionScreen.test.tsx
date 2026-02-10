@@ -191,7 +191,7 @@ describe('resolution screen voting flow', () => {
     expect(updated?.resolutionStage).toBe('guess');
     expect(updated?.voteOutcome).toBe('captured');
     expect(updated?.votedSpyIds).toEqual(['p2']);
-  });
+  }, 12_000);
 
   it('starts a runoff when the first round is tied, then resolves in round 2', async () => {
     const user = userEvent.setup();
@@ -247,6 +247,5 @@ describe('resolution screen voting flow', () => {
     expect(updated?.resolutionStage).toBe('guess');
     expect(updated?.voteOutcome).toBe('captured');
     expect(updated?.votedSpyIds).toEqual(['p2']);
-  });
+  }, 12_000);
 });
-

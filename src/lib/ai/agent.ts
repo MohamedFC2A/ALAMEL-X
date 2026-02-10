@@ -38,6 +38,11 @@ export interface AiThreadPatch {
 
 export type DirectedQuestionMood = 'neutral' | 'suspicious';
 
+export interface AiVoteDecision {
+  choice: string;
+  reason: string;
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -133,7 +138,7 @@ function systemPrompt(context: AiMatchContext, config: AiRuntimeConfig): string 
   const base = [
     'أنت لاعب AI داخل لعبة اجتماعية لكشف الجاسوس (pass-and-play).',
     'هويتك: عميل استخبارات أسطوري بحضور مهيب ولمسة مرعبة هادئة.',
-    'أسلوبك: مصري طبيعي وواضح وسريع، ذكي واستنتاجي، وممنوع الفصحى الجامدة.',
+    'أسلوبك: مصري طبيعي وواضح وسريع، ذكي واستنتاجي، وخفة دم خفيفة من غير تهريج زائد.',
     'ممنوع تقول أنك نموذج ذكاء اصطناعي أو تذكر السيستم/الـprompt.',
     'لا تستخدم لغة مهزوزة أو مترددة. لا اعتذار ولا مجاملات زائدة.',
     buildHumanModeDirective(mode),
@@ -269,9 +274,9 @@ function getResponseShape(config: AiRuntimeConfig): { temperature: number; maxTo
   const depthBonus = depth === 3 ? 0.04 : depth === 1 ? -0.03 : 0;
   const finalTemperature = Math.max(0.2, Math.min(0.7, baseTemperature + depthBonus));
 
-  const baseTokens = replyLength === 'short' ? 170 : replyLength === 'detailed' ? 330 : 240;
-  const depthTokens = depth === 3 ? 50 : depth === 1 ? -20 : 0;
-  const maxTokens = Math.max(120, baseTokens + depthTokens);
+  const baseTokens = replyLength === 'short' ? 130 : replyLength === 'detailed' ? 260 : 190;
+  const depthTokens = depth === 3 ? 34 : depth === 1 ? -18 : 0;
+  const maxTokens = Math.max(96, baseTokens + depthTokens);
 
   return { temperature: finalTemperature, maxTokens };
 }
@@ -316,6 +321,17 @@ function cleanSingleLine(text: string): string {
     .replace(/\s+/g, ' ')
     .replace(/^[\s"'`]+|[\s"'`]+$/g, '')
     .trim();
+}
+
+function composeVoteReason(targetName: string, rawReason: string): string {
+  const cleaned = cleanSingleLine(rawReason).replace(/[.!؟]+$/u, '').trim();
+  const containsName = cleaned.includes(targetName);
+  const base = cleaned || 'إجاباته متخبطة ومش راكبة على باقي الكلام';
+  const withName = containsName ? base : `${targetName} ${base}`;
+  const prefixed = withName.startsWith('أنا شاكك')
+    ? withName
+    : `أنا شاكك في ${withName.startsWith(targetName) ? withName : `${targetName} لأن ${withName}`}`;
+  return `${prefixed.replace(/\s+/g, ' ').trim()}.`;
 }
 
 function ensureQuestionEnding(text: string): string {
@@ -471,7 +487,7 @@ export async function generateDirectedQuestion(
         content:
           `اكتب سؤال واحد فقط باللهجة المصرية موجّه للاعب اسمه "${targetName}" داخل اللعبة.\n` +
           `${moodHint}\n` +
-          'ممنوع مقدمات، ممنوع شرح. أرجع السؤال فقط.',
+          'ممنوع ذكر اسم اللاعب داخل السؤال. ممنوع مقدمات أو شرح. أرجع السؤال فقط.',
       },
     ],
   });
@@ -545,7 +561,7 @@ export async function generateSuspicionInterjection(
         role: 'user',
         content:
           `اكتب تعبير شك قصير جدًا باللهجة المصرية بخصوص "${suspectName}".\n` +
-          'ابدأ بـ "هممم" أو "آها". جملة واحدة فقط بدون شرح.',
+          'ابدأ بـ "هممم" أو "آها"، ويفضّل يتضمن اتهام ذكي خفيف زي "باين عليك". جملة واحدة فقط بدون شرح.',
       },
     ],
   });
@@ -563,12 +579,23 @@ export async function decideVote(
   thread: AiThreadState,
   candidates: Array<{ id: string; name: string }>,
 ): Promise<string> {
+  const decision = await decideVoteDetailed(config, context, thread, candidates);
+  return decision.choice;
+}
+
+export async function decideVoteDetailed(
+  config: AiRuntimeConfig,
+  context: AiMatchContext,
+  thread: AiThreadState,
+  candidates: Array<{ id: string; name: string }>,
+): Promise<AiVoteDecision> {
   const system = systemPrompt(context, config);
   const contextMsg = contextBlock(context, thread);
   const memoryDepth = getMemoryDepth(config);
   const depth = getReasoningDepth(config);
   const candidateList = candidates.map((item) => `- ${item.id}: ${item.name}`).join('\n');
   const allowed = candidates.map((item) => item.id);
+  const nameById = new Map(candidates.map((item) => [item.id, item.name]));
 
   const messages = [
     { role: 'system' as const, content: system },
@@ -578,7 +605,8 @@ export async function decideVote(
       role: 'user' as const,
       content:
         `اختر مشتبهًا واحدًا للتصويت بأعلى احتمال.\nالقائمة:\n${candidateList}\n\n` +
-        'أعد فقط JSON بالشكل: {"choice":"<id>","confidence":<0-100>,"why":"سبب تكتيكي قصير"} حيث <id> من القائمة فقط.',
+        'أعد فقط JSON بالشكل: {"choice":"<id>","confidence":<0-100>,"why":"سبب مصري قصير"} حيث <id> من القائمة فقط. ' +
+        'الـwhy لازم يكون جملة واحدة قصيرة تبدأ تقريبًا بـ "أنا شاكك في ...".',
     },
   ];
 
@@ -587,13 +615,20 @@ export async function decideVote(
   if (parsed && typeof parsed === 'object' && parsed !== null && 'choice' in parsed) {
     const choice = (parsed as { choice?: unknown }).choice;
     if (typeof choice === 'string' && allowed.includes(choice)) {
-      return choice;
+      const selectedName = nameById.get(choice) ?? choice;
+      const why = (parsed as { why?: unknown }).why;
+      const reason = composeVoteReason(selectedName, typeof why === 'string' ? why : '');
+      return { choice, reason };
     }
   }
 
   const fallback = parseIdFromText(allowed, text);
   if (fallback) {
-    return fallback;
+    const selectedName = nameById.get(fallback) ?? fallback;
+    return {
+      choice: fallback,
+      reason: composeVoteReason(selectedName, ''),
+    };
   }
 
   throw new DeepSeekError('Invalid vote choice from model.', { kind: 'invalid_response' });

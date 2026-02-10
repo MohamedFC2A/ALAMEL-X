@@ -16,7 +16,7 @@ import {
 } from '../lib/ai/discussion-orchestrator';
 import { runtimeConfigFromSettings, generateChatReply, generateDirectedQuestion, generateSuspicionInterjection, decideYesNo } from '../lib/ai/agent';
 import { ElevenError, transcribeWithEleven, speakWithEleven, cancelElevenSpeechOutput } from '../lib/ai/eleven-client';
-import { BrowserVoiceError, cancelBrowserSpeechOutput, transcribeWithBrowserRecognition } from '../lib/ai/browser-voice';
+import { BrowserVoiceError, cancelBrowserSpeechOutput } from '../lib/ai/browser-voice';
 
 interface UseAiDiscussionOrchestratorParams {
   activeMatch: ActiveMatch | null;
@@ -37,7 +37,7 @@ export interface UseAiDiscussionOrchestratorResult {
 interface TranscriptResult {
   text: string;
   confidence: number;
-  provider: 'elevenlabs' | 'browser';
+  provider: 'elevenlabs';
 }
 
 const VAD_MIN_RMS = 0.024;
@@ -99,6 +99,29 @@ function detectMimeType(): string {
     return 'audio/mp4';
   }
   return '';
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function stripLeadingTargetName(question: string, targetName: string): string {
+  const trimmed = question.replace(/\s+/g, ' ').trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const escaped = escapeRegExp(targetName.trim());
+  const patterns = [
+    new RegExp(`^(?:يا\\s+)?${escaped}\\s*[:،,\\-]\\s*`, 'iu'),
+    new RegExp(`^(?:يا\\s+)?${escaped}\\s+`, 'iu'),
+  ];
+
+  let output = trimmed;
+  for (const pattern of patterns) {
+    output = output.replace(pattern, '');
+  }
+  return output.trim() || trimmed;
 }
 
 function stateAfterSpeech(hasPendingTarget: boolean): AiOrchestratorState['status'] {
@@ -239,6 +262,15 @@ export function useAiDiscussionOrchestrator({
     setRuntimeEnabled((current) => !current);
   }, []);
 
+  const isDiscussionLive = useCallback(() => {
+    return Boolean(
+      activeMatchRef.current &&
+        activeMatchRef.current.match.status === 'discussion' &&
+        runtimeEnabledRef.current &&
+        !stopRequestedRef.current,
+    );
+  }, []);
+
   const updateState = useCallback((patch: Partial<AiOrchestratorState>) => {
     setState((prev) => ({
       ...prev,
@@ -361,7 +393,9 @@ export function useAiDiscussionOrchestrator({
         const line = asNamedLine(speaker.name, reply);
         await appendMessages(speaker.id, [{ from: 'ai', text: line }]);
         await appendMessages(aiPlayer.id, [{ from: 'user', text: line }]);
-        await speakWithFallback(line);
+        if (isDiscussionLive()) {
+          await speakWithFallback(reply);
+        }
         updateState({ lastIntervention: line });
         pendingTargetRef.current = null;
         pendingDeadlineRef.current = 0;
@@ -378,7 +412,9 @@ export function useAiDiscussionOrchestrator({
         const line = asNamedLine(aiPlayer.name, spoken);
         await appendMessages(aiPlayer.id, [{ from: 'ai', text: line }]);
         updateState({ lastIntervention: line });
-        await speakWithFallback(line);
+        if (isDiscussionLive()) {
+          await speakWithFallback(spoken);
+        }
         pendingTargetRef.current = null;
         pendingDeadlineRef.current = 0;
         updateState({ pendingTargetPlayerId: '', pendingTargetName: '', status: 'listening' });
@@ -393,7 +429,9 @@ export function useAiDiscussionOrchestrator({
         const line = asNamedLine(aiPlayer.name, interjection);
         await appendMessages(aiPlayer.id, [{ from: 'ai', text: line }]);
         updateState({ lastIntervention: line });
-        await speakWithFallback(line);
+        if (isDiscussionLive()) {
+          await speakWithFallback(interjection);
+        }
       }
 
       pendingTargetRef.current = null;
@@ -404,7 +442,7 @@ export function useAiDiscussionOrchestrator({
         status: 'listening',
       });
     },
-    [appendMessages, speakWithFallback, t, updateState, updateSuspicionForSpeaker],
+    [appendMessages, isDiscussionLive, speakWithFallback, t, updateState, updateSuspicionForSpeaker],
   );
 
   const autoReplyFromAiTarget = useCallback(
@@ -429,7 +467,9 @@ export function useAiDiscussionOrchestrator({
         lastIntervention: responseLine,
       });
 
-      await speakWithFallback(responseLine);
+      if (isDiscussionLive()) {
+        await speakWithFallback(reply);
+      }
 
       pendingTargetRef.current = null;
       pendingDeadlineRef.current = 0;
@@ -439,11 +479,15 @@ export function useAiDiscussionOrchestrator({
         status: 'listening',
       });
     },
-    [appendMessages, speakWithFallback, updateState],
+    [appendMessages, isDiscussionLive, speakWithFallback, updateState],
   );
 
   const runIntervention = useCallback(async () => {
     if (interventionLockRef.current || processingRef.current || speakingRef.current) {
+      return;
+    }
+
+    if (!isDiscussionLive()) {
       return;
     }
 
@@ -490,7 +534,8 @@ export function useAiDiscussionOrchestrator({
       }
 
       const question = await generateDirectedQuestion(config, context, thread, targetPlayer.name, mood);
-      speech += `${targetPlayer.name}، ${question}`;
+      const trimmedQuestion = stripLeadingTargetName(question, targetPlayer.name);
+      speech += `${targetPlayer.name}، ${trimmedQuestion}`;
       const line = asNamedLine(aiPlayer.name, speech.trim());
 
       pendingTargetRef.current = targetPlayer.id;
@@ -504,10 +549,12 @@ export function useAiDiscussionOrchestrator({
         lastIntervention: line,
         status: 'waiting_answer',
       });
-      await speakWithFallback(line);
+      if (isDiscussionLive()) {
+        await speakWithFallback(speech.trim());
+      }
 
       if (targetPlayer.kind === 'ai' && targetPlayer.id !== aiPlayer.id) {
-        await autoReplyFromAiTarget(active, aiPlayer, targetPlayer, question);
+        await autoReplyFromAiTarget(active, aiPlayer, targetPlayer, trimmedQuestion);
       }
     } catch (error) {
       setError(pickVoiceErrorMessage(error, t));
@@ -517,7 +564,7 @@ export function useAiDiscussionOrchestrator({
     } finally {
       interventionLockRef.current = false;
     }
-  }, [appendMessages, autoReplyFromAiTarget, speakWithFallback, t, updateState]);
+  }, [appendMessages, autoReplyFromAiTarget, isDiscussionLive, speakWithFallback, t, updateState]);
 
   const processQueue = useCallback(async () => {
     if (processingRef.current) {
@@ -545,19 +592,6 @@ export function useAiDiscussionOrchestrator({
               text: eleven.text,
               confidence: typeof eleven.confidence === 'number' ? eleven.confidence : 0.72,
               provider: 'elevenlabs',
-            };
-          } catch {
-            setError(t('aiVoiceFallbackStt'));
-          }
-        }
-
-        if (!transcript) {
-          try {
-            const browser = await transcribeWithBrowserRecognition(currentLanguage, 5_000);
-            transcript = {
-              text: browser.text,
-              confidence: browser.confidence,
-              provider: 'browser',
             };
           } catch (error) {
             setError(pickVoiceErrorMessage(error, t));

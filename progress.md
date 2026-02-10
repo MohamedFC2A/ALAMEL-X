@@ -521,3 +521,28 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - `npm run test`: pass (47 tests).
 - `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
 - `npm run build`: pass.
+
+## Progress Log
+- Upgraded AI personality + dialogue quality in `src/lib/ai/agent.ts`:
+  - Stronger Egyptian colloquial style with light comedic tone.
+  - Better suspicion phrasing prompts (including accusatory style cues).
+  - Faster default response-shape token budgets for snappier replies.
+- Fixed spoken output formatting in discussion orchestrator:
+  - AI no longer speaks prefixed agent names like `العميل ...:`.
+  - Yes/No spoken replies are now just `أه` / `لا` without name prefix.
+  - Added target-name stripping to prevent duplicate target name mention in directed questions.
+- Tightened discussion-only behavior:
+  - Added `isDiscussionLive` guards so async interventions/speech stop cleanly outside discussion phase.
+  - Removed browser STT fallback from orchestrator path (ElevenLabs-only STT/TTS behavior in gameplay path).
+- Added richer AI vote behavior in resolution:
+  - New `decideVoteDetailed` API returns `{ choice, reason }` with Egyptian suspicion wording.
+  - AI vote handoff now shows the reason and attempts ElevenLabs TTS before auto-submitting the vote.
+- Updated tests:
+  - `src/lib/ai/agent.test.ts` new coverage for vote-reason shape.
+  - `src/screens/ResolutionScreen.ai.test.tsx` updated to mock `decideVoteDetailed` + `speakWithEleven`.
+  - `src/screens/ResolutionScreen.test.tsx` voting tests got explicit timeout to reduce CI/runtime flake.
+
+## Validation Update (AI Persona + Speech/Flow polish)
+- `npm run test`: pass (48 tests).
+- `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.

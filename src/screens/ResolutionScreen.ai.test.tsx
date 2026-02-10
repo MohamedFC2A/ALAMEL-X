@@ -6,16 +6,21 @@ import { db, defaultSettings } from '../lib/db';
 import type { ActiveMatch, Player } from '../types';
 import { ResolutionScreen } from './ResolutionScreen';
 
-const decideVoteMock = vi.hoisted(() => vi.fn());
+const decideVoteDetailedMock = vi.hoisted(() => vi.fn());
 const decideGuessMock = vi.hoisted(() => vi.fn());
+const speakWithElevenMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../lib/ai/agent', () => ({
-  decideVote: decideVoteMock,
+  decideVoteDetailed: decideVoteDetailedMock,
   decideGuess: decideGuessMock,
   runtimeConfigFromSettings: (settings: { aiBaseUrl: string; aiModel: string }) => ({
     baseUrl: settings.aiBaseUrl,
     model: settings.aiModel,
   }),
+}));
+
+vi.mock('../lib/ai/eleven-client', () => ({
+  speakWithEleven: speakWithElevenMock,
 }));
 
 const seededPlayers: Player[] = [
@@ -152,14 +157,16 @@ describe('resolution screen AI automation', () => {
   });
 
   beforeEach(async () => {
-    decideVoteMock.mockReset();
+    decideVoteDetailedMock.mockReset();
     decideGuessMock.mockReset();
+    speakWithElevenMock.mockReset();
+    speakWithElevenMock.mockResolvedValue(undefined);
     await resetState();
     await db.players.bulkPut(seededPlayers);
   });
 
   it('auto-casts a ballot when the voter is an AI player', async () => {
-    decideVoteMock.mockResolvedValueOnce('p2');
+    decideVoteDetailedMock.mockResolvedValueOnce({ choice: 'p2', reason: 'أنا شاكك في لاعب ٢ لأن كلامه ملخبط.' });
     await db.activeMatch.put(buildActiveMatch());
 
     render(
@@ -174,7 +181,8 @@ describe('resolution screen AI automation', () => {
       expect(updated?.voteState?.ballots).toMatchObject({ ai1: 'p2' });
     });
 
-    expect(decideVoteMock).toHaveBeenCalledTimes(1);
+    expect(decideVoteDetailedMock).toHaveBeenCalledTimes(1);
+    expect(speakWithElevenMock).toHaveBeenCalledTimes(1);
   });
 
   it('auto-submits a guess when the captured spy is an AI player', async () => {

@@ -22,7 +22,8 @@ import { useActiveMatch } from '../hooks/useActiveMatch';
 import { formatWordForDisplay } from '../lib/word-format';
 import { GameButton } from '../components/GameButton';
 import { DeepSeekError } from '../lib/ai/deepseek-client';
-import { decideGuess, decideVote, runtimeConfigFromSettings } from '../lib/ai/agent';
+import { decideGuess, decideVoteDetailed, runtimeConfigFromSettings } from '../lib/ai/agent';
+import { speakWithEleven } from '../lib/ai/eleven-client';
 
 export function ResolutionScreen() {
   const { t, i18n } = useTranslation();
@@ -55,6 +56,7 @@ export function ResolutionScreen() {
   const [aiGuessRetryNonce, setAiGuessRetryNonce] = useState(0);
   const [aiVoteError, setAiVoteError] = useState<{ key: string; message: string } | null>(null);
   const [aiGuessError, setAiGuessError] = useState<{ key: string; message: string } | null>(null);
+  const [aiVoteNarration, setAiVoteNarration] = useState<{ key: string; message: string } | null>(null);
   const [aiVoteManualKey, setAiVoteManualKey] = useState('');
   const [aiGuessManualKey, setAiGuessManualKey] = useState('');
 
@@ -331,8 +333,16 @@ export function ResolutionScreen() {
         const candidateIds = (voteState.candidates ?? activeMatch.match.playerIds).filter((id) => id !== voterId);
         const candidates = candidateIds.map((id) => ({ id, name: playerMap.get(id)?.name ?? id })).filter((item) => item.id);
 
-        const choice = await decideVote(config, context, thread, candidates);
-        await submitBallotWithPick(choice);
+        const decision = await decideVoteDetailed(config, context, thread, candidates);
+        setAiVoteNarration({ key: voteStateKey, message: decision.reason });
+        if (settings.soundEnabled && settings.aiVoiceOutputEnabled) {
+          try {
+            await speakWithEleven({ text: decision.reason });
+          } catch {
+            // keep vote flow moving even if TTS fails
+          }
+        }
+        await submitBallotWithPick(decision.choice);
       } catch (err) {
         setAiVoteError({ key: voteStateKey, message: formatAiError(err) });
       }
@@ -467,6 +477,7 @@ export function ResolutionScreen() {
     (clampedBallotPage + 1) * candidatesPerPage,
   );
   const isAiVoter = voter?.kind === 'ai';
+  const aiVoteNarrationMessage = aiVoteNarration?.key === voteStateKey ? aiVoteNarration.message : '';
   const capturedSpyId = currentMatch.votedSpyIds[0] ?? '';
   const capturedSpy = capturedSpyId ? playerMap.get(capturedSpyId) ?? null : null;
   const isAiCapturedSpy = capturedSpy?.kind === 'ai';
@@ -509,6 +520,8 @@ export function ResolutionScreen() {
               {settings?.aiEnabled ? (
                 aiVoteError?.key === voteStateKey ? (
                   <StatusBanner tone="danger">{aiVoteError.message}</StatusBanner>
+                ) : aiVoteNarrationMessage ? (
+                  <StatusBanner tone="success">{aiVoteNarrationMessage}</StatusBanner>
                 ) : (
                   <StatusBanner tone="warning">{t('aiThinking')}</StatusBanner>
                 )

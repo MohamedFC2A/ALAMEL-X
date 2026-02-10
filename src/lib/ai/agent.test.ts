@@ -21,7 +21,7 @@ vi.mock('./deepseek-client', () => {
   };
 });
 
-import { decideGuess, decideVote, decideYesNo, generateChatReply } from './agent';
+import { decideGuess, decideVote, decideVoteDetailed, decideYesNo, generateChatReply } from './agent';
 import type { AiThreadState } from '../../types';
 
 describe('ai agent', () => {
@@ -92,6 +92,28 @@ describe('ai agent', () => {
     ]);
 
     expect(choice).toBe('p2');
+  });
+
+  it('returns an egyptian suspicion reason when deciding vote', async () => {
+    const thread: AiThreadState = { messages: [], summary: '' };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'citizen' as const,
+      category: 'أماكن',
+      secretWord: 'ميدان عام',
+    };
+
+    chatCompleteMock.mockResolvedValueOnce('{"choice":"p2","why":"بيجاوب بطريقة متناقضة"}');
+
+    const decision = await decideVoteDetailed(config, context, thread, [
+      { id: 'p1', name: 'لاعب ١' },
+      { id: 'p2', name: 'محمد' },
+    ]);
+
+    expect(decision.choice).toBe('p2');
+    expect(decision.reason).toContain('أنا شاكك في');
+    expect(decision.reason).toContain('محمد');
   });
 
   it('keeps chat replies concise and tactical by default', async () => {
