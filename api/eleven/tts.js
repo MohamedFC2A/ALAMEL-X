@@ -1,6 +1,9 @@
 const ELEVEN_TTS_BASE_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
+const ELEVEN_VOICES_URL = 'https://api.elevenlabs.io/v1/voices';
 const DEFAULT_TTS_MODEL = 'eleven_multilingual_v2';
 const MAX_TEXT_LENGTH = 720;
+const VOICE_CACHE_TTL_MS = 10 * 60 * 1000;
+let cachedVoice = { id: '', at: 0 };
 
 function parseJsonBody(body) {
   if (!body) return {};
@@ -16,6 +19,79 @@ function parseJsonBody(body) {
 
 function fail(res, status, message, code) {
   res.status(status).json({ error: { message, code } });
+}
+
+function scoreVoice(voice, preferredNameLower) {
+  const name = String(voice?.name || '').toLowerCase();
+  const labels = voice?.labels && typeof voice.labels === 'object' ? voice.labels : {};
+  const language = String(labels.language || labels.locale || labels.accent || '').toLowerCase();
+
+  let score = 0;
+  if (preferredNameLower && name.includes(preferredNameLower)) score += 60;
+  if (/(arabic|ar|egypt|egyptian|masr|misr)/.test(language)) score += 50;
+  if (/(arabic|egypt|egyptian|masr|misr)/.test(name)) score += 24;
+  if (voice?.category === 'premade') score += 8;
+  if (voice?.fine_tuning?.state === 'fine_tuned') score += 8;
+  if (voice?.is_legacy) score -= 4;
+  if (voice?.deleted || voice?.status === 'deleted') score -= 120;
+  return score;
+}
+
+async function listVoices(apiKey, signal) {
+  const response = await fetch(ELEVEN_VOICES_URL, {
+    method: 'GET',
+    headers: { 'xi-api-key': apiKey, accept: 'application/json' },
+    signal,
+  });
+
+  const raw = await response.text();
+  let payload = {};
+  try {
+    payload = raw ? JSON.parse(raw) : {};
+  } catch {
+    payload = {};
+  }
+
+  if (!response.ok) {
+    const message = payload?.detail?.message || payload?.error?.message || `ElevenLabs voices request failed (${response.status}).`;
+    throw new Error(message);
+  }
+
+  return Array.isArray(payload?.voices) ? payload.voices : [];
+}
+
+async function resolveVoiceId(apiKey, preferredVoiceId, signal) {
+  const now = Date.now();
+  if (!preferredVoiceId && cachedVoice.id && now - cachedVoice.at < VOICE_CACHE_TTL_MS) {
+    return cachedVoice.id;
+  }
+
+  const voices = await listVoices(apiKey, signal);
+  if (!voices.length) {
+    throw new Error('No voices available in ElevenLabs account.');
+  }
+
+  if (preferredVoiceId) {
+    const exact = voices.find((voice) => String(voice?.voice_id || '') === preferredVoiceId);
+    if (exact) {
+      cachedVoice = { id: preferredVoiceId, at: now };
+      return preferredVoiceId;
+    }
+  }
+
+  const preferredNameLower = String(process.env.ELEVENLABS_VOICE_NAME || '').trim().toLowerCase();
+  const ranked = [...voices]
+    .filter((voice) => !voice?.deleted && voice?.status !== 'deleted')
+    .sort((left, right) => scoreVoice(right, preferredNameLower) - scoreVoice(left, preferredNameLower));
+
+  const picked = ranked[0] || voices[0];
+  const pickedId = String(picked?.voice_id || '').trim();
+  if (!pickedId) {
+    throw new Error('Failed to resolve a valid ElevenLabs voice ID.');
+  }
+
+  cachedVoice = { id: pickedId, at: now };
+  return pickedId;
 }
 
 export default async function handler(req, res) {
@@ -45,11 +121,7 @@ export default async function handler(req, res) {
 
   const voiceIdRaw = typeof input.voiceId === 'string' ? input.voiceId : '';
   const envVoiceId = process.env.ELEVENLABS_VOICE_ID || '';
-  const voiceId = (voiceIdRaw || envVoiceId).trim();
-  if (!voiceId) {
-    fail(res, 503, 'ElevenLabs voice ID is not configured on the server.', 'missing_voice_id');
-    return;
-  }
+  const preferredVoiceId = (voiceIdRaw || envVoiceId).trim();
 
   const modelIdRaw = typeof input.modelId === 'string' ? input.modelId : '';
   const modelId = (modelIdRaw || process.env.ELEVENLABS_TTS_MODEL_ID || DEFAULT_TTS_MODEL).trim();
@@ -58,6 +130,7 @@ export default async function handler(req, res) {
   const timer = setTimeout(() => controller.abort(), 15_000);
 
   try {
+    const voiceId = await resolveVoiceId(apiKey, preferredVoiceId, controller.signal);
     const upstream = await fetch(
       `${ELEVEN_TTS_BASE_URL}/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
       {

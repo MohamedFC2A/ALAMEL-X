@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "generate:words": "node scripts/generate-word-pack.mjs"
+    "generate:words": "node scripts/generate-word-pack.mjs",
+    "test:elevenlabs": "node scripts/test-elevenlabs.mjs"
   },
   "dependencies": {
     "dexie": "^4.3.0",
