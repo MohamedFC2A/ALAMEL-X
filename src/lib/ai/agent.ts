@@ -248,7 +248,10 @@ function buildTurnDirective(context: AiMatchContext, userText: string, config: A
     return 'قدّم تلميحًا ذكيًا قصيرًا مع اختبار ناعم لرد الفعل دون استجواب.';
   }
 
-  return 'أنت جاسوس: حافظ على الغموض الذكي. قدم جملة عامة مقنعة ثم جملة تمويه تكتيكية تخفف الشك.';
+  return (
+    'أنت جاسوس: أنت لا تعرف الكلمة إطلاقًا. لا تتكلم بثقة مطلقة ولا تدّعي معرفة تفاصيل دقيقة. ' +
+    'اظهر حيرة بشرية ذكية (زي: مش متأكد / غالبًا / يمكن) بدون مبالغة، وخلّ ردك عام وتمويهي.'
+  );
 }
 
 function getSentenceLimit(replyLength: AiReplyLength): number {
@@ -286,6 +289,26 @@ function polishReply(text: string, replyLength: AiReplyLength): string {
 
   const limited = (parts.length ? parts : [compact]).slice(0, getSentenceLimit(replyLength));
   return limited.join(' ');
+}
+
+function softenSpyReply(reply: string, replyLength: AiReplyLength): string {
+  const confidencePatterns = [
+    /(^|[\s.,،؛!?؟:()"'-])(أكيد|اكيد|متأكد|متاكد|مؤكد|طبعا|طبعاً)(?=$|[\s.,،؛!?؟:()"'-])/giu,
+    /(^|[\s.,،؛!?؟:()"'-])(for sure|definitely|certainly)(?=$|[\s.,،؛!?؟:()"'-])/giu,
+  ];
+
+  let softened = reply;
+  for (const pattern of confidencePatterns) {
+    softened = softened.replace(pattern, '$1');
+  }
+  softened = softened.replace(/\s+/g, ' ').trim();
+
+  const uncertaintyPattern = /(مش متأكد|مش متاكد|مش عارف|غالبا|غالبًا|يمكن|تقريبا|تقريبًا)/u;
+  if (!uncertaintyPattern.test(softened)) {
+    softened = `مش متأكد بصراحة، ${softened}`;
+  }
+
+  return polishReply(softened, replyLength);
 }
 
 function cleanSingleLine(text: string): string {
@@ -345,6 +368,10 @@ export async function generateChatReply(
   let reply = await chatComplete({ ...config, messages, temperature: shape.temperature, maxTokens: shape.maxTokens });
   reply = polishReply(reply, replyLength);
   let didRedact = false;
+
+  if (context.role === 'spy') {
+    reply = softenSpyReply(reply, replyLength);
+  }
 
   if (getHumanMode(config) === 'ultra') {
     try {
@@ -476,7 +503,9 @@ export async function decideYesNo(
         role: 'user',
         content:
           `السؤال: ${question}\n` +
-          'جاوب إجابة ثنائية فقط حسب دورك وسياق الجولة.\n' +
+          (context.role === 'spy'
+            ? 'جاوب إجابة ثنائية فقط حسب دورك. لو مش متأكد، اختَر no بدل التخمين بثقة.\n'
+            : 'جاوب إجابة ثنائية فقط حسب دورك وسياق الجولة.\n') +
           'ارجع فقط yes أو no بدون أي كلمة إضافية.',
       },
     ],

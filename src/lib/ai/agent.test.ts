@@ -184,4 +184,22 @@ describe('ai agent', () => {
     const second = await decideYesNo(config, context, thread, 'هل المكان ده داخل بيت؟');
     expect(second).toBe('no');
   });
+
+  it('makes spy replies sound uncertain instead of confidently knowing the word', async () => {
+    const thread: AiThreadState = { messages: [], summary: '' };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'spy' as const,
+      category: 'أماكن',
+      spyHintText: 'ركّز على الفئة',
+      spyTeammateNames: [],
+    };
+
+    chatCompleteMock.mockResolvedValueOnce('أكيد هي محطة مترو ومفيش احتمال تاني.');
+
+    const result = await generateChatReply(config, context, thread, 'قول رأيك');
+    expect(result.reply).toContain('مش متأكد');
+    expect(result.reply).not.toMatch(/أكيد|مؤكد/u);
+  });
 });

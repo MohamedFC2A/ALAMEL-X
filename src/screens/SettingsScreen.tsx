@@ -5,6 +5,7 @@ import { RefreshCw } from 'lucide-react';
 import { db, ensureSettings } from '../lib/db';
 import { updateGlobalSettings } from '../lib/game-repository';
 import { chatComplete, DeepSeekError } from '../lib/ai/deepseek-client';
+import { ElevenError, speakWithEleven } from '../lib/ai/eleven-client';
 import { ScreenScaffold } from '../components/ScreenScaffold';
 import { GameButton } from '../components/GameButton';
 import { StatusBanner } from '../components/StatusBanner';
@@ -12,13 +13,65 @@ import { usePWAUpdate } from '../hooks/usePWAUpdate';
 import type { AiHumanMode, AiReplyLength, AiVoiceProvider, ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date';
+type AsyncStatus = 'idle' | 'testing' | 'success' | 'error';
+
+interface ElevenVoicePreview {
+  id: string;
+  name: string;
+  category?: string;
+  language?: string;
+}
+
+interface ElevenHealthResponse {
+  ok: boolean;
+  provider?: string;
+  modelId?: string;
+  configuredVoiceId?: string | null;
+  selectedVoice?: ElevenVoicePreview;
+  voicesCount?: number;
+  voicesPreview?: ElevenVoicePreview[];
+  error?: {
+    message?: string;
+    code?: string;
+    details?: string;
+  };
+}
+
+function randomItem<T>(items: T[]): T | undefined {
+  if (!items.length) return undefined;
+  const index = Math.floor(Math.random() * items.length);
+  return items[index];
+}
+
+async function parseJsonSafe<T>(response: Response): Promise<T | null> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+function formatElevenError(error: unknown, fallback: string): string {
+  if (error instanceof ElevenError) {
+    const status = error.status ? ` (status ${error.status})` : '';
+    return `${error.message}${status}`;
+  }
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  return fallback;
+}
 
 export function SettingsScreen() {
   const { t } = useTranslation();
   const settings = useLiveQuery(() => db.settings.get('global'), []);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
-  const [aiTestStatus, setAiTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [aiTestStatus, setAiTestStatus] = useState<AsyncStatus>('idle');
   const [aiTestMessage, setAiTestMessage] = useState('');
+  const [elevenStatus, setElevenStatus] = useState<AsyncStatus>('idle');
+  const [elevenMessage, setElevenMessage] = useState('');
+  const [elevenVoiceTestStatus, setElevenVoiceTestStatus] = useState<AsyncStatus>('idle');
+  const [elevenVoiceTestMessage, setElevenVoiceTestMessage] = useState('');
   const { needRefresh, updateServiceWorker } = usePWAUpdate();
 
   useEffect(() => {
@@ -121,6 +174,77 @@ export function SettingsScreen() {
       }
     }
   }, [settings, t]);
+
+  const fetchElevenHealth = useCallback(async (): Promise<ElevenHealthResponse> => {
+    const response = await fetch('/api/eleven/health', {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    const payload = await parseJsonSafe<ElevenHealthResponse>(response);
+
+    if (!response.ok || !payload?.ok) {
+      const errorMessage = payload?.error?.message || `ElevenLabs health failed (${response.status}).`;
+      const code = payload?.error?.code ? `code=${payload.error.code}` : '';
+      const details = payload?.error?.details ? ` | details=${String(payload.error.details).slice(0, 500)}` : '';
+      throw new Error(`${errorMessage}${code ? ` | ${code}` : ''}${details}`);
+    }
+
+    return payload;
+  }, []);
+
+  const testElevenConnection = useCallback(async () => {
+    setElevenStatus('testing');
+    setElevenMessage('');
+    try {
+      const health = await fetchElevenHealth();
+      const selected = health.selectedVoice;
+      const voiceLabel = selected?.name ? `${selected.name} (${selected.id})` : t('elevenUnknownVoice');
+      const count = typeof health.voicesCount === 'number' ? health.voicesCount : 0;
+      const model = health.modelId || '-';
+      setElevenStatus('success');
+      setElevenMessage(t('elevenConnectionOkDetailed', { voice: voiceLabel, count, model }));
+    } catch (error) {
+      setElevenStatus('error');
+      setElevenMessage(formatElevenError(error, t('elevenConnectionFail')));
+    }
+  }, [fetchElevenHealth, t]);
+
+  const testElevenSpeech = useCallback(async () => {
+    if (!settings?.soundEnabled || !settings.aiVoiceOutputEnabled) {
+      setElevenVoiceTestStatus('error');
+      setElevenVoiceTestMessage(t('elevenVoiceTestNeedOutput'));
+      return;
+    }
+
+    setElevenVoiceTestStatus('testing');
+    setElevenVoiceTestMessage('');
+
+    try {
+      const health = await fetchElevenHealth();
+      const voices = health.voicesPreview ?? [];
+      const selectedVoice = randomItem(voices) ?? health.selectedVoice;
+      const selectedVoiceId = selectedVoice?.id;
+      const selectedVoiceName = selectedVoice?.name || t('elevenUnknownVoice');
+
+      const samples = [
+        'اختبار صوت ElevenLabs. لو سامعني يبقى كل حاجة تمام.',
+        'تمام كده، الصوت شغال من إعدادات اللعبة.',
+        'ده اختبار عشوائي للصوت من ElevenLabs داخل اللعبة.',
+      ];
+      const sample = randomItem(samples) ?? samples[0];
+
+      await speakWithEleven({
+        text: sample,
+        voiceId: selectedVoiceId,
+      });
+
+      setElevenVoiceTestStatus('success');
+      setElevenVoiceTestMessage(t('elevenVoiceTestOkDetailed', { voice: selectedVoiceName, voiceId: selectedVoiceId || '-' }));
+    } catch (error) {
+      setElevenVoiceTestStatus('error');
+      setElevenVoiceTestMessage(formatElevenError(error, t('elevenVoiceTestFail')));
+    }
+  }, [fetchElevenHealth, settings, t]);
 
   if (!settings) {
     return null;
@@ -391,6 +515,54 @@ export function SettingsScreen() {
         </div>
 
         <div className="glass-card setting-card cinematic-panel section-card">
+          <div className="section-heading section-heading--stack">
+            <h2>{t('elevenSettingsTitle')}</h2>
+            <span className="subtle">{t('elevenSettingsHint')}</span>
+          </div>
+          <div className="actions-row">
+            <GameButton
+              variant="primary"
+              size="md"
+              onClick={() => void testElevenConnection()}
+              disabled={elevenStatus === 'testing'}
+            >
+              {elevenStatus === 'testing' ? t('elevenTesting') : t('elevenConnectionTest')}
+            </GameButton>
+
+            <GameButton
+              variant="ghost"
+              size="md"
+              onClick={() => void testElevenSpeech()}
+              disabled={elevenVoiceTestStatus === 'testing' || !settings.soundEnabled || !settings.aiVoiceOutputEnabled}
+            >
+              {elevenVoiceTestStatus === 'testing' ? t('elevenVoiceTesting') : t('elevenVoiceTest')}
+            </GameButton>
+          </div>
+
+          {elevenStatus !== 'idle' ? (
+            <StatusBanner tone={elevenStatus === 'success' ? 'success' : elevenStatus === 'error' ? 'danger' : 'default'}>
+              {elevenMessage ||
+                (elevenStatus === 'success' ? t('elevenConnectionOk') : elevenStatus === 'testing' ? t('elevenTesting') : t('elevenConnectionFail'))}
+            </StatusBanner>
+          ) : null}
+
+          {elevenVoiceTestStatus !== 'idle' ? (
+            <StatusBanner
+              tone={
+                elevenVoiceTestStatus === 'success' ? 'success' : elevenVoiceTestStatus === 'error' ? 'danger' : 'default'
+              }
+            >
+              {elevenVoiceTestMessage ||
+                (elevenVoiceTestStatus === 'success'
+                  ? t('elevenVoiceTestOk')
+                  : elevenVoiceTestStatus === 'testing'
+                    ? t('elevenVoiceTesting')
+                    : t('elevenVoiceTestFail'))}
+            </StatusBanner>
+          ) : null}
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
           <label className="switch-row">
             <span>{t('aiVoiceInput')}</span>
             <input
@@ -449,6 +621,22 @@ export function SettingsScreen() {
               step={500}
               value={settings.aiSilenceThresholdMs}
               onChange={(event) => void updateGlobalSettings({ aiSilenceThresholdMs: Number(event.target.value) })}
+            />
+          </label>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="form-field">
+            <span>
+              {t('aiInterventionRest')} ({Math.round(settings.aiInterventionRestMs / 1000)} {t('seconds')})
+            </span>
+            <input
+              type="range"
+              min={4000}
+              max={20000}
+              step={1000}
+              value={settings.aiInterventionRestMs}
+              onChange={(event) => void updateGlobalSettings({ aiInterventionRestMs: Number(event.target.value) })}
             />
           </label>
         </div>

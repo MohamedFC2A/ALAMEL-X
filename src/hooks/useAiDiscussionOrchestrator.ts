@@ -648,7 +648,8 @@ export function useAiDiscussionOrchestrator({
     setError('');
 
     const silenceThresholdMs = Math.max(3_000, settings?.aiSilenceThresholdMs ?? DEFAULT_SILENCE_THRESHOLD_MS);
-    const interventionCooldownMs = Math.max(2_300, Math.floor(silenceThresholdMs * 0.6));
+    const interventionRestMs = Math.max(4_000, settings?.aiInterventionRestMs ?? 9_000);
+    const interventionCooldownMs = Math.max(interventionRestMs, Math.floor(silenceThresholdMs * 0.6));
     const timeDomain = new Uint8Array(2048);
 
     let disposed = false;

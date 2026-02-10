@@ -39,6 +39,7 @@ export const defaultSettings: GlobalSettings = {
   aiVoiceProvider: 'elevenlabs',
   aiAutoFacilitatorEnabled: true,
   aiSilenceThresholdMs: 6000,
+  aiInterventionRestMs: 9000,
 };
 
 export const defaultAccessibility = {

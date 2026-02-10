@@ -452,3 +452,26 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - Optional tuning variables:
   - `ELEVENLABS_TTS_MODEL_ID`
   - `ELEVENLABS_STT_MODEL_ID`
+
+## Progress Log
+- Added ElevenLabs diagnostics endpoint `api/eleven/health.js` to verify server key + available voices and return detailed actionable errors.
+- Hardened `api/eleven/tts.js` voice selection with automatic fallback to an available account voice when the configured/requested voice is invalid.
+- Expanded settings diagnostics in `src/screens/SettingsScreen.tsx`:
+  - Connection test (`/api/eleven/health`) with detailed result payload.
+  - Random speech test that picks a random available voice and plays a live sample.
+  - Detailed failure rendering for auth/network/upstream issues.
+- Added/updated i18n copy for ElevenLabs diagnostics and AI intervention rest setting.
+- Added `aiInterventionRestMs` setting (default `9000ms`) and wired orchestrator cooldown to enforce pause between silence-triggered AI questions.
+- Improved spy AI uncertainty behavior in `src/lib/ai/agent.ts` so spy responses avoid overconfident certainty terms and maintain uncertain phrasing.
+- Added tests for the new settings diagnostics flow and spy uncertainty behavior:
+  - `src/screens/SettingsScreen.ai.test.tsx`
+  - `src/lib/ai/agent.test.ts`
+
+## Validation Update (Eleven Diagnostics + Spy/Rest Tuning)
+- `npm run test`: pass (47 tests).
+- `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.
+- `npm run test:elevenlabs`: fail in current local environment because `ELEVENLABS_API_KEY` is missing.
+
+## Remaining TODOs / Suggestions
+- Validate ElevenLabs end-to-end with real environment variables in deployment/runtime target (local environment currently has no ElevenLabs key configured).

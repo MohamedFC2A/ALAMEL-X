@@ -1,10 +1,30 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { setupI18n } from '../lib/i18n';
 import { db, defaultSettings } from '../lib/db';
 import { SettingsScreen } from './SettingsScreen';
+const speakWithElevenMock = vi.hoisted(() => vi.fn());
+
+vi.mock('../lib/ai/eleven-client', () => {
+  class ElevenError extends Error {
+    kind: string;
+    status?: number;
+
+    constructor(message: string, options: { kind: string; status?: number }) {
+      super(message);
+      this.name = 'ElevenError';
+      this.kind = options.kind;
+      this.status = options.status;
+    }
+  }
+
+  return {
+    ElevenError,
+    speakWithEleven: speakWithElevenMock,
+  };
+});
 
 async function resetState() {
   await db.players.clear();
@@ -26,7 +46,13 @@ describe('settings screen AI section', () => {
   });
 
   beforeEach(async () => {
+    speakWithElevenMock.mockReset();
+    vi.stubGlobal('fetch', vi.fn());
     await resetState();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('persists AI toggles without exposing key input', async () => {
@@ -73,5 +99,45 @@ describe('settings screen AI section', () => {
 
     expect(screen.queryByPlaceholderText(/ضع المفتاح هنا/i)).not.toBeInTheDocument();
     expect(screen.getByText(/مفتاح deepseek غير ظاهر للمستخدم/i)).toBeInTheDocument();
+  });
+
+  it('runs elevenlabs connection and voice tests with detailed status', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        modelId: 'eleven_multilingual_v2',
+        voicesCount: 2,
+        selectedVoice: { id: 'voice_1', name: 'Nour' },
+        voicesPreview: [
+          { id: 'voice_1', name: 'Nour' },
+          { id: 'voice_2', name: 'Karim' },
+        ],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    speakWithElevenMock.mockResolvedValue(undefined);
+
+    render(
+      <MemoryRouter>
+        <SettingsScreen />
+      </MemoryRouter>,
+    );
+
+    const connectionBtn = await screen.findByRole('button', { name: /اختبار اتصال elevenlabs/i });
+    await user.click(connectionBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/اتصال ElevenLabs شغال/i)).toBeInTheDocument();
+    });
+
+    const voiceBtn = await screen.findByRole('button', { name: /اختبار نطق عشوائي/i });
+    await user.click(voiceBtn);
+
+    await waitFor(() => {
+      expect(speakWithElevenMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(/اختبار النطق نجح/i)).toBeInTheDocument();
+    });
   });
 });

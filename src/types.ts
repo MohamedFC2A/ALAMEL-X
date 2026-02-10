@@ -71,6 +71,7 @@ export interface GlobalSettings {
   aiVoiceProvider: AiVoiceProvider;
   aiAutoFacilitatorEnabled: boolean;
   aiSilenceThresholdMs: number;
+  aiInterventionRestMs: number;
 }
 
 export interface WordEntry {
