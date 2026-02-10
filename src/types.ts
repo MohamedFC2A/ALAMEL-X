@@ -204,6 +204,7 @@ export interface ElevenSttResponse {
   text: string;
   confidence?: number;
   provider: 'elevenlabs';
+  noSpeech?: boolean;
 }
 
 export interface MatchRecord {

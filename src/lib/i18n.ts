@@ -208,7 +208,7 @@ const translation = {
   aiMissingKey: 'ضع المفتاح أولًا.',
   aiVoiceInput: 'استقبال بالصوت',
   aiVoiceOutput: 'نطق ردود AI',
-  aiVoiceNote: 'تحويل الصوت يعتمد على دعم المتصفح وقد يستخدم مزوّد خدمة المتصفح.',
+  aiVoiceNote: 'تحويل الصوت داخل الجولة يعتمد على ElevenLabs فقط.',
   aiVoiceProvider: 'مزود الصوت',
   aiVoiceProviderEleven: 'ElevenLabs (أساسي)',
   aiVoiceProviderBrowser: 'المتصفح (احتياطي)',
@@ -313,6 +313,8 @@ export async function setupI18n(initialLanguage: 'en' | 'ar'): Promise<void> {
     resources,
     lng: initialLanguage,
     fallbackLng: 'ar',
+    debug: false,
+    showSupportNotice: false,
     interpolation: {
       escapeValue: false,
     },

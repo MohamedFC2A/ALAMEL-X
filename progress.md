@@ -546,3 +546,28 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - `npm run test`: pass (48 tests).
 - `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
 - `npm run build`: pass.
+## Progress Log
+- Fixed ElevenLabs STT endpoint behavior for silence chunks: `api/eleven/stt.js` now returns HTTP 200 with `{ noSpeech: true }` when transcript text is empty instead of forcing a 502 error.
+- Increased STT timeout to 28s and added stronger diagnostics (`details`) for upstream failures/timeouts.
+- Added base64 sanitizer for STT payloads to support `data:*;base64,...` input safely.
+- Updated client types/mapper (`src/types.ts`, `src/lib/ai/eleven-client.ts`) to consume `noSpeech` and avoid treating silence as a fatal error.
+- Suppressed i18next support spam banner by setting `showSupportNotice: false` and `debug: false` in `src/lib/i18n.ts`.
+- Added runtime error noise filter in `src/main.tsx` to ignore third-party Chrome extension exceptions (`chrome-extension://...`) so game debugging remains clean.
+- Added `vercel.json` with API passthrough + SPA fallback routing to prevent route-level 404s on deep links (e.g. `/play/discussion`).
+- Updated Arabic settings copy to reflect ElevenLabs-only in-game voice path.
+
+## Validation Update (STT + Routing + Noise)
+- `npm run lint`: pass (4 existing warnings in `src/screens/ResolutionScreen.tsx`, no new lint errors).
+- `npm run test`: pass (48 tests).
+- `npm run build`: pass.
+- Ran develop-web-game Playwright client against live URL and produced fresh artifacts at:
+  - `output/web-game/shot-0.png`
+  - `output/web-game/shot-1.png`
+  - `output/web-game/state-0.json`
+  - `output/web-game/state-1.json`
+- Playwright console-error artifact was not produced (no captured page errors in that run).
+
+## Remaining TODOs / Suggestions
+- Redeploy on Vercel to apply the new `vercel.json` routing behavior and STT endpoint changes in production.
+- After deploy, verify `/api/eleven/stt` with a real discussion flow (non-empty speech + silence chunk) to confirm no more false 502 for silence.
+- Optional: add a tiny UI badge in AI monitor for `noSpeech` events for easier operator debugging.

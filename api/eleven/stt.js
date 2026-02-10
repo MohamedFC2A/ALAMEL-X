@@ -1,7 +1,7 @@
 const ELEVEN_STT_URL = 'https://api.elevenlabs.io/v1/speech-to-text';
 const DEFAULT_STT_MODEL = 'scribe_v2';
 const MAX_AUDIO_BYTES = 8 * 1024 * 1024;
-const MAX_AUDIO_BASE64_LENGTH = Math.ceil((MAX_AUDIO_BYTES * 4) / 3) + 16;
+const MAX_AUDIO_BASE64_LENGTH = Math.ceil((MAX_AUDIO_BYTES * 4) / 3) + 128;
 
 function parseJsonBody(body) {
   if (!body) return {};
@@ -15,8 +15,21 @@ function parseJsonBody(body) {
   return body;
 }
 
-function fail(res, status, message, code) {
-  res.status(status).json({ error: { message, code } });
+function fail(res, status, message, code, details) {
+  const payload = { error: { message, code } };
+  if (details) {
+    payload.error.details = details;
+  }
+  res.status(status).json(payload);
+}
+
+function sanitizeBase64(value) {
+  const trimmed = typeof value === 'string' ? value.trim() : '';
+  if (!trimmed) return '';
+  const marker = ';base64,';
+  const index = trimmed.indexOf(marker);
+  if (index === -1) return trimmed;
+  return trimmed.slice(index + marker.length);
 }
 
 function pickConfidence(payload) {
@@ -44,7 +57,7 @@ export default async function handler(req, res) {
   }
 
   const input = parseJsonBody(req.body);
-  const audioBase64 = typeof input.audioBase64 === 'string' ? input.audioBase64.trim() : '';
+  const audioBase64 = sanitizeBase64(input.audioBase64);
   if (!audioBase64) {
     fail(res, 400, 'audioBase64 is required.', 'invalid_payload');
     return;
@@ -87,7 +100,7 @@ export default async function handler(req, res) {
   formData.append('language_code', languageCode || 'ar');
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 18_000);
+  const timer = setTimeout(() => controller.abort(), 28_000);
 
   try {
     const upstream = await fetch(ELEVEN_STT_URL, {
@@ -109,21 +122,17 @@ export default async function handler(req, res) {
 
     if (!upstream.ok) {
       const message = payload?.detail?.message || payload?.error?.message || `ElevenLabs STT request failed (${upstream.status}).`;
-      fail(res, upstream.status, message, 'upstream_stt_failed');
+      fail(res, upstream.status, message, 'upstream_stt_failed', raw.slice(0, 800));
       return;
     }
 
     const text = typeof payload?.text === 'string' ? payload.text.trim() : '';
-    if (!text) {
-      fail(res, 502, 'ElevenLabs STT returned an empty transcript.', 'invalid_response');
-      return;
-    }
-
     const confidence = pickConfidence(payload);
     res.status(200).json({
       text,
       confidence,
       provider: 'elevenlabs',
+      noSpeech: !text,
     });
   } catch (error) {
     const timedOut = Boolean(error && typeof error === 'object' && 'name' in error && error.name === 'AbortError');
@@ -132,6 +141,7 @@ export default async function handler(req, res) {
       502,
       timedOut ? 'ElevenLabs STT request timed out.' : 'Failed to connect to ElevenLabs STT upstream.',
       'upstream_request_failed',
+      error instanceof Error ? error.message : String(error),
     );
   } finally {
     clearTimeout(timer);

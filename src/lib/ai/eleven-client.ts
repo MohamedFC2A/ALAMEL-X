@@ -100,29 +100,27 @@ export async function transcribeWithEleven(audioBlob: Blob, language: Language):
     throw new ElevenError('Failed to connect to ElevenLabs STT endpoint.', { kind: 'network', cause: error });
   }
 
-  let data: ElevenSttResponse | null = null;
+  let data: ElevenSttResponse | { error?: { message?: string } } | null = null;
   try {
-    data = (await response.json()) as ElevenSttResponse;
+    data = (await response.json()) as ElevenSttResponse | { error?: { message?: string } };
   } catch {
     data = null;
   }
 
   if (!response.ok) {
     const status = response.status;
-    const message =
-      (data as unknown as { error?: { message?: string } })?.error?.message || `ElevenLabs STT failed (${status}).`;
+    const message = (data as { error?: { message?: string } } | null)?.error?.message || `ElevenLabs STT failed (${status}).`;
     throw new ElevenError(message, { kind: classifyStatus(status), status });
   }
 
-  const text = typeof data?.text === 'string' ? data.text.trim() : '';
-  if (!text) {
-    throw new ElevenError('ElevenLabs STT returned an empty transcript.', { kind: 'invalid_response' });
-  }
+  const text = typeof (data as ElevenSttResponse | null)?.text === 'string' ? (data as ElevenSttResponse).text.trim() : '';
+  const noSpeech = Boolean((data as ElevenSttResponse | null)?.noSpeech) || !text;
 
   return {
     text,
-    confidence: typeof data?.confidence === 'number' ? data.confidence : undefined,
+    confidence: typeof (data as ElevenSttResponse | null)?.confidence === 'number' ? (data as ElevenSttResponse).confidence : undefined,
     provider: 'elevenlabs',
+    noSpeech,
   };
 }
 
