@@ -178,3 +178,52 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
   - Players edit/toggle actions.
   - Settings update/check button (`تحديث اللعبة` -> `اللعبة محدّثة` state observed).
 - Long Arabic player name scenario verified on mobile: no horizontal overflow or card breakage in players list.
+## Progress Log
+- Applied mobile-first layout stabilization pass across `src/styles/base.css`, `src/styles/layout.css`, and `src/styles/components.css`.
+- Added safe-area-aware shell paddings and min viewport guards (`vh/svh/dvh`) to reduce clipping on small phones.
+- Improved scroll resilience by allowing `screen-scroll-region--none` to become vertical-scroll on narrow/short viewports.
+- Reworked mobile header grid behavior to prevent title/subtitle/home-link collisions.
+- Rebalanced action bars, player rows/actions, stats grid, spy-count controls, and long-text wrapping for Arabic-heavy UI.
+- Updated modal max-height to `dvh` and hardened banner/chip/choice-card word wrapping.
+
+## TODO (Current)
+- Run lint/test/build and inspect for regressions.
+- Run Playwright mobile verification loop and compare before/after screenshots.
+## Validation Update (Mobile Layout Rebalance)
+- `npm run lint`: pass.
+- `npm run test`: pass (23 tests).
+- `npm run build`: pass (PWA artifacts generated; existing chunk-size warning unchanged).
+- Ran develop-web-game Playwright client (skill script) and generated fresh artifacts:
+  - `output/web-game/mobilefix-home`
+  - `output/web-game/mobilefix-players`
+  - `output/web-game/mobilefix-settings`
+  - `output/web-game/mobilefix-setup`
+  - `output/web-game/mobilefix-reveal`
+- Verified corresponding text-state payloads for captured routes (home/players/settings).
+- Ran direct Playwright viewport verification at `390x844` for:
+  - `/`
+  - `/play/setup`
+  - `/players`
+  - `/settings`
+  - `/play/reveal`
+  - `/play/discussion`
+  - `/play/resolution`
+  - `/play/summary`
+- Console error check in browser session: no errors.
+
+## Remaining TODOs / Suggestions
+- If you want an even tighter mobile feel, we can make a second pass specifically for `setup-insights` visual density (typography scale + contrast) on <=390px.
+- Optional: add screenshot regression checks for 390x844 in CI to catch future layout drift.
+## Progress Log
+- Reproduced user-reported bug on mobile setup screen: spy-count selector was visually/interaction-blocked by the sticky action bar overlap.
+- Implemented targeted mobile fix in `src/styles/components.css`: on `max-width: 560px`, both `.sticky-action-bar` and `.reveal-action-bar` switch to non-sticky flow (`position: static`) to prevent control occlusion.
+- Verified interaction in Playwright at `390x844`: clicking spy count `2` updates HUD spy count from `1` to `2` and active pill state toggles correctly.
+
+## Validation Update (Spy Count Fix)
+- `npm run lint`: pass.
+- `npm run test`: pass (23 tests).
+- `npm run build`: pass.
+- develop-web-game client run completed after fix:
+  - `output/web-game/spycount-fix-verify`
+- Browser-side verification screenshot:
+  - `spycount-after-fix-click.png`

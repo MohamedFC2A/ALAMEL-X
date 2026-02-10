@@ -1,10 +1,12 @@
 /* ═══════════ APP SHELL & SCAFFOLDING ═══════════ */
 .app-shell {
     position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
     height: var(--app-height);
     width: 100%;
     background-color: var(--bg-void);
-    overflow: hidden;
+    overflow: clip;
 }
 
 .app-shell__vignette {
@@ -48,15 +50,16 @@
     display: flex;
     justify-content: center;
     isolation: isolate;
-    padding-block-start: var(--space-3);
-    padding-block-end: var(--space-4);
-    padding-inline: var(--space-2);
+    padding-block-start: max(var(--space-2), var(--safe-top));
+    padding-block-end: calc(var(--space-4) + var(--safe-bottom));
+    padding-inline-start: max(var(--space-2), var(--safe-left));
+    padding-inline-end: max(var(--space-2), var(--safe-right));
 }
 
 @media (max-height: 740px) {
     .app-shell__content {
         padding-block-start: var(--space-2);
-        padding-block-end: var(--space-2);
+        padding-block-end: calc(var(--space-2) + var(--safe-bottom));
     }
 
     .screen-header {
@@ -74,7 +77,11 @@
 
 .route-stage {
     width: var(--content-width);
+    max-width: 100%;
     height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     margin-inline: auto;
     margin-block: 0;
     pointer-events: none;
@@ -82,6 +89,7 @@
 
 .route-stage>* {
     height: 100%;
+    min-height: 0;
     pointer-events: auto;
 }
 
@@ -95,6 +103,7 @@ main {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
 }
 
 .screen-header {
@@ -118,6 +127,7 @@ main {
     gap: var(--space-2);
     height: 100%;
     min-height: 0;
+    overflow: hidden;
 }
 
 .screen-scroll-region {
@@ -127,11 +137,14 @@ main {
     flex: 1;
     min-height: 0;
     padding-inline: var(--space-2);
+    padding-block-end: var(--space-2);
     overscroll-behavior: contain;
 }
 
 .screen-scroll-region--auto {
     overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
@@ -158,12 +171,29 @@ main {
     background: rgba(255, 255, 255, 0.24);
 }
 
-@media (max-width: 560px) {
-    .screen-scroll-region--auto {
+@media (max-width: 860px),
+(max-height: 820px) {
+    .screen-scroll-region--none {
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
     }
 
-    .screen-scroll-region--auto::-webkit-scrollbar {
+    .screen-scroll-region--none::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
+}
+
+@media (max-width: 560px) {
+    .screen-scroll-region--auto,
+    .screen-scroll-region--none {
+        scrollbar-width: none;
+    }
+
+    .screen-scroll-region--auto::-webkit-scrollbar,
+    .screen-scroll-region--none::-webkit-scrollbar {
         width: 0;
         height: 0;
     }
@@ -212,6 +242,9 @@ main {
 .header-subtitle {
     color: var(--text-soft);
     font-size: 0.8125rem;
+    line-height: var(--lh-body);
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
 }
 
 .header-home-link {
@@ -245,6 +278,7 @@ main {
     padding-inline: var(--space-2);
     overflow-y: auto;
     min-height: 0;
+    gap: var(--space-3);
 }
 
 .home-hud__top {
@@ -273,6 +307,7 @@ main {
 
 .home-hud__center {
     flex: 1 1 auto;
+    min-height: clamp(8rem, 34vh, 18rem);
     width: 100%;
     display: flex;
     align-items: center;
@@ -307,8 +342,7 @@ main {
 }
 
 /* ═══════════ RTL ADAPTATIONS (Layout) ═══════════ */
-html[dir='rtl'] .screen-header-main,
-html[dir='rtl'] .header-meta {
+html[dir='rtl'] .screen-header-main {
     text-align: right;
 }
 
@@ -320,35 +354,42 @@ html[dir='rtl'] .header-meta {
 @media (max-width: 560px) {
     .app-shell__content {
         padding-block-start: var(--space-2);
-        padding-inline: var(--space-1);
-        padding-block-end: var(--space-3);
+        padding-inline-start: max(var(--space-1), var(--safe-left));
+        padding-inline-end: max(var(--space-1), var(--safe-right));
+        padding-block-end: calc(var(--space-3) + var(--safe-bottom));
     }
 
-    /* Header Rail (defined here as it wasn't in main block) */
-    .header-rail {
-        display: flex;
-        /* inferred */
+    .header-grid {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "start end"
+            "center center";
+        row-gap: var(--space-1);
         align-items: flex-start;
-        gap: 0.6rem;
     }
 
-    .header-meta {
-        flex: 1 1 auto;
+    .header-grid__start {
+        grid-area: start;
     }
 
-    .header-subtitle {
-        max-width: 26ch;
-        font-size: 0.84rem;
-        line-height: var(--lh-body);
+    .header-grid__center {
+        grid-area: center;
+        width: 100%;
+        gap: var(--space-1);
     }
 
-    .header-actions {
-        width: auto;
-        align-self: flex-start;
+    .header-grid__center h1 {
+        font-size: clamp(1.25rem, 6.2vw, 1.65rem);
+        letter-spacing: 0.06em;
     }
 
-    /* RTL override for header actions might be needed if they are flex row */
+    .header-grid__end {
+        grid-area: end;
+    }
 
+    .header-home-link {
+        min-width: max-content;
+    }
 
     .home-hud {
         padding-block-start: 0.8rem;
@@ -366,7 +407,7 @@ html[dir='rtl'] .header-meta {
 
     .screen-scroll-region {
         padding-inline: var(--space-2);
-        padding-block-end: calc(80px + var(--space-2));
+        padding-block-end: calc(76px + var(--space-2) + var(--safe-bottom));
     }
 }
 

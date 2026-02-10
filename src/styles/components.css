@@ -91,12 +91,14 @@
 .metric-chip strong {
     font-size: 1.18rem;
     line-height: 1;
+    overflow-wrap: anywhere;
 }
 
 .metric-chip span {
     color: var(--text-soft);
     font-size: 0.85rem;
     line-height: var(--lh-compact);
+    overflow-wrap: anywhere;
 }
 
 .section-count-badge {
@@ -113,7 +115,8 @@
     font-weight: 700;
     line-height: var(--lh-compact);
     letter-spacing: 0.04em;
-    white-space: nowrap;
+    white-space: normal;
+    text-align: center;
 }
 
 /* ─── Banners ─── */
@@ -126,6 +129,8 @@
     color: var(--text-main);
     position: relative;
     line-height: var(--lh-body);
+    overflow-wrap: anywhere;
+    word-break: break-word;
     animation: cardRise 360ms ease;
 }
 
@@ -388,6 +393,7 @@
 .primary-action-bar {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: var(--space-3);
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--stroke-1);
@@ -425,6 +431,7 @@
 
 .action-leading {
     flex: 1;
+    min-width: min(11rem, 100%);
     color: var(--text-soft);
 }
 
@@ -432,7 +439,14 @@
     display: flex;
     justify-content: flex-end;
     flex: 1;
+    min-width: min(11rem, 100%);
+    flex-wrap: wrap;
     gap: var(--space-2);
+}
+
+.action-main>*,
+.action-leading>* {
+    max-width: 100%;
 }
 
 .actions-row {
@@ -588,7 +602,7 @@ input[type='range'] {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: "avatar main actions";
-    align-items: center;
+    align-items: start;
     column-gap: var(--space-2);
     row-gap: var(--space-1);
     width: 100%;
@@ -630,7 +644,7 @@ input[type='range'] {
     display: flex;
     gap: var(--space-1);
     justify-content: flex-end;
-    align-items: center;
+    align-items: stretch;
     flex-wrap: wrap;
 }
 
@@ -642,9 +656,9 @@ input[type='range'] {
     margin-block-start: var(--space-2);
     padding-block-start: var(--space-2);
     border-block-start: 1px solid var(--stroke-2);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-3);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+    gap: var(--space-1) var(--space-2);
     color: var(--text-soft);
     font-size: 0.9rem;
     line-height: var(--lh-body);
@@ -728,6 +742,7 @@ input[type='range'] {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: var(--space-2);
 }
 
 .toggle-panel {
@@ -737,6 +752,7 @@ input[type='range'] {
 
 .pill-row {
     display: inline-flex;
+    max-width: 100%;
     background: rgba(16, 29, 47, 0.9);
     padding: 0.22rem;
     border-radius: 999px;
@@ -1134,6 +1150,8 @@ input[type='range'] {
 .word-list {
     margin-inline-start: 0.35rem;
     color: var(--text-soft);
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .choice-grid {
@@ -1152,10 +1170,12 @@ input[type='range'] {
     justify-content: center;
     text-align: center;
     font-weight: 600;
+    line-height: var(--lh-body);
     padding-block: var(--space-3);
     padding-inline: var(--space-4);
     border: 1px solid var(--stroke-1);
     background: linear-gradient(162deg, rgba(120, 180, 255, 0.1), rgba(8, 14, 25, 0.95));
+    overflow-wrap: anywhere;
 }
 
 .choice-card.selected {
@@ -1281,7 +1301,7 @@ input[type='range'] {
 
 .modal {
     width: min(100%, 640px);
-    max-height: min(88vh, 800px);
+    max-height: min(88dvh, 800px);
     overflow: auto;
     padding: var(--space-3);
     display: flex;
@@ -1329,14 +1349,24 @@ html[dir='rtl'] .reveal-mask-progress-fill {
 
 /* ═══════════ MEDIA QUERIES (Components) ═══════════ */
 @media (max-width: 560px) {
+    .sticky-action-bar,
+    .reveal-action-bar {
+        position: static;
+        inset-block-end: auto;
+        margin-top: var(--space-2);
+    }
+
     .phase-indicator {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .player-actions,
     .modal-actions,
     .primary-action-bar {
         flex-direction: column;
+    }
+
+    .primary-action-bar {
+        align-items: stretch;
     }
 
     .glass-card {
@@ -1366,22 +1396,25 @@ html[dir='rtl'] .reveal-mask-progress-fill {
         grid-template-areas:
             "avatar main"
             "actions actions";
-        align-items: center;
+        align-items: start;
     }
 
     .player-actions {
         width: 100%;
-        justify-content: space-between;
+        justify-content: flex-start;
+        align-items: stretch;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         margin-block-start: var(--space-1);
     }
 
     .player-actions .game-button {
-        flex: 1;
+        width: 100%;
         min-width: 0;
     }
 
     .stats-grid {
-        flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
         gap: var(--space-1);
     }
 
@@ -1422,6 +1455,23 @@ html[dir='rtl'] .reveal-mask-progress-fill {
     .reveal-action-bar .action-main,
     .reveal-action-bar .action-main .next-btn {
         width: 100%;
+    }
+
+    .spy-count-panel {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pill-row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.25rem;
+    }
+
+    .pill-btn {
+        width: 100%;
+        min-width: 0;
     }
 
     .home-hud .game-button--icon {
