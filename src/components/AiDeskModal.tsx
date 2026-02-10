@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bot, Mic, Send, X } from 'lucide-react';
+import { Bot, Mic, Volume2, X } from 'lucide-react';
 import type { ActiveMatch, AiThreadState, GlobalSettings, Language, Player } from '../types';
 import { db } from '../lib/db';
 import { updateActiveMatch } from '../lib/game-repository';
 import { DeepSeekError } from '../lib/ai/deepseek-client';
-import { generateChatReply, generateQuestion, runtimeConfigFromSettings } from '../lib/ai/agent';
+import { generateChatReply, runtimeConfigFromSettings } from '../lib/ai/agent';
 import { StatusBanner } from './StatusBanner';
 import { GameButton } from './GameButton';
 
 type SpeechRecognitionEventLike = {
+  resultIndex?: number;
   results?: ArrayLike<ArrayLike<{ transcript?: string }>>;
 };
 
@@ -79,6 +80,93 @@ function buildContext(activeMatch: ActiveMatch, aiPlayer: Player, language: Lang
   } as const;
 }
 
+function normalizeSpeechText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[\u064b-\u065f\u0610-\u061a\u06d6-\u06ed]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function stripWakePhrase(text: string, aiName: string): string {
+  const escaped = aiName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`^\\s*(يا\\s*)?${escaped}[،,:\\-\\s]*`, 'i'), '').trim();
+}
+
+function resolveAiTarget(utterance: string, aiPlayers: Player[]): Player | null {
+  if (!aiPlayers.length) {
+    return null;
+  }
+  if (aiPlayers.length === 1) {
+    return aiPlayers[0];
+  }
+
+  const normalizedInput = normalizeSpeechText(utterance);
+  let best: { player: Player; score: number } | null = null;
+
+  for (const player of aiPlayers) {
+    const normalizedName = normalizeSpeechText(player.name);
+    if (!normalizedName) {
+      continue;
+    }
+
+    let score = 0;
+    if (normalizedInput.includes(normalizedName)) {
+      score += 10;
+    }
+
+    const tokens = normalizedName.split(' ').filter((token) => token.length >= 2);
+    for (const token of tokens) {
+      if (normalizedInput.includes(token)) {
+        score += 2;
+      }
+    }
+
+    if (!best || score > best.score) {
+      best = { player, score };
+    }
+  }
+
+  if (best && best.score > 0) {
+    return best.player;
+  }
+
+  return aiPlayers[0];
+}
+
+function pickBestVoice(language: Language): SpeechSynthesisVoice | undefined {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return undefined;
+  }
+
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) {
+    return undefined;
+  }
+
+  const langPrefix = language === 'ar' ? 'ar' : 'en';
+  const preferredName = language === 'ar' ? ['google', 'premium', 'neural', 'arabic'] : ['google', 'premium', 'neural'];
+  const candidates = voices.filter((voice) => voice.lang.toLowerCase().startsWith(langPrefix));
+  const pool = candidates.length ? candidates : voices;
+
+  let best: SpeechSynthesisVoice | undefined;
+  let bestScore = -1;
+  for (const voice of pool) {
+    const name = voice.name.toLowerCase();
+    let score = 0;
+    if (voice.lang.toLowerCase().startsWith(langPrefix)) score += 5;
+    if (voice.localService) score += 2;
+    if (preferredName.some((entry) => name.includes(entry))) score += 2;
+    if (score > bestScore) {
+      bestScore = score;
+      best = voice;
+    }
+  }
+
+  return best;
+}
+
 function speakText(text: string, language: Language) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     return;
@@ -86,9 +174,10 @@ function speakText(text: string, language: Language) {
   try {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language === 'ar' ? 'ar' : 'en-US';
-    utterance.rate = 1;
-    utterance.pitch = 1;
+    utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
+    utterance.voice = pickBestVoice(language) ?? null;
+    utterance.rate = language === 'ar' ? 1.17 : 1.08;
+    utterance.pitch = 0.96;
     window.speechSynthesis.speak(utterance);
   } catch {
     // ignore
@@ -97,18 +186,12 @@ function speakText(text: string, language: Language) {
 
 export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, settings, language }: AiDeskModalProps) {
   const { t } = useTranslation();
-  const [selectedAiId, setSelectedAiId] = useState('');
-  const [draft, setDraft] = useState('');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'asking'>('idle');
+  const [status, setStatus] = useState<'idle' | 'listening' | 'processing'>('idle');
   const [error, setError] = useState('');
-  const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const listening = status === 'listening';
 
-  const selectedAi = useMemo(() => aiPlayers.find((player) => player.id === selectedAiId) ?? aiPlayers[0] ?? null, [aiPlayers, selectedAiId]);
-  const thread = useMemo(() => {
-    if (!selectedAi) return buildEmptyThread();
-    return activeMatch.ai?.threads?.[selectedAi.id] ?? buildEmptyThread();
-  }, [activeMatch.ai, selectedAi]);
+  const aiNames = useMemo(() => aiPlayers.map((player) => player.name).join('، '), [aiPlayers]);
 
   useEffect(() => {
     if (!open) {
@@ -118,14 +201,10 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
         // ignore
       }
       recognitionRef.current = null;
-      setListening(false);
+      setStatus('idle');
       return;
     }
-
-    if (!selectedAiId && aiPlayers.length > 0) {
-      setSelectedAiId(aiPlayers[0].id);
-    }
-  }, [aiPlayers, open, selectedAiId]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -160,66 +239,6 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
   const canVoiceIn = Boolean(settings?.aiVoiceInputEnabled);
   const canVoiceOut = Boolean(settings?.aiVoiceOutputEnabled && settings?.soundEnabled);
 
-  function startListening() {
-    if (!canVoiceIn) {
-      return;
-    }
-    if (listening) {
-      return;
-    }
-
-    const windowWithSpeech = window as unknown as SpeechRecognitionWindow;
-    const SpeechRecognitionCtor = windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) {
-      setError(t('aiVoiceUnsupported'));
-      return;
-    }
-
-    setError('');
-    setListening(true);
-
-    const recognition = new SpeechRecognitionCtor();
-    recognitionRef.current = recognition;
-    recognition.lang = language === 'ar' ? 'ar' : 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
-
-    recognition.onresult = (event: SpeechRecognitionEventLike) => {
-      const transcript = event?.results?.[0]?.[0]?.transcript ?? '';
-      const next = transcript.toString().trim();
-      if (next) {
-        setDraft((prev) => (prev ? `${prev} ${next}` : next));
-      }
-    };
-
-    recognition.onerror = () => {
-      setError(t('aiVoiceError'));
-      setListening(false);
-    };
-
-    recognition.onend = () => {
-      setListening(false);
-    };
-
-    try {
-      recognition.start();
-    } catch {
-      setListening(false);
-    }
-  }
-
-  function stopListening() {
-    if (!listening) {
-      return;
-    }
-    try {
-      recognitionRef.current?.stop?.();
-    } catch {
-      // ignore
-    }
-  }
-
   async function appendMessages(aiId: string, messagesToAppend: Array<{ from: 'user' | 'ai'; text: string }>) {
     const current = await db.activeMatch.get('active');
     if (!current) {
@@ -246,13 +265,9 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     });
   }
 
-  async function sendText(text: string) {
-    if (!selectedAi) {
-      return;
-    }
-
-    const trimmed = text.trim();
-    if (!trimmed) {
+  async function handleVoiceCommand(utterance: string) {
+    const targetAi = resolveAiTarget(utterance, aiPlayers);
+    if (!targetAi) {
       return;
     }
 
@@ -266,20 +281,23 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
       return;
     }
 
+    const cleanedText = stripWakePhrase(utterance, targetAi.name);
+    if (!cleanedText) {
+      setError(t('aiVoiceNeedPrompt'));
+      return;
+    }
+
     setError('');
-    setStatus('sending');
-    setDraft('');
+    setStatus('processing');
 
     try {
       const config = runtimeConfigFromSettings(settings);
-      const context = buildContext(activeMatch, selectedAi, language, playerMap);
-      const baseThread = activeMatch.ai?.threads?.[selectedAi.id] ?? buildEmptyThread();
+      const context = buildContext(activeMatch, targetAi, language, playerMap);
+      const baseThread = activeMatch.ai?.threads?.[targetAi.id] ?? buildEmptyThread();
 
-      await appendMessages(selectedAi.id, [{ from: 'user', text: trimmed }]);
-
-      const { reply } = await generateChatReply(config, context, baseThread, trimmed);
-
-      await appendMessages(selectedAi.id, [{ from: 'ai', text: reply }]);
+      await appendMessages(targetAi.id, [{ from: 'user', text: cleanedText }]);
+      const { reply } = await generateChatReply(config, context, baseThread, cleanedText);
+      await appendMessages(targetAi.id, [{ from: 'ai', text: reply }]);
 
       if (canVoiceOut) {
         speakText(reply, language);
@@ -291,39 +309,77 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     }
   }
 
-  async function askQuestion() {
-    if (!selectedAi) {
+  function startListening() {
+    if (!canVoiceIn) {
+      setError(t('aiVoiceInputDisabled'));
+      return;
+    }
+    if (status !== 'idle') {
       return;
     }
 
-    if (!settings?.aiEnabled) {
-      setError(t('aiDisabled'));
-      return;
-    }
-
-    if (!canUseAi) {
-      setError(t('aiSetupRequired'));
+    const windowWithSpeech = window as unknown as SpeechRecognitionWindow;
+    const SpeechRecognitionCtor = windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) {
+      setError(t('aiVoiceUnsupported'));
       return;
     }
 
     setError('');
-    setStatus('asking');
+    setStatus('listening');
 
-    try {
-      const config = runtimeConfigFromSettings(settings);
-      const context = buildContext(activeMatch, selectedAi, language, playerMap);
-      const baseThread = activeMatch.ai?.threads?.[selectedAi.id] ?? buildEmptyThread();
-      const question = await generateQuestion(config, context, baseThread);
-      if (question) {
-        await appendMessages(selectedAi.id, [{ from: 'ai', text: question }]);
-        if (canVoiceOut) {
-          speakText(question, language);
+    const recognition = new SpeechRecognitionCtor();
+    recognitionRef.current = recognition;
+    recognition.lang = language === 'ar' ? 'ar-SA' : 'en-US';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+    let finalText = '';
+
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
+      const startIndex = event.resultIndex ?? 0;
+      const results = event.results ?? [];
+      for (let i = startIndex; i < results.length; i += 1) {
+        const transcript = results[i]?.[0]?.transcript?.toString().trim() ?? '';
+        if (!transcript) {
+          continue;
+        }
+        const isFinal = Boolean((results as unknown as ArrayLike<{ isFinal?: boolean }>)[i]?.isFinal);
+        if (isFinal) {
+          finalText = `${finalText} ${transcript}`.trim();
         }
       }
-    } catch (err) {
-      setError(formatAiError(err, t));
-    } finally {
+    };
+
+    recognition.onerror = () => {
+      setError(t('aiVoiceError'));
       setStatus('idle');
+    };
+
+    recognition.onend = () => {
+      setStatus('idle');
+      if (finalText.trim()) {
+        void handleVoiceCommand(finalText.trim());
+        return;
+      }
+      setError(t('aiVoiceNoSpeech'));
+    };
+
+    try {
+      recognition.start();
+    } catch {
+      setStatus('idle');
+    }
+  }
+
+  function stopListening() {
+    if (!listening) {
+      return;
+    }
+    try {
+      recognitionRef.current?.stop?.();
+    } catch {
+      // ignore
     }
   }
 
@@ -349,73 +405,25 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
           </button>
         </div>
 
-        <label className="form-field">
-          <span>{t('aiChooseAgent')}</span>
-          <select value={selectedAi?.id ?? ''} onChange={(event) => setSelectedAiId(event.target.value)}>
-            {aiPlayers.map((player) => (
-              <option key={player.id} value={player.id}>
-                {player.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="ai-chat-log" role="log" aria-live="polite">
-          {(thread.messages ?? []).length === 0 ? (
-            <p className="subtle ai-chat-empty">{t('aiDeskEmpty')}</p>
-          ) : (
-            (thread.messages ?? []).map((msg) => (
-              <div key={`${msg.at}-${msg.from}`} className={`ai-chat-bubble ${msg.from === 'user' ? 'from-user' : 'from-ai'}`.trim()}>
-                <span>{msg.text}</span>
-              </div>
-            ))
-          )}
+        <div className="ai-voice-room">
+          <p className="subtle">{t('aiVoiceRoomHint', { names: aiNames })}</p>
+          <StatusBanner tone="default">
+            <Volume2 size={16} aria-hidden /> {t('aiVoiceRoomOnly')}
+          </StatusBanner>
+          {!canVoiceOut ? <StatusBanner tone="warning">{t('aiVoiceOutputDisabled')}</StatusBanner> : null}
         </div>
 
         {error ? <StatusBanner tone="danger">{error}</StatusBanner> : null}
 
-        <div className="ai-chat-controls">
+        <div className="ai-voice-cta">
           <GameButton
-            variant={listening ? 'danger' : 'ghost'}
-            size="md"
+            variant={listening ? 'danger' : 'cta'}
+            size="lg"
             icon={<Mic size={18} aria-hidden />}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              startListening();
-            }}
-            onPointerUp={(event) => {
-              event.preventDefault();
-              stopListening();
-            }}
-            onPointerLeave={() => stopListening()}
-            onPointerCancel={() => stopListening()}
-            disabled={!canVoiceIn}
+            onClick={() => (listening ? stopListening() : startListening())}
+            disabled={!canVoiceIn || status === 'processing'}
           >
-            {listening ? t('aiListening') : t('aiSpeak')}
-          </GameButton>
-
-          <input
-            className="ai-chat-input"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder={t('aiTypeHere')}
-            maxLength={240}
-          />
-
-          <GameButton
-            variant="cta"
-            size="md"
-            icon={<Send size={18} aria-hidden />}
-            onClick={() => void sendText(draft)}
-            disabled={status !== 'idle' || !draft.trim()}
-          >
-            {t('aiSend')}
-          </GameButton>
-        </div>
-
-        <div className="actions-row ai-desk-actions">
-          <GameButton variant="ghost" size="md" onClick={() => void askQuestion()} disabled={status !== 'idle'}>
-            {t('aiAskQuestion')}
+            {status === 'processing' ? t('aiThinking') : listening ? t('aiVoiceTapToStop') : t('aiVoiceTapToSpeak')}
           </GameButton>
         </div>
       </div>

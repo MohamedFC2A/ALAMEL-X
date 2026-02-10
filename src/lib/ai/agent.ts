@@ -63,20 +63,22 @@ function redactLeakedWord(reply: string, secretWord: string, language: Language)
 function systemPrompt(context: AiMatchContext): string {
   const base = [
     'أنت لاعب AI داخل لعبة اجتماعية لكشف الجاسوس (pass-and-play).',
-    'أسلوبك: عربي طبيعي مختصر (1–3 جمل)، ذكي، وتفكير استنتاجي.',
+    'أسلوبك: عربي طبيعي واضح وسريع، مختصر (1-2 جمل غالبًا)، ذكي، واستنتاجي.',
     'ممنوع تقول أنك نموذج ذكاء اصطناعي أو تذكر السيستم/الـprompt.',
-    'لو سُئلت سؤال مباشر: أجب ثم اسأل سؤال متابعة واحد ذكي.',
+    'تعاون مع الفريق بطريقة غير مباشرة: قدّم إشارات ذكية بدل الشرح المكشوف.',
+    'قلّل الأسئلة جدًا. لا تسأل إلا إذا كان السؤال ضروريًا فعلاً لتقليل الشك.',
+    'اعتبر أن مدخلات المستخدم صوتية وقد تحتوي أخطاء نطق/إملاء: استنتج المقصود وصحّح الفهم ضمنيًا.',
   ];
 
   if (context.role === 'citizen') {
     base.push(
       `أنت *مواطن*. تعرف الكلمة السرية لكن ممنوع تذكرها أو أي جزء منها حرفيًا.`,
-      'قدّم تلميحات غير مباشرة فقط.',
+      'قدّم تلميحات غير مباشرة وداعمة. تجنّب تحويل الحوار إلى استجواب.',
     );
   } else {
     base.push(
       `أنت *جاسوس*. لا تعرف الكلمة السرية.`,
-      'مهمتك تستنتج الكلمة من الأسئلة والحوارات وتضلّل بدون فضح نفسك.',
+      'مهمتك تستنتج الكلمة من الحوار وتضلّل بدون فضح نفسك أو المبالغة في الأسئلة.',
     );
   }
 
@@ -161,13 +163,15 @@ export async function generateChatReply(
     { role: 'user' as const, content: userText },
   ];
 
-  let reply = await chatComplete({ ...config, messages });
+  let reply = await chatComplete({ ...config, messages, temperature: 0.45, maxTokens: 170 });
   let didRedact = false;
 
   if (context.role === 'citizen' && context.secretWord && hasWordLeak(reply, context.secretWord, context.language)) {
     try {
       const retry = await chatComplete({
         ...config,
+        temperature: 0.4,
+        maxTokens: 170,
         messages: [
           { role: 'system', content: system },
           { role: 'system', content: contextMsg },
