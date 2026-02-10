@@ -10,6 +10,9 @@ export function HomeScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const activeMatch = useLiveQuery(() => db.activeMatch.get('active'), []);
+  const settings = useLiveQuery(() => db.settings.get('global'), []);
+  const reducedMotion = Boolean(settings?.reducedMotionMode);
+  const motionSpeed = Math.max(0.35, settings?.animationSpeed ?? 1);
 
   const handleMission = () => {
     if (navigator.vibrate) navigator.vibrate(50);
@@ -30,8 +33,8 @@ export function HomeScreen() {
       <section className="home-hud__center">
         <motion.div
           className="home-hud__mission-wrap"
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+          animate={reducedMotion ? undefined : { scale: [1, 1.04, 1] }}
+          transition={reducedMotion ? undefined : { duration: 2.8 / motionSpeed, repeat: Infinity, ease: 'easeInOut' }}
         >
           <GameButton
             id="start-mission-btn"

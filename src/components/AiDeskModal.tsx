@@ -136,6 +136,7 @@ function resolveAiTarget(utterance: string, aiPlayers: Player[]): Player | null 
 }
 
 const voiceCache: Partial<Record<Language, SpeechSynthesisVoice>> = {};
+let speechSessionNonce = 0;
 const FEMALE_VOICE_HINTS = [
   'female',
   'woman',
@@ -216,6 +217,23 @@ function splitForSpeech(text: string): string[] {
   return chunks.length ? chunks : [normalized];
 }
 
+function humanizeForSpeech(text: string, language: Language): string {
+  const normalized = text
+    .replace(/[•]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\.{3,}/g, '.')
+    .replace(/([!؟?]){2,}/g, '$1')
+    .replace(/([،,؛:]){2,}/g, '$1')
+    .trim();
+
+  if (!normalized) {
+    return normalized;
+  }
+
+  const withReadableAcronyms = language === 'ar' ? normalized.replace(/\bAI\b/gi, 'إيه آي') : normalized;
+  return /[.!؟]$/.test(withReadableAcronyms) ? withReadableAcronyms : `${withReadableAcronyms}.`;
+}
+
 function scoreVoice(voice: SpeechSynthesisVoice, language: Language): number {
   const name = voice.name.toLowerCase();
   const lang = voice.lang.toLowerCase();
@@ -224,12 +242,13 @@ function scoreVoice(voice: SpeechSynthesisVoice, language: Language): number {
   let score = 0;
   if (lang.startsWith(langPrefix)) score += 25;
   if (language === 'ar' && /(ar-sa|ar-eg|ar-ae|ar-jo|ar)\b/.test(lang)) score += 8;
-  if (voice.localService) score += 4;
+  if (voice.localService) score -= 1;
+  if (!voice.localService) score += 5;
 
-  if (/(natural|neural|premium|enhanced|online)/.test(name)) score += 7;
+  if (/(natural|neural|premium|enhanced|online|wavenet|studio)/.test(name)) score += 11;
   if (/(google|microsoft|samsung|apple)/.test(name)) score += 4;
   if (language === 'ar' && /(arabic|arabi|hoda|salma|amira|leila|layla|maryam|mariam)/.test(name)) score += 4;
-  if (/(compact|espeak|festival)/.test(name)) score -= 12;
+  if (/(compact|espeak|festival|robot|siri compact)/.test(name)) score -= 14;
   if (hasNameHint(name, FEMALE_VOICE_HINTS)) score += 22;
   if (hasNameHint(name, MALE_VOICE_HINTS)) score -= 28;
 
@@ -297,8 +316,8 @@ function speakChunk(chunk: string, language: Language, voice?: SpeechSynthesisVo
     const utterance = new SpeechSynthesisUtterance(chunk);
     utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
     utterance.voice = voice ?? null;
-    utterance.rate = language === 'ar' ? 1.02 : 1;
-    utterance.pitch = language === 'ar' ? 1.08 : 1.02;
+    utterance.rate = language === 'ar' ? 0.95 : 0.98;
+    utterance.pitch = language === 'ar' ? 1.05 : 1.02;
     utterance.volume = 1;
     utterance.onend = () => resolve();
     utterance.onerror = () => resolve();
@@ -311,17 +330,39 @@ async function speakText(text: string, language: Language) {
     return;
   }
 
-  const segments = splitForSpeech(text);
+  const segments = splitForSpeech(humanizeForSpeech(text, language));
   if (!segments.length) {
     return;
   }
 
   try {
+    const sessionNonce = ++speechSessionNonce;
     const bestVoice = await pickBestVoice(language);
     window.speechSynthesis.cancel();
     for (const segment of segments) {
+      if (sessionNonce !== speechSessionNonce) {
+        return;
+      }
       await speakChunk(segment, language, bestVoice);
+      if (sessionNonce !== speechSessionNonce) {
+        return;
+      }
+      await new Promise<void>((resolve) => {
+        window.setTimeout(() => resolve(), 70);
+      });
     }
+  } catch {
+    // ignore
+  }
+}
+
+function cancelSpeechOutput() {
+  speechSessionNonce += 1;
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return;
+  }
+  try {
+    window.speechSynthesis.cancel();
   } catch {
     // ignore
   }
@@ -329,12 +370,22 @@ async function speakText(text: string, language: Language) {
 
 export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, settings, language }: AiDeskModalProps) {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<'idle' | 'listening' | 'processing'>('idle');
+  const [status, setStatus] = useState<'idle' | 'listening' | 'processing' | 'speaking'>('idle');
   const [error, setError] = useState('');
+  const [activeAgentName, setActiveAgentName] = useState('');
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const listening = status === 'listening';
+  const speaking = status === 'speaking';
+  const voiceWaveActive = listening || speaking;
+  const voiceWaveProcessing = status === 'processing';
 
   const aiNames = useMemo(() => aiPlayers.map((player) => player.name).join('، '), [aiPlayers]);
+  const displayedAgentName = useMemo(() => {
+    if (activeAgentName && aiPlayers.some((player) => player.name === activeAgentName)) {
+      return activeAgentName;
+    }
+    return aiPlayers[0]?.name ?? '';
+  }, [activeAgentName, aiPlayers]);
 
   useEffect(() => {
     if (!open) {
@@ -343,8 +394,11 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
       } catch {
         // ignore
       }
+      cancelSpeechOutput();
       recognitionRef.current = null;
-      setStatus('idle');
+      window.setTimeout(() => {
+        setStatus('idle');
+      }, 0);
       return;
     }
   }, [open]);
@@ -420,6 +474,7 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     if (!targetAi) {
       return;
     }
+    setActiveAgentName(targetAi.name);
 
     if (!settings?.aiEnabled) {
       setError(t('aiDisabled'));
@@ -450,11 +505,12 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
       await appendMessages(targetAi.id, [{ from: 'ai', text: reply }]);
 
       if (canVoiceOut) {
-        void speakText(reply, language);
+        setStatus('speaking');
+        await speakText(reply, language);
       }
+      setStatus('idle');
     } catch (err) {
       setError(formatAiError(err, t));
-    } finally {
       setStatus('idle');
     }
   }
@@ -533,12 +589,40 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
     }
   }
 
+  function stopSpeaking() {
+    if (!speaking) {
+      return;
+    }
+    cancelSpeechOutput();
+    setStatus('idle');
+  }
+
+  function closeModal() {
+    try {
+      recognitionRef.current?.stop?.();
+    } catch {
+      // ignore
+    }
+    cancelSpeechOutput();
+    setStatus('idle');
+    onClose();
+  }
+
+  const currentVoiceStateLabel =
+    status === 'listening'
+      ? t('aiVoiceStateListening')
+      : status === 'processing'
+        ? t('aiVoiceStateProcessing')
+        : status === 'speaking'
+          ? t('aiVoiceStateSpeaking')
+          : t('aiVoiceStateIdle');
+
   if (!open) {
     return null;
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <div className="modal-backdrop" role="presentation" onClick={closeModal}>
       <div
         className="modal glass-card section-card cinematic-panel ai-desk-modal"
         role="dialog"
@@ -550,13 +634,30 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
             <Bot size={18} aria-hidden />
             <h2>{t('aiDeskTitle')}</h2>
           </div>
-          <button type="button" className="ai-desk-close" onClick={onClose} aria-label={t('close')}>
+          <button type="button" className="ai-desk-close" onClick={closeModal} aria-label={t('close')}>
             <X size={18} aria-hidden />
           </button>
         </div>
 
         <div className="ai-voice-room">
           <p className="subtle">{t('aiVoiceRoomHint', { names: aiNames })}</p>
+          <div className="ai-voice-agent-card">
+            <div className="ai-voice-agent-meta">
+              <span className="ai-voice-agent-label">{t('aiVoiceAgentLabel')}</span>
+              <strong className="ai-voice-agent-name">{displayedAgentName}</strong>
+            </div>
+            <div
+              className={`ai-voice-wave ${voiceWaveActive ? 'is-active' : ''} ${voiceWaveProcessing ? 'is-processing' : ''}`.trim()}
+              aria-hidden="true"
+            >
+              <span className="ai-voice-wave-bar" />
+              <span className="ai-voice-wave-bar" />
+              <span className="ai-voice-wave-bar" />
+              <span className="ai-voice-wave-bar" />
+              <span className="ai-voice-wave-bar" />
+            </div>
+            <p className="subtle ai-voice-state">{currentVoiceStateLabel}</p>
+          </div>
           <StatusBanner tone="default">
             <Volume2 size={16} aria-hidden /> {t('aiVoiceRoomOnly')}
           </StatusBanner>
@@ -567,13 +668,29 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
 
         <div className="ai-voice-cta">
           <GameButton
-            variant={listening ? 'danger' : 'cta'}
+            variant={listening || speaking ? 'danger' : 'cta'}
             size="lg"
             icon={<Mic size={18} aria-hidden />}
-            onClick={() => (listening ? stopListening() : startListening())}
+            onClick={() => {
+              if (listening) {
+                stopListening();
+                return;
+              }
+              if (speaking) {
+                stopSpeaking();
+                return;
+              }
+              startListening();
+            }}
             disabled={!canVoiceIn || status === 'processing'}
           >
-            {status === 'processing' ? t('aiThinking') : listening ? t('aiVoiceTapToStop') : t('aiVoiceTapToSpeak')}
+            {status === 'processing'
+              ? t('aiThinking')
+              : listening
+                ? t('aiVoiceTapToStop')
+                : speaking
+                  ? t('aiVoiceStopPlayback')
+                  : t('aiVoiceTapToSpeak')}
           </GameButton>
         </div>
       </div>

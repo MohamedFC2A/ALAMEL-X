@@ -8,10 +8,23 @@
     max-width: 100%;
     border-radius: var(--radius-2);
     border: 1px solid var(--stroke-1);
-    background: color-mix(in oklab, var(--surface-1) 90%, transparent);
+    background:
+        linear-gradient(165deg, color-mix(in oklab, var(--surface-1) 90%, rgba(255, 255, 255, 0.04)), color-mix(in oklab, var(--surface-1) 96%, transparent)),
+        color-mix(in oklab, var(--surface-1) 90%, transparent);
     backdrop-filter: blur(16px);
     box-shadow: var(--shadow-soft);
-    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    transition:
+        transform calc(180ms * max(var(--anim-speed), 0.01)) ease,
+        box-shadow calc(180ms * max(var(--anim-speed), 0.01)) ease,
+        border-color calc(180ms * max(var(--anim-speed), 0.01)) ease;
+}
+
+.player-card:hover,
+.history-card:hover,
+.setting-card:hover {
+    border-color: color-mix(in oklab, var(--accent) 45%, var(--stroke-1));
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(79, 209, 197, 0.08);
+    transform: translateY(-1px);
 }
 
 .cinematic-panel {
@@ -125,9 +138,14 @@
     border: 1px solid var(--stroke-1);
     padding: var(--space-2) var(--space-3);
     padding-inline-start: var(--space-4);
-    background: var(--surface-1);
+    background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0)),
+        var(--surface-1);
     color: var(--text-main);
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     line-height: var(--lh-body);
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -188,8 +206,13 @@
     gap: 0.5rem;
     letter-spacing: 0.04em;
     font-family: var(--font-hud);
+    font-weight: 650;
     text-transform: uppercase;
-    transition: border-color 150ms ease, background-color 150ms ease;
+    transition:
+        transform calc(120ms * max(var(--anim-speed), 0.01)) ease,
+        border-color calc(150ms * max(var(--anim-speed), 0.01)) ease,
+        background-color calc(150ms * max(var(--anim-speed), 0.01)) ease,
+        box-shadow calc(180ms * max(var(--anim-speed), 0.01)) ease;
     /* 
        CRITICAL: Force pointer events to auto to override any parent's pointer-events: none
        CRITICAL: manipulation optimizes touch response by disabling double-tap zoom delay 
@@ -200,10 +223,24 @@
 
 .game-button:hover:not(:disabled) {
     border-color: var(--accent);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(79, 209, 197, 0.2);
+    transform: translateY(-1px);
+}
+
+.game-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: inset 0 0 0 1px rgba(79, 209, 197, 0.14);
+}
+
+.game-button:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--accent) 88%, white);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 24%, transparent);
 }
 
 .game-button:disabled {
-    opacity: 0.4;
+    opacity: 0.46;
+    filter: saturate(0.75);
 }
 
 .game-button__icon {
@@ -214,6 +251,7 @@
 
 .game-button__label {
     line-height: var(--lh-compact);
+    text-wrap: balance;
 }
 
 .game-button--md {
@@ -248,6 +286,7 @@
     padding-block: var(--space-3);
     padding-inline: var(--space-2);
     width: calc(33.333% - var(--space-2));
+    min-height: 76px;
     border-radius: var(--radius-2);
     flex-direction: column;
     font-size: 0.6875rem;
@@ -266,7 +305,7 @@
 
 .game-button--ghost {
     border-color: var(--stroke-2);
-    background: transparent;
+    background: color-mix(in oklab, var(--surface-2) 35%, transparent);
 }
 
 .game-button--ghost:hover:not(:disabled) {
@@ -408,9 +447,11 @@
     gap: var(--space-3);
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--stroke-1);
-    background: var(--surface-1);
+    background: color-mix(in oklab, var(--surface-1) 90%, transparent);
+    backdrop-filter: blur(14px);
     border-radius: var(--radius-1);
     animation: cardRise 360ms ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .sticky-action-bar {
@@ -448,6 +489,7 @@
     flex: 1;
     min-width: min(11rem, 100%);
     color: var(--text-soft);
+    font-weight: 600;
 }
 
 .action-main {
@@ -498,6 +540,7 @@
 
 .section-heading .subtle {
     max-width: 32ch;
+    color: color-mix(in oklab, var(--text-soft) 88%, white);
 }
 
 .section-heading--stack {
@@ -550,6 +593,14 @@ select {
     color: var(--text-main);
     min-height: 2.55rem;
     padding: 0.45rem 0.7rem;
+    transition:
+        border-color calc(120ms * max(var(--anim-speed), 0.01)) ease,
+        box-shadow calc(120ms * max(var(--anim-speed), 0.01)) ease,
+        background-color calc(120ms * max(var(--anim-speed), 0.01)) ease;
+}
+
+input::placeholder {
+    color: color-mix(in oklab, var(--text-dim) 80%, white);
 }
 
 input:focus,
@@ -558,10 +609,13 @@ button:focus-visible,
 a:focus-visible {
     outline: 2px solid color-mix(in oklab, var(--accent) 80%, white);
     outline-offset: 1px;
+    border-color: color-mix(in oklab, var(--accent) 65%, white);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 25%, transparent);
 }
 
 input[type='range'] {
     padding: 0;
+    accent-color: var(--accent);
 }
 
 .switch-row {
@@ -575,6 +629,7 @@ input[type='range'] {
     width: 1.18rem;
     height: 1.18rem;
     accent-color: var(--accent);
+    border-radius: 0.3rem;
 }
 
 /* ═══════════ GAMEPLAY COMPONENTS ═══════════ */
@@ -619,6 +674,14 @@ input[type='range'] {
     background: var(--accent);
     border-color: var(--accent);
     box-shadow: none;
+}
+
+.phase-item.current {
+    font-weight: 700;
+}
+
+.phase-item.current .phase-dot {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 24%, transparent);
 }
 
 .phase-label {
@@ -1170,7 +1233,7 @@ input[type='range'] {
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, var(--accent), color-mix(in oklab, var(--accent) 62%, white));
-    transition: width 300ms linear;
+    transition: width calc(300ms * max(var(--anim-speed), 0.01)) linear;
 }
 
 .progress-fill.warning {
@@ -1357,7 +1420,8 @@ input[type='range'] {
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(4, 7, 12, 0.72);
+    background: rgba(4, 7, 12, 0.76);
+    backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1373,6 +1437,8 @@ input[type='range'] {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+    border: 1px solid color-mix(in oklab, var(--stroke-1) 90%, white 10%);
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.45);
     background:
         linear-gradient(135deg, rgba(255, 79, 109, 0.1), transparent 36%),
         linear-gradient(162deg, rgba(128, 190, 255, 0.1), rgba(7, 13, 24, 0.96));
@@ -1383,10 +1449,30 @@ input[type='range'] {
     padding-inline-start: 1.2rem;
 }
 
+.modal h2 {
+    margin-block-end: 0.2rem;
+}
+
+.modal-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border: 1px solid var(--stroke-2);
+    border-radius: var(--radius-1);
+    background: color-mix(in oklab, var(--surface-2) 86%, transparent);
+}
+
+.modal-section h3 {
+    margin: 0;
+}
+
 .modal-actions {
     display: flex;
     gap: var(--space-2);
     justify-content: flex-end;
+    padding-block-start: var(--space-1);
+    border-block-start: 1px solid color-mix(in oklab, var(--stroke-2) 80%, transparent);
 }
 
 /* ─── AI Desk ─── */
@@ -1431,6 +1517,116 @@ input[type='range'] {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-1);
+    border: 1px dashed color-mix(in oklab, var(--accent) 35%, transparent);
+    background: color-mix(in oklab, var(--surface-2) 70%, transparent);
+}
+
+.ai-voice-agent-card {
+    display: grid;
+    gap: var(--space-1);
+    border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--stroke-1));
+    border-radius: var(--radius-1);
+    padding: var(--space-2);
+    background:
+        linear-gradient(150deg, color-mix(in oklab, var(--accent) 10%, transparent), transparent 60%),
+        color-mix(in oklab, var(--surface-1) 88%, transparent);
+}
+
+.ai-voice-agent-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.ai-voice-agent-label {
+    color: var(--text-soft);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+}
+
+.ai-voice-agent-name {
+    color: color-mix(in oklab, var(--accent-2) 85%, white);
+    font-size: 1.02rem;
+    font-weight: 800;
+}
+
+.ai-voice-state {
+    margin: 0;
+    font-weight: 700;
+    color: color-mix(in oklab, var(--text-main) 90%, var(--accent));
+}
+
+.ai-voice-wave {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.32rem;
+    min-height: 1.5rem;
+}
+
+.ai-voice-wave-bar {
+    inline-size: 5px;
+    block-size: 0.5rem;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--accent) 45%, var(--text-soft));
+    opacity: 0.48;
+}
+
+.ai-voice-wave.is-active .ai-voice-wave-bar {
+    animation: aiVoiceWave 820ms ease-in-out infinite;
+    opacity: 1;
+}
+
+.ai-voice-wave.is-processing .ai-voice-wave-bar {
+    animation: aiVoiceThinking 900ms ease-in-out infinite;
+}
+
+.ai-voice-wave.is-active .ai-voice-wave-bar:nth-child(2),
+.ai-voice-wave.is-processing .ai-voice-wave-bar:nth-child(2) {
+    animation-delay: 100ms;
+}
+
+.ai-voice-wave.is-active .ai-voice-wave-bar:nth-child(3),
+.ai-voice-wave.is-processing .ai-voice-wave-bar:nth-child(3) {
+    animation-delay: 180ms;
+}
+
+.ai-voice-wave.is-active .ai-voice-wave-bar:nth-child(4),
+.ai-voice-wave.is-processing .ai-voice-wave-bar:nth-child(4) {
+    animation-delay: 260ms;
+}
+
+.ai-voice-wave.is-active .ai-voice-wave-bar:nth-child(5),
+.ai-voice-wave.is-processing .ai-voice-wave-bar:nth-child(5) {
+    animation-delay: 340ms;
+}
+
+@keyframes aiVoiceWave {
+
+    0%,
+    100% {
+        block-size: 0.45rem;
+    }
+
+    50% {
+        block-size: 1.45rem;
+    }
+}
+
+@keyframes aiVoiceThinking {
+
+    0%,
+    100% {
+        block-size: 0.4rem;
+        opacity: 0.45;
+    }
+
+    50% {
+        block-size: 1rem;
+        opacity: 0.9;
+    }
 }
 
 .ai-voice-room .status-banner {
@@ -1447,6 +1643,7 @@ input[type='range'] {
 
 .ai-voice-cta .game-button {
     width: min(100%, 360px);
+    min-height: 54px;
 }
 
 .ai-chat-log {
@@ -1563,6 +1760,12 @@ html[dir='rtl'] .reveal-mask-progress-fill {
         width: 100%;
     }
 
+    .ai-voice-agent-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.15rem;
+    }
+
     .primary-action-bar {
         flex-direction: row;
         padding: var(--space-2);
@@ -1643,8 +1846,9 @@ html[dir='rtl'] .reveal-mask-progress-fill {
     }
 
     .section-heading {
-        align-items: flex-end;
-        flex-direction: row;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-1);
     }
 
     .section-count-badge {

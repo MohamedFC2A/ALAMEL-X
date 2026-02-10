@@ -56,6 +56,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     root.setAttribute('data-theme', settings.theme);
     root.setAttribute('data-contrast', settings.contrastPreset);
     root.setAttribute('data-density', settings.uiDensity);
+    root.setAttribute('data-motion', settings.reducedMotionMode ? 'reduced' : 'full');
 
     if (i18n.language !== settings.language) {
       void i18n.changeLanguage(settings.language);
@@ -82,16 +83,21 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
 
 function AnimatedRoutes() {
   const location = useLocation();
+  const settings = useLiveQuery(() => db.settings.get('global'), []);
+  const reducedMotion = Boolean(settings?.reducedMotionMode);
+  const speed = Math.max(0.35, settings?.animationSpeed ?? 1);
+  const yOffset = reducedMotion ? 0 : 16;
+  const duration = reducedMotion ? 0.01 : 0.22 / speed;
 
   return (
     <AnimatePresence mode="wait">
       <motion.div
         key={location.pathname}
         className="route-stage"
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: yOffset }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -16, pointerEvents: 'none' }}
-        transition={{ duration: 0.22 }}
+        exit={{ opacity: 0, y: -yOffset, pointerEvents: 'none' }}
+        transition={{ duration }}
       >
         <Routes location={location}>
           <Route path="/" element={<HomeScreen />} />

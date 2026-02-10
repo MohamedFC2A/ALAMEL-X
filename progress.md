@@ -268,3 +268,66 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 ## Validation Update (AI Persona Upgrade)
 - `npm run lint`: pass (only pre-existing warnings in `src/screens/ResolutionScreen.tsx`).
 - `npm run test`: pass (35 tests).
+
+## Progress Log
+- Implemented a focused UI/UX polish pass across shell + components + interaction surfaces.
+- Updated route/page transitions in `src/App.tsx` to respect `reducedMotionMode` and `animationSpeed` at runtime.
+- Updated `src/screens/HomeScreen.tsx` mission pulse animation to disable cleanly in reduced-motion mode and scale with animation speed.
+- Restored `scroll` behavior support in `src/components/ScreenScaffold.tsx` so screens can explicitly request `auto` vs `none`.
+- Enhanced card visual hierarchy and readability in `src/styles/components.css`:
+  - richer glass gradient layering
+  - subtle hover affordance for info cards
+  - improved banner structure and spacing
+  - stronger primary action bar glass treatment
+- Upgraded button UX in `src/styles/components.css`:
+  - clearer focus-visible ring
+  - tactile hover/active feedback
+  - improved disabled treatment
+  - better text wrapping/legibility on labels
+- Improved form field UX in `src/styles/components.css`:
+  - smoother focus transitions
+  - stronger focus contrast
+  - placeholder readability
+  - range accent alignment
+- Improved modal UX in `src/styles/components.css`:
+  - stronger backdrop clarity
+  - elevated modal depth
+  - standardized modal section grouping (`.modal-section`)
+  - action row separation
+- Improved header/shell layout balance in `src/styles/layout.css`:
+  - refined header panel depth
+  - better center-column title constraints
+  - tighter mobile header grid behavior
+  - safer scroll-region bottom padding with safe-area awareness
+- Added `data-motion` runtime attribute in `src/App.tsx` and corresponding hard motion reduction rule in `src/styles/utilities.css`.
+- Added global readability polish in `src/styles/base.css` (`text-rendering`, safer button select behavior, themed `::selection`).
+
+## Validation Update (UI/UX Polish)
+- `npm run lint`: pass (same pre-existing warnings in `src/screens/ResolutionScreen.tsx`).
+- `npm run test`: pass (35 tests).
+- `npm run build`: pass (existing chunk-size warning unchanged).
+- Ran develop-web-game Playwright client and generated fresh visual artifact folder:
+  - `output/web-game/uiux-pass-1`
+- Reviewed screenshot artifact:
+  - `output/web-game/uiux-pass-1/shot-0.png`
+- Reviewed state artifact:
+  - `output/web-game/uiux-pass-1/state-0.json`
+
+## Progress Log
+- Upgraded AI voice-room UX in `src/components/AiDeskModal.tsx`:
+  - added live responder identity display (`active AI name`)
+  - added dynamic voice-state display (`جاهز / يستمع / يفكّر / يتكلم`)
+  - added animated voice-wave visualization for listening/speaking/processing states
+  - added explicit speech-stop action while AI is talking
+- Improved speech naturalness pipeline in `src/components/AiDeskModal.tsx`:
+  - text humanization pass before TTS (cleanup + punctuation smoothing + acronym readability)
+  - slower/more natural prosody tuning for Arabic voice playback
+  - session-safe speech cancellation to prevent overlap/choppy output between turns
+  - stronger voice scoring preference toward more human-like neural voices
+- Added new locale keys for voice states and controls in `src/lib/i18n.ts`.
+- Added full styling for responder card and waveform animation in `src/styles/components.css`.
+
+## Validation Update (AI Voice Identity + Animation)
+- `npm run lint`: pass (only existing warnings in `src/screens/ResolutionScreen.tsx`).
+- `npm run test`: pass (35 tests).
+- `npm run build`: pass (existing bundle-size warning unchanged).

@@ -205,6 +205,7 @@ body {
     font-size: var(--font-size-body);
     color: var(--text-main);
     background: var(--bg-void);
+    text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -259,6 +260,7 @@ button {
     z-index: var(--z-ui);
     cursor: pointer;
     transition: transform calc(220ms * max(var(--anim-speed), 0.01)) ease, opacity 150ms ease, box-shadow 220ms ease, border-color 220ms ease;
+    -webkit-user-select: none;
 }
 
 button:disabled {
@@ -275,6 +277,11 @@ select,
     user-select: text;
     -webkit-user-select: text;
     -webkit-touch-callout: default;
+}
+
+::selection {
+    background: color-mix(in oklab, var(--accent) 45%, transparent);
+    color: #041015;
 }
 
 /* Mobile Spacing Override */
