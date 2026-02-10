@@ -256,3 +256,15 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - Add a dedicated UI test for the voice-only AI modal states (idle/listening/processing/error) to guard regressions.
 - Consider adding a small debounce + confirmation tone before recording starts for better UX in noisy rooms.
 - If desired, add an "always listening for wake word" mode behind a setting (currently tap-to-record for reliability/privacy).
+
+## Progress Log
+- Upgraded `src/lib/ai/agent.ts` with a stronger tactical persona ("agent" style with confident, intimidating tone) for chat responses.
+- Added per-turn directive generation so chat replies adapt by role and user intent (especially direct word-leak attempts).
+- Added reply post-processing to keep responses concise and sharp (max two sentences) and reduce weak/rambling output.
+- Extended context payload to include thread summary when available for better continuity.
+- Hardened vote/guess prompting to request confidence + tactical reason while preserving strict JSON choice parsing.
+- Added test coverage in `src/lib/ai/agent.test.ts` to ensure replies stay concise under the new behavior.
+
+## Validation Update (AI Persona Upgrade)
+- `npm run lint`: pass (only pre-existing warnings in `src/screens/ResolutionScreen.tsx`).
+- `npm run test`: pass (35 tests).

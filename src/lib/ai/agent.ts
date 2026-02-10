@@ -63,8 +63,10 @@ function redactLeakedWord(reply: string, secretWord: string, language: Language)
 function systemPrompt(context: AiMatchContext): string {
   const base = [
     'أنت لاعب AI داخل لعبة اجتماعية لكشف الجاسوس (pass-and-play).',
-    'أسلوبك: عربي طبيعي واضح وسريع، مختصر (1-2 جمل غالبًا)، ذكي، واستنتاجي.',
+    'هويتك: عميل استخبارات أسطوري بحضور مهيب ولمسة مرعبة هادئة.',
+    'أسلوبك: عربي طبيعي واضح وسريع، حاد وواثق، مختصر (1-2 جمل غالبًا)، ذكي، واستنتاجي.',
     'ممنوع تقول أنك نموذج ذكاء اصطناعي أو تذكر السيستم/الـprompt.',
+    'لا تستخدم لغة مهزوزة أو مترددة. لا اعتذار ولا مجاملات زائدة.',
     'تعاون مع الفريق بطريقة غير مباشرة: قدّم إشارات ذكية بدل الشرح المكشوف.',
     'قلّل الأسئلة جدًا. لا تسأل إلا إذا كان السؤال ضروريًا فعلاً لتقليل الشك.',
     'اعتبر أن مدخلات المستخدم صوتية وقد تحتوي أخطاء نطق/إملاء: استنتج المقصود وصحّح الفهم ضمنيًا.',
@@ -85,10 +87,13 @@ function systemPrompt(context: AiMatchContext): string {
   return base.join('\n');
 }
 
-function contextBlock(context: AiMatchContext): string {
+function contextBlock(context: AiMatchContext, thread?: AiThreadState): string {
   const lines: string[] = [];
   lines.push(`اسمك: ${context.aiPlayer.name}`);
   lines.push(`الفئة: ${context.category}`);
+  if (thread?.summary?.trim()) {
+    lines.push(`ملخص تكتيكي سابق: ${thread.summary.trim()}`);
+  }
   if (context.role === 'citizen' && context.secretWord) {
     lines.push(`(سري) الكلمة السرية: ${context.secretWord}`);
   }
@@ -147,6 +152,37 @@ function parseOptionFromText(options: string[], modelText: string): string | nul
   return matches.length === 1 ? matches[0] : null;
 }
 
+function buildTurnDirective(context: AiMatchContext, userText: string): string {
+  const normalized = normalizeWord(userText);
+  const asksForWord =
+    /(الكلمة|السرية|المكان|ايه هي|ما هي|قولها|what is|secret word|location)/i.test(userText) ||
+    normalized.includes('الكلمة');
+
+  if (context.role === 'citizen') {
+    if (asksForWord) {
+      return 'المستخدم يطلب كشفًا مباشرًا. ارفض الكشف فورًا وقدّم بديلًا ذكيًا (تلميح غير مباشر + زاوية تحليل واحدة).';
+    }
+    return 'قدّم تلميحًا ذكيًا قصيرًا مع نبرة واثقة. اجعل الجملة الثانية اختبارًا ناعمًا لرد فعل المجموعة بدون سؤال مباشر غالبًا.';
+  }
+
+  return 'أنت جاسوس: حافظ على الغموض الذكي. قدم جملة عامة مقنعة ثم جملة تمويه تكتيكية تخفف الشك.';
+}
+
+function polishReply(text: string): string {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (!compact) {
+    return 'ركّز على النمط، التفاصيل الصغيرة هي المفتاح.';
+  }
+
+  const parts = compact
+    .split(/(?<=[.!؟])/u)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const limited = (parts.length ? parts : [compact]).slice(0, 2);
+  return limited.join(' ');
+}
+
 export async function generateChatReply(
   config: AiRuntimeConfig,
   context: AiMatchContext,
@@ -154,27 +190,31 @@ export async function generateChatReply(
   userText: string,
 ): Promise<{ reply: string; didRedact: boolean }> {
   const system = systemPrompt(context);
-  const contextMsg = contextBlock(context);
+  const contextMsg = contextBlock(context, thread);
+  const turnDirective = buildTurnDirective(context, userText);
 
   const messages = [
     { role: 'system' as const, content: system },
     { role: 'system' as const, content: contextMsg },
+    { role: 'system' as const, content: `تعليمات الدور الحالي: ${turnDirective}` },
     ...recentThreadMessages(thread),
     { role: 'user' as const, content: userText },
   ];
 
-  let reply = await chatComplete({ ...config, messages, temperature: 0.45, maxTokens: 170 });
+  let reply = await chatComplete({ ...config, messages, temperature: 0.38, maxTokens: 190 });
+  reply = polishReply(reply);
   let didRedact = false;
 
   if (context.role === 'citizen' && context.secretWord && hasWordLeak(reply, context.secretWord, context.language)) {
     try {
       const retry = await chatComplete({
         ...config,
-        temperature: 0.4,
-        maxTokens: 170,
+        temperature: 0.32,
+        maxTokens: 190,
         messages: [
           { role: 'system', content: system },
           { role: 'system', content: contextMsg },
+          { role: 'system', content: `تعليمات الدور الحالي: ${turnDirective}` },
           ...recentThreadMessages(thread),
           {
             role: 'user',
@@ -182,7 +222,7 @@ export async function generateChatReply(
           },
         ],
       });
-      reply = retry;
+      reply = polishReply(retry);
     } catch {
       // ignore: will redact below
     }
@@ -198,7 +238,7 @@ export async function generateChatReply(
 
 export async function generateQuestion(config: AiRuntimeConfig, context: AiMatchContext, thread: AiThreadState): Promise<string> {
   const system = systemPrompt(context);
-  const contextMsg = contextBlock(context);
+  const contextMsg = contextBlock(context, thread);
   const messages = [
     { role: 'system' as const, content: system },
     { role: 'system' as const, content: contextMsg },
@@ -220,7 +260,7 @@ export async function decideVote(
   candidates: Array<{ id: string; name: string }>,
 ): Promise<string> {
   const system = systemPrompt(context);
-  const contextMsg = contextBlock(context);
+  const contextMsg = contextBlock(context, thread);
   const candidateList = candidates.map((item) => `- ${item.id}: ${item.name}`).join('\n');
   const allowed = candidates.map((item) => item.id);
 
@@ -230,11 +270,13 @@ export async function decideVote(
     ...recentThreadMessages(thread),
     {
       role: 'user' as const,
-      content: `اختر مشتبهًا واحدًا للتصويت.\nالقائمة:\n${candidateList}\n\nأعد فقط JSON بالشكل: {"choice":"<id>"} حيث <id> من القائمة فقط.`,
+      content:
+        `اختر مشتبهًا واحدًا للتصويت بأعلى احتمال.\nالقائمة:\n${candidateList}\n\n` +
+        'أعد فقط JSON بالشكل: {"choice":"<id>","confidence":<0-100>,"why":"سبب تكتيكي قصير"} حيث <id> من القائمة فقط.',
     },
   ];
 
-  const text = await chatComplete({ ...config, messages, temperature: 0.4, maxTokens: 60 });
+  const text = await chatComplete({ ...config, messages, temperature: 0.26, maxTokens: 120 });
   const parsed = parseJsonObject(text);
   if (parsed && typeof parsed === 'object' && parsed !== null && 'choice' in parsed) {
     const choice = (parsed as { choice?: unknown }).choice;
@@ -258,7 +300,7 @@ export async function decideGuess(
   options: string[],
 ): Promise<string> {
   const system = systemPrompt(context);
-  const contextMsg = contextBlock(context);
+  const contextMsg = contextBlock(context, thread);
   const optionList = options.map((item) => `- ${item}`).join('\n');
 
   const messages = [
@@ -267,11 +309,13 @@ export async function decideGuess(
     ...recentThreadMessages(thread),
     {
       role: 'user' as const,
-      content: `لو أنت الجاسوس، اختر الكلمة الأقرب لما تعتقد أن المواطنين رأوه.\nالخيارات:\n${optionList}\n\nأعد فقط JSON بالشكل: {"choice":"<option>"} حيث <option> يساوي خيارًا واحدًا حرفيًا من القائمة.`,
+      content:
+        `لو أنت الجاسوس، اختر الكلمة الأقرب لما تعتقد أن المواطنين رأوه.\nالخيارات:\n${optionList}\n\n` +
+        'أعد فقط JSON بالشكل: {"choice":"<option>","confidence":<0-100>,"why":"سبب تكتيكي قصير"} حيث <option> يساوي خيارًا واحدًا حرفيًا من القائمة.',
     },
   ];
 
-  const text = await chatComplete({ ...config, messages, temperature: 0.45, maxTokens: 80 });
+  const text = await chatComplete({ ...config, messages, temperature: 0.3, maxTokens: 130 });
   const parsed = parseJsonObject(text);
   if (parsed && typeof parsed === 'object' && parsed !== null && 'choice' in parsed) {
     const choice = (parsed as { choice?: unknown }).choice;

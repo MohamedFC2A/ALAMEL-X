@@ -136,6 +136,49 @@ function resolveAiTarget(utterance: string, aiPlayers: Player[]): Player | null 
 }
 
 const voiceCache: Partial<Record<Language, SpeechSynthesisVoice>> = {};
+const FEMALE_VOICE_HINTS = [
+  'female',
+  'woman',
+  'girl',
+  'zira',
+  'hazel',
+  'susan',
+  'sara',
+  'salma',
+  'leila',
+  'layla',
+  'amira',
+  'mariam',
+  'maryam',
+  'hana',
+  'hoda',
+  'noura',
+  'noora',
+  'fatima',
+  'fatma',
+];
+const MALE_VOICE_HINTS = [
+  'male',
+  'man',
+  'boy',
+  'david',
+  'mark',
+  'alex',
+  'maged',
+  'majid',
+  'tarik',
+  'tarek',
+  'naayf',
+  'fahad',
+  'omar',
+  'khalid',
+  'yousef',
+  'yusuf',
+];
+
+function hasNameHint(value: string, hints: string[]): boolean {
+  return hints.some((hint) => value.includes(hint));
+}
 
 function splitForSpeech(text: string): string[] {
   const normalized = text.replace(/\s+/g, ' ').trim();
@@ -185,8 +228,10 @@ function scoreVoice(voice: SpeechSynthesisVoice, language: Language): number {
 
   if (/(natural|neural|premium|enhanced|online)/.test(name)) score += 7;
   if (/(google|microsoft|samsung|apple)/.test(name)) score += 4;
-  if (language === 'ar' && /(arabic|arabi|hoda|naayf|maged|salma|tarik|amira)/.test(name)) score += 4;
+  if (language === 'ar' && /(arabic|arabi|hoda|salma|amira|leila|layla|maryam|mariam)/.test(name)) score += 4;
   if (/(compact|espeak|festival)/.test(name)) score -= 12;
+  if (hasNameHint(name, FEMALE_VOICE_HINTS)) score += 22;
+  if (hasNameHint(name, MALE_VOICE_HINTS)) score -= 28;
 
   return score;
 }
@@ -252,8 +297,8 @@ function speakChunk(chunk: string, language: Language, voice?: SpeechSynthesisVo
     const utterance = new SpeechSynthesisUtterance(chunk);
     utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
     utterance.voice = voice ?? null;
-    utterance.rate = language === 'ar' ? 1.03 : 1;
-    utterance.pitch = language === 'ar' ? 0.98 : 1;
+    utterance.rate = language === 'ar' ? 1.02 : 1;
+    utterance.pitch = language === 'ar' ? 1.08 : 1.02;
     utterance.volume = 1;
     utterance.onend = () => resolve();
     utterance.onerror = () => resolve();
