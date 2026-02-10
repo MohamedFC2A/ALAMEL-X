@@ -5,7 +5,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { avatarPresets } from '../data/avatars';
-import { buildPlayer, buildQuickPlayers, togglePlayerEnabled, upsertPlayer } from '../lib/game-repository';
+import { buildAiPlayer, buildPlayer, buildQuickPlayers, togglePlayerEnabled, upsertPlayer } from '../lib/game-repository';
 import { db, defaultAccessibility } from '../lib/db';
 import type { Player, PlayerAccessibility } from '../types';
 import { ScreenScaffold } from '../components/ScreenScaffold';
@@ -124,6 +124,11 @@ export function PlayersScreen() {
     await db.players.bulkPut(quickPlayers);
   }
 
+  async function handleAddAiPlayer() {
+    const player = await buildAiPlayer();
+    await upsertPlayer(player);
+  }
+
   return (
     <ScreenScaffold title={t('playersRecords')} subtitle={t('playersManagementSubtitle')} eyebrow={t('players')}>
       {redirectMessage ? <StatusBanner tone="warning">{t(redirectMessage)}</StatusBanner> : null}
@@ -131,6 +136,9 @@ export function PlayersScreen() {
       <div className="actions-row case-actions">
         <GameButton type="button" variant="primary" size="lg" onClick={openCreateModal}>
           {t('addPlayer')}
+        </GameButton>
+        <GameButton type="button" variant="ghost" size="md" onClick={() => void handleAddAiPlayer()}>
+          {t('addAiPlayer')}
         </GameButton>
         {!hasPlayers ? (
           <GameButton type="button" variant="ghost" size="md" onClick={() => void handleQuickAdd()}>
@@ -144,12 +152,16 @@ export function PlayersScreen() {
           <h2>{t('players')}</h2>
           <span className="section-count-badge">{t('playersCountBadge', { count: (players ?? []).length })}</span>
         </div>
-        {(players ?? []).map((player) => (
+        {(players ?? []).map((player) => {
+          const isAi = player.kind === 'ai';
+          return (
           <GlassCard key={player.id} className="player-card section-card cinematic-panel">
             <div className="player-row">
               <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={58} />
               <div className="player-main">
-                <h3>{player.name}</h3>
+                <h3>
+                  {player.name} {isAi ? <span className="ai-badge">{t('aiBadge')}</span> : null}
+                </h3>
                 <p>{player.enabled ? t('playerEnabled') : t('playerDisabled')}</p>
               </div>
               <div className="player-actions">
@@ -169,7 +181,8 @@ export function PlayersScreen() {
               <span>{t('records')}: {playerMatches.get(player.id) ?? 0}</span>
             </div>
           </GlassCard>
-        ))}
+          );
+        })}
 
         {!hasPlayers ? (
           <StatusBanner>

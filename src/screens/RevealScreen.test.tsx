@@ -1,10 +1,14 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RevealScreen } from './RevealScreen';
 import { setupI18n } from '../lib/i18n';
 import { db } from '../lib/db';
 import type { ActiveMatch, Player } from '../types';
+
+afterEach(() => {
+  cleanup();
+});
 
 const seededPlayers: Player[] = [
   {
@@ -89,13 +93,13 @@ const seededPlayers: Player[] = [
   },
 ];
 
-function buildActiveMatch(): ActiveMatch {
+function buildActiveMatch(playerIds = seededPlayers.map((player) => player.id)): ActiveMatch {
   return {
     id: 'active',
     match: {
       id: 'm1',
       createdAt: Date.now(),
-      playerIds: seededPlayers.map((player) => player.id),
+      playerIds,
       spyIds: ['p2'],
       wordId: 'w1',
       category: 'أماكن',
@@ -177,5 +181,34 @@ describe('reveal screen hold behavior', () => {
 
     await sleep(250);
     expect(screen.queryByRole('button', { name: /اضغط مطولًا للكشف/i })).not.toBeInTheDocument();
+  }, 10000);
+
+  it('auto-skips AI players without revealing secrets', async () => {
+    const aiPlayers: Player[] = [
+      { ...seededPlayers[0], name: 'العميل صقر', avatarId: 'ai_bot', kind: 'ai' },
+      ...seededPlayers.slice(1),
+    ];
+
+    await db.players.clear();
+    await db.activeMatch.clear();
+    await db.players.bulkPut(aiPlayers);
+    await db.activeMatch.put(buildActiveMatch(aiPlayers.map((player) => player.id)));
+
+    render(
+      <MemoryRouter>
+        <RevealScreen />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/جارٍ تجهيز العميل/i)).toBeInTheDocument();
+
+    await sleep(1100);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/جارٍ تجهيز العميل/i)).not.toBeInTheDocument();
+    });
+
+    expect(await screen.findByRole('heading', { name: /سلّم الموبايل إلى لاعب ٢/i })).toBeInTheDocument();
+    expect(screen.queryByText(/الكلمة السرية/i)).not.toBeInTheDocument();
   }, 10000);
 });

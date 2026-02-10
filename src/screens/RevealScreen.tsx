@@ -51,6 +51,7 @@ export function RevealScreen() {
   const unlockTimerRef = useRef<number | null>(null);
   const holdProgressRef = useRef(0);
   const holdPhaseRef = useRef<HoldPhase>('idle');
+  const aiSkipKeyRef = useRef('');
   const revealIndex = activeMatch?.revealState.currentRevealIndex ?? -1;
   const revealPhase = activeMatch?.revealState.phase ?? 'handoff';
 
@@ -134,12 +135,92 @@ export function RevealScreen() {
     [clearHoldTimers, clearUnlockTimer],
   );
 
+  useEffect(() => {
+    if (!activeMatch || !currentPlayer) {
+      aiSkipKeyRef.current = '';
+      return;
+    }
+
+    if (activeMatch.match.status !== 'reveal') {
+      return;
+    }
+
+    if (currentPlayer.kind !== 'ai') {
+      aiSkipKeyRef.current = '';
+      return;
+    }
+
+    const key = `${activeMatch.match.id}:${activeMatch.revealState.currentRevealIndex}`;
+    if (aiSkipKeyRef.current === key) {
+      return;
+    }
+
+    aiSkipKeyRef.current = key;
+    const aiPlayerId = currentPlayer.id;
+
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const refreshed = await db.activeMatch.get('active');
+        if (!refreshed || refreshed.match.status !== 'reveal') {
+          return;
+        }
+
+        const refreshedPlayerId = refreshed.match.playerIds[refreshed.revealState.currentRevealIndex];
+        if (!refreshedPlayerId || refreshedPlayerId !== aiPlayerId) {
+          return;
+        }
+
+        const refreshedPlayer = playerMap.get(refreshedPlayerId);
+        if (!refreshedPlayer || refreshedPlayer.kind !== 'ai') {
+          return;
+        }
+
+        const revealedPlayerIds = Array.from(new Set([...refreshed.revealState.revealedPlayerIds, refreshedPlayerId]));
+        const isLastPlayer = refreshed.revealState.currentRevealIndex >= refreshed.match.playerIds.length - 1;
+
+        if (isLastPlayer) {
+          await updateActiveMatch({
+            uiPhaseLabel: 'discussion',
+            match: {
+              ...refreshed.match,
+              status: nextStatusAfterReveal(true),
+            },
+            revealState: {
+              ...refreshed.revealState,
+              revealedPlayerIds,
+              canBack: true,
+            },
+          });
+          navigate('/play/discussion');
+          return;
+        }
+
+        await updateActiveMatch({
+          match: {
+            ...refreshed.match,
+            status: nextStatusAfterReveal(false),
+          },
+          revealState: {
+            ...refreshed.revealState,
+            currentRevealIndex: refreshed.revealState.currentRevealIndex + 1,
+            revealedPlayerIds,
+            phase: 'handoff',
+            canBack: false,
+          },
+        });
+      })();
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [activeMatch, currentPlayer, navigate, playerMap]);
+
   if (!activeMatch || !currentPlayer) {
     return null;
   }
 
   const currentMatch = activeMatch;
   const revealPlayer = currentPlayer;
+  const isAiPlayer = revealPlayer.kind === 'ai';
   const isSpy = currentMatch.match.spyIds.includes(revealPlayer.id);
   const isRevealed = holdPhase === 'revealed';
   const spyHintText = i18n.language === 'ar' ? currentMatch.spyHintAr : currentMatch.spyHintEn;
@@ -313,7 +394,7 @@ export function RevealScreen() {
     <ScreenScaffold
       scroll="none"
       title={t('roleHeader')}
-      subtitle={t('handoff', { name: revealPlayer.name })}
+      subtitle={isAiPlayer ? revealPlayer.name : t('handoff', { name: revealPlayer.name })}
       eyebrow={t('phaseRevealEyebrow')}
     >
       <PhaseIndicator current={2} labels={[t('phaseSetup'), t('phaseReveal'), t('phaseTalk'), t('phaseResolve')]} />
@@ -328,7 +409,13 @@ export function RevealScreen() {
         </div>
       </section>
 
-      {currentMatch.revealState.phase === 'handoff' ? (
+      {isAiPlayer ? (
+        <section className="glass-card phase-card section-card cinematic-panel ai-skip-card">
+          <PlayerAvatar avatarId={revealPlayer.avatarId} alt={revealPlayer.name} size={104} />
+          <h2>{t('aiRevealSkipping')}</h2>
+          <p className="subtle">{t('aiRevealSkipHint')}</p>
+        </section>
+      ) : currentMatch.revealState.phase === 'handoff' ? (
         <section className="glass-card handoff-card section-card cinematic-panel">
           <PlayerAvatar avatarId={revealPlayer.avatarId} alt={revealPlayer.name} size={104} />
           <h2>{t('handoff', { name: revealPlayer.name })}</h2>
@@ -400,28 +487,34 @@ export function RevealScreen() {
         </motion.section>
       )}
 
-      <PrimaryActionBar
-        className="reveal-action-bar"
-        leading={
-          <GameButton variant="ghost" onClick={() => void goBack()} disabled={currentMatch.revealState.phase === 'handoff'}>
-            {t('back')}
-          </GameButton>
-        }
-      >
-        {currentMatch.revealState.phase === 'reveal' ? (
-          <GameButton
-            variant="cta"
-            size="lg"
-            className="next-btn"
-            onClick={() => void goNext()}
-            disabled={!canMoveNext}
-          >
-            {t('next')}
-          </GameButton>
-        ) : (
-          <div className="subtle">{t('safeTransitionHint')}</div>
-        )}
-      </PrimaryActionBar>
+      {isAiPlayer ? (
+        <PrimaryActionBar className="reveal-action-bar">
+          <div className="subtle">{t('aiAutoContinue')}</div>
+        </PrimaryActionBar>
+      ) : (
+        <PrimaryActionBar
+          className="reveal-action-bar"
+          leading={
+            <GameButton variant="ghost" onClick={() => void goBack()} disabled={currentMatch.revealState.phase === 'handoff'}>
+              {t('back')}
+            </GameButton>
+          }
+        >
+          {currentMatch.revealState.phase === 'reveal' ? (
+            <GameButton
+              variant="cta"
+              size="lg"
+              className="next-btn"
+              onClick={() => void goNext()}
+              disabled={!canMoveNext}
+            >
+              {t('next')}
+            </GameButton>
+          ) : (
+            <div className="subtle">{t('safeTransitionHint')}</div>
+          )}
+        </PrimaryActionBar>
+      )}
     </ScreenScaffold>
   );
 }

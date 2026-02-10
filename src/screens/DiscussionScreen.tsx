@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/db';
@@ -11,15 +11,41 @@ import { PhaseIndicator } from '../components/PhaseIndicator';
 import { useActiveMatch } from '../hooks/useActiveMatch';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { GameButton } from '../components/GameButton';
+import { Bot } from 'lucide-react';
+import type { Player } from '../types';
+import { AiDeskModal } from '../components/AiDeskModal';
 
 export function DiscussionScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const activeMatchState = useActiveMatch();
   const activeMatch = activeMatchState?.match ?? null;
   const settings = useLiveQuery(() => db.settings.get('global'), []);
+  const players = useLiveQuery(() => db.players.toArray(), []);
+  const [aiDeskOpen, setAiDeskOpen] = useState(false);
   const now = useClockNow();
   const discussionMs = Math.max(60_000, (settings?.discussionMinutes ?? 3) * 60 * 1000);
+
+  const playerMap = useMemo(() => {
+    const map = new Map<string, Player>();
+    (players ?? []).forEach((player) => map.set(player.id, player));
+    return map;
+  }, [players]);
+
+  const aiPlayers = useMemo(() => {
+    if (!activeMatch) {
+      return [] as Player[];
+    }
+
+    const ids =
+      activeMatch.ai?.playerIds?.length
+        ? activeMatch.ai.playerIds
+        : activeMatch.match.playerIds.filter((id) => playerMap.get(id)?.kind === 'ai');
+
+    return ids.map((id) => playerMap.get(id)).filter((player): player is Player => Boolean(player));
+  }, [activeMatch, playerMap]);
+
+  const hasAi = aiPlayers.length > 0;
 
   useEffect(() => {
     if (!activeMatchState) {
@@ -130,10 +156,27 @@ export function DiscussionScreen() {
       )}
 
       <PrimaryActionBar className="sticky-action-bar">
+        {hasAi ? (
+          <GameButton variant="ghost" onClick={() => setAiDeskOpen(true)} icon={<Bot size={18} aria-hidden />}>
+            {t('aiDeskButton')}
+          </GameButton>
+        ) : null}
         <GameButton variant="ghost" onClick={() => void skipDiscussion()}>
           {t('skipTimer')}
         </GameButton>
       </PrimaryActionBar>
+
+      {activeMatch && hasAi ? (
+        <AiDeskModal
+          open={aiDeskOpen}
+          onClose={() => setAiDeskOpen(false)}
+          activeMatch={activeMatch}
+          aiPlayers={aiPlayers}
+          playerMap={playerMap}
+          settings={settings}
+          language={i18n.language as 'en' | 'ar'}
+        />
+      ) : null}
     </ScreenScaffold>
   );
 }

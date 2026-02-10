@@ -4,6 +4,8 @@ import {
   buildGuessOptions,
   computeSpyGuessCorrect,
   computeVoteOutcome,
+  isValidPlayerCount,
+  minPlayersForSpyCount,
   pickWinnerFromLeaders,
   resolveWinner,
   tallyBallots,
@@ -22,6 +24,20 @@ describe('game-repository logic', () => {
     const spies = assignSpies(['a', 'b', 'c', 'd', 'e'], 2);
     expect(spies).toHaveLength(2);
     expect(new Set(spies).size).toBe(2);
+  });
+
+  it('sets minimum players to 3 for 1 spy and 4 for 2 spies', () => {
+    expect(minPlayersForSpyCount(1)).toBe(3);
+    expect(minPlayersForSpyCount(2)).toBe(4);
+  });
+
+  it('validates player count based on spy count', () => {
+    expect(isValidPlayerCount(2, 1)).toBe(false);
+    expect(isValidPlayerCount(3, 1)).toBe(true);
+    expect(isValidPlayerCount(3, 2)).toBe(false);
+    expect(isValidPlayerCount(4, 2)).toBe(true);
+    expect(isValidPlayerCount(10, 1)).toBe(true);
+    expect(isValidPlayerCount(11, 1)).toBe(false);
   });
 
   it('resolves winner matrix correctly', () => {

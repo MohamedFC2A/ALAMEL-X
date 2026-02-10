@@ -5,6 +5,7 @@ export interface AvatarPreset {
 }
 
 export const avatarPresets: AvatarPreset[] = [
+  { id: 'ai_bot', label: 'AI', src: '/avatars/ai_bot.svg' },
   { id: 'boy_1', label: 'ولد ١', src: '/avatars/boy_1.svg' },
   { id: 'boy_2', label: 'ولد ٢', src: '/avatars/boy_2.svg' },
   { id: 'boy_3', label: 'ولد ٣', src: '/avatars/boy_3.svg' },

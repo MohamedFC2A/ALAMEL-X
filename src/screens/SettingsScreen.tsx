@@ -1,11 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw } from 'lucide-react';
 import { db, ensureSettings } from '../lib/db';
 import { updateGlobalSettings } from '../lib/game-repository';
+import { chatComplete, DeepSeekError } from '../lib/ai/deepseek-client';
 import { ScreenScaffold } from '../components/ScreenScaffold';
 import { GameButton } from '../components/GameButton';
+import { StatusBanner } from '../components/StatusBanner';
 import { usePWAUpdate } from '../hooks/usePWAUpdate';
 import type { ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
 
@@ -15,10 +17,25 @@ export function SettingsScreen() {
   const { t } = useTranslation();
   const settings = useLiveQuery(() => db.settings.get('global'), []);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('idle');
+  const [aiKeyVisible, setAiKeyVisible] = useState(false);
+  const [aiApiKeyDraft, setAiApiKeyDraft] = useState('');
+  const [aiApiKeyEditing, setAiApiKeyEditing] = useState(false);
+  const aiKeySaveTimerRef = useRef<number | null>(null);
+  const [aiTestStatus, setAiTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [aiTestMessage, setAiTestMessage] = useState('');
   const { needRefresh, updateServiceWorker } = usePWAUpdate();
 
   useEffect(() => {
     void ensureSettings();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (aiKeySaveTimerRef.current !== null) {
+        window.clearTimeout(aiKeySaveTimerRef.current);
+        aiKeySaveTimerRef.current = null;
+      }
+    };
   }, []);
 
   // Auto-check for updates when entering settings
@@ -65,6 +82,68 @@ export function SettingsScreen() {
       setUpdateStatus('idle');
     }
   }, [needRefresh, updateServiceWorker]);
+
+  const testAiConnection = useCallback(async () => {
+    if (!settings) {
+      return;
+    }
+
+    const apiKey = aiApiKeyEditing ? aiApiKeyDraft : settings.aiApiKey;
+
+    if (!settings.aiEnabled) {
+      setAiTestStatus('error');
+      setAiTestMessage(t('aiDisabled'));
+      return;
+    }
+
+    if (!apiKey.trim()) {
+      setAiTestStatus('error');
+      setAiTestMessage(t('aiMissingKey'));
+      return;
+    }
+
+    setAiTestStatus('testing');
+    setAiTestMessage('');
+
+    try {
+      const text = await chatComplete({
+        baseUrl: settings.aiBaseUrl,
+        apiKey,
+        model: settings.aiModel,
+        messages: [
+          { role: 'system', content: 'Reply only with "pong".' },
+          { role: 'user', content: 'ping' },
+        ],
+        temperature: 0,
+        maxTokens: 8,
+        timeoutMs: 10_000,
+      });
+
+      if (text.toLowerCase().includes('pong')) {
+        setAiTestStatus('success');
+        setAiTestMessage(t('aiTestOk'));
+      } else {
+        setAiTestStatus('success');
+        setAiTestMessage(t('aiTestOk'));
+      }
+    } catch (error) {
+      if (error instanceof DeepSeekError) {
+        const msg =
+          error.kind === 'auth'
+            ? t('aiAuthError')
+            : error.kind === 'rate_limit'
+              ? t('aiRateLimitError')
+              : error.kind === 'network'
+                ? t('aiNetworkError')
+                : t('aiUnknownError');
+        setAiTestStatus('error');
+        setAiTestMessage(msg);
+      } else {
+        setAiTestStatus('error');
+        setAiTestMessage(t('aiUnknownError'));
+      }
+    }
+  }, [aiApiKeyDraft, aiApiKeyEditing, settings, t]);
 
   if (!settings) {
     return null;
@@ -223,6 +302,122 @@ export function SettingsScreen() {
               onChange={(event) => void updateGlobalSettings({ soundEnabled: event.target.checked })}
             />
           </label>
+        </div>
+      </section>
+
+      <section className="stack-list settings-section">
+        <div className="section-heading section-heading--stack">
+          <h2>{t('aiSettings')}</h2>
+          <span className="subtle">{t('aiSettingsHint')}</span>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="switch-row">
+            <span>{t('aiEnabled')}</span>
+            <input
+              type="checkbox"
+              checked={settings.aiEnabled}
+              onChange={(event) => void updateGlobalSettings({ aiEnabled: event.target.checked })}
+            />
+          </label>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="form-field">
+            <span>{t('aiApiKey')}</span>
+            <div className="input-row">
+              <input
+                type={aiKeyVisible ? 'text' : 'password'}
+                value={aiApiKeyEditing ? aiApiKeyDraft : settings.aiApiKey}
+                onFocus={() => {
+                  setAiApiKeyEditing(true);
+                  setAiApiKeyDraft(settings.aiApiKey ?? '');
+                }}
+                onBlur={() => {
+                  setAiApiKeyEditing(false);
+                }}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  if (!aiApiKeyEditing) {
+                    setAiApiKeyEditing(true);
+                  }
+                  setAiApiKeyDraft(nextValue);
+                  if (aiKeySaveTimerRef.current !== null) {
+                    window.clearTimeout(aiKeySaveTimerRef.current);
+                  }
+                  aiKeySaveTimerRef.current = window.setTimeout(() => {
+                    aiKeySaveTimerRef.current = null;
+                    void updateGlobalSettings({ aiApiKey: nextValue });
+                  }, 150);
+                }}
+                placeholder={t('aiApiKeyPlaceholder')}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <GameButton variant="ghost" size="md" onClick={() => setAiKeyVisible((prev) => !prev)}>
+                {aiKeyVisible ? t('aiHideKey') : t('aiShowKey')}
+              </GameButton>
+            </div>
+          </label>
+          <p className="subtle">{t('aiKeyStoredNote')}</p>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <div className="actions-row">
+            <GameButton
+              variant="primary"
+              size="md"
+              onClick={() => void testAiConnection()}
+              disabled={aiTestStatus === 'testing' || !(aiApiKeyEditing ? aiApiKeyDraft : settings.aiApiKey).trim() || !settings.aiEnabled}
+            >
+              {aiTestStatus === 'testing' ? t('aiTesting') : t('aiTestConnection')}
+            </GameButton>
+            <GameButton
+              variant="danger"
+              size="md"
+              onClick={() => {
+                if (aiKeySaveTimerRef.current !== null) {
+                  window.clearTimeout(aiKeySaveTimerRef.current);
+                  aiKeySaveTimerRef.current = null;
+                }
+                setAiApiKeyEditing(true);
+                setAiApiKeyDraft('');
+                void updateGlobalSettings({ aiApiKey: '' });
+              }}
+              disabled={!(aiApiKeyEditing ? aiApiKeyDraft : settings.aiApiKey).trim()}
+            >
+              {t('aiClearKey')}
+            </GameButton>
+          </div>
+
+          {aiTestStatus !== 'idle' ? (
+            <StatusBanner tone={aiTestStatus === 'success' ? 'success' : aiTestStatus === 'error' ? 'danger' : 'default'}>
+              {aiTestMessage || (aiTestStatus === 'success' ? t('aiTestOk') : aiTestStatus === 'testing' ? t('aiTesting') : t('aiTestFail'))}
+            </StatusBanner>
+          ) : null}
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="switch-row">
+            <span>{t('aiVoiceInput')}</span>
+            <input
+              type="checkbox"
+              checked={settings.aiVoiceInputEnabled}
+              onChange={(event) => void updateGlobalSettings({ aiVoiceInputEnabled: event.target.checked })}
+            />
+          </label>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="switch-row">
+            <span>{t('aiVoiceOutput')}</span>
+            <input
+              type="checkbox"
+              checked={settings.aiVoiceOutputEnabled}
+              onChange={(event) => void updateGlobalSettings({ aiVoiceOutputEnabled: event.target.checked })}
+            />
+          </label>
+          <p className="subtle">{t('aiVoiceNote')}</p>
         </div>
       </section>
 

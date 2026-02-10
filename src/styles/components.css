@@ -168,6 +168,10 @@
     background: var(--success);
 }
 
+.banner-actions {
+    margin-top: var(--space-2);
+}
+
 /* ─── Buttons ─── */
 .game-button {
     position: relative;
@@ -525,6 +529,19 @@
     font-weight: 600;
 }
 
+.input-row {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    width: 100%;
+}
+
+.input-row>input,
+.input-row>select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 input,
 select {
     border-radius: var(--radius-1);
@@ -645,6 +662,29 @@ input[type='range'] {
     overflow-wrap: anywhere;
 }
 
+.ai-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.35rem;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--accent) 50%, rgba(255, 255, 255, 0.2));
+    background: color-mix(in oklab, var(--accent) 18%, rgba(7, 14, 25, 0.92));
+    color: var(--text-main);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.ai-badge--small {
+    min-height: 1.15rem;
+    padding: 0.06rem 0.42rem;
+    font-size: 0.66rem;
+}
+
 .player-main p {
     color: var(--text-soft);
     line-height: var(--lh-compact);
@@ -737,6 +777,15 @@ input[type='range'] {
 
 .pick-card span {
     line-height: 1.2;
+}
+
+.pick-card-name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    text-align: center;
 }
 
 .pick-card.selected {
@@ -1340,6 +1389,99 @@ input[type='range'] {
     justify-content: flex-end;
 }
 
+/* ─── AI Desk ─── */
+.ai-skip-card {
+    text-align: center;
+}
+
+.ai-desk-modal {
+    width: min(100%, 740px);
+}
+
+.ai-desk-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.ai-desk-title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.ai-desk-title h2 {
+    margin: 0;
+}
+
+.ai-desk-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--stroke-1);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+}
+
+.ai-chat-log {
+    border-radius: var(--radius-1);
+    border: 1px solid var(--stroke-1);
+    background: rgba(2, 5, 10, 0.55);
+    padding: var(--space-2);
+    max-height: 44dvh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.ai-chat-empty {
+    margin: 0;
+    padding: var(--space-2);
+    text-align: center;
+}
+
+.ai-chat-bubble {
+    max-width: min(92%, 34rem);
+    padding: 0.65rem 0.75rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    line-height: var(--lh-body);
+    overflow-wrap: anywhere;
+}
+
+.ai-chat-bubble.from-user {
+    align-self: flex-end;
+    border-color: color-mix(in oklab, var(--accent) 55%, rgba(255, 255, 255, 0.12));
+    background: color-mix(in oklab, var(--accent) 14%, rgba(255, 255, 255, 0.05));
+}
+
+.ai-chat-bubble.from-ai {
+    align-self: flex-start;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ai-chat-controls {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.ai-chat-input {
+    width: 100%;
+}
+
+.ai-desk-actions {
+    justify-content: flex-end;
+}
+
 /* ═══════════ RTL ADAPTATIONS (Components) ═══════════ */
 html[dir='rtl'] .player-main,
 html[dir='rtl'] .history-card,
@@ -1380,6 +1522,19 @@ html[dir='rtl'] .reveal-mask-progress-fill {
 
     .modal-actions {
         flex-direction: column;
+    }
+
+    .input-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ai-chat-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .ai-chat-controls .game-button {
+        width: 100%;
     }
 
     .primary-action-bar {

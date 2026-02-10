@@ -4,6 +4,8 @@ export type ThemeName = 'aurora' | 'solar' | 'onyx';
 export type ContrastPreset = 'normal' | 'high';
 export type UiDensity = 'comfortable' | 'compact';
 
+export type PlayerKind = 'human' | 'ai';
+
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type WordDifficulty = 'any' | Difficulty;
 export type HintMode = 'weak' | 'normal' | 'off';
@@ -28,6 +30,7 @@ export interface Player {
   id: string;
   name: string;
   avatarId: string;
+  kind?: PlayerKind;
   enabled: boolean;
   accessibility: PlayerAccessibility;
   stats: PlayerStats;
@@ -50,6 +53,13 @@ export interface GlobalSettings {
   guessSeconds: number;
   wordDifficulty: WordDifficulty;
   hintMode: HintMode;
+  aiEnabled: boolean;
+  aiProvider: 'deepseek';
+  aiBaseUrl: string;
+  aiModel: string;
+  aiApiKey: string;
+  aiVoiceInputEnabled: boolean;
+  aiVoiceOutputEnabled: boolean;
 }
 
 export interface WordEntry {
@@ -106,6 +116,22 @@ export interface ResolutionVoteState {
   lastTally?: Record<string, number>;
 }
 
+export interface AiThreadMessage {
+  at: number;
+  from: 'user' | 'ai';
+  text: string;
+}
+
+export interface AiThreadState {
+  messages: AiThreadMessage[];
+  summary: string;
+}
+
+export interface ActiveMatchAiState {
+  playerIds: string[];
+  threads: Record<string, AiThreadState>;
+}
+
 export interface ActiveMatch {
   id: 'active';
   match: Match;
@@ -113,6 +139,7 @@ export interface ActiveMatch {
   uiPhaseLabel: 'setup' | 'reveal' | 'discussion' | 'resolution' | 'summary';
   transitionLock: boolean;
   resolutionStage: 'vote' | 'guess' | 'result';
+  ai?: ActiveMatchAiState;
   discussionEndsAt?: number;
   guessEndsAt?: number;
   votedSpyIds: string[];

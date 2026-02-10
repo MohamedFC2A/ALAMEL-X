@@ -38,7 +38,7 @@ describe('rtl ui regressions', () => {
       </MemoryRouter>,
     );
 
-    const addPlayer = await screen.findByRole('button', { name: /إضافة لاعب/i });
+    const addPlayer = await screen.findByRole('button', { name: /^إضافة لاعب$/i });
     const quickAdd = await screen.findByRole('button', { name: /إضافة ٤ لاعبين بسرعة/i });
     expect(addPlayer).toHaveClass('game-button');
     expect(quickAdd).toHaveClass('game-button');

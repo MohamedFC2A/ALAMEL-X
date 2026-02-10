@@ -21,6 +21,8 @@ import { StatusBanner } from '../components/StatusBanner';
 import { useActiveMatch } from '../hooks/useActiveMatch';
 import { formatWordForDisplay } from '../lib/word-format';
 import { GameButton } from '../components/GameButton';
+import { DeepSeekError } from '../lib/ai/deepseek-client';
+import { decideGuess, decideVote, runtimeConfigFromSettings } from '../lib/ai/agent';
 
 export function ResolutionScreen() {
   const { t, i18n } = useTranslation();
@@ -47,6 +49,14 @@ export function ResolutionScreen() {
   };
   const [guessInput, setGuessInput] = useState('');
   const guessTimeoutHandled = useRef(false);
+  const aiVoteHandledKeyRef = useRef('');
+  const aiGuessHandledKeyRef = useRef('');
+  const [aiVoteRetryNonce, setAiVoteRetryNonce] = useState(0);
+  const [aiGuessRetryNonce, setAiGuessRetryNonce] = useState(0);
+  const [aiVoteError, setAiVoteError] = useState<{ key: string; message: string } | null>(null);
+  const [aiGuessError, setAiGuessError] = useState<{ key: string; message: string } | null>(null);
+  const [aiVoteManualKey, setAiVoteManualKey] = useState('');
+  const [aiGuessManualKey, setAiGuessManualKey] = useState('');
 
   const playerMap = useMemo(() => {
     const map = new Map<string, Player>();
@@ -61,93 +71,18 @@ export function ResolutionScreen() {
     }
   };
 
-  useEffect(() => {
-    if (!activeMatchState) {
-      return;
+  const formatAiError = (error: unknown): string => {
+    if (error instanceof DeepSeekError) {
+      if (error.kind === 'auth') return t('aiAuthError');
+      if (error.kind === 'rate_limit') return t('aiRateLimitError');
+      if (error.kind === 'network') return t('aiNetworkError');
+      return t('aiUnknownError');
     }
-    if (!activeMatch) {
-      navigate('/');
-      return;
-    }
-    if (activeMatch.match.status !== 'resolution') {
-      navigate('/play/discussion');
-    }
-  }, [activeMatch, activeMatchState, navigate]);
+    return t('aiUnknownError');
+  };
 
-  // Guess timeout auto-resolve: when timer expires without a guess, citizens win
-  const guessRemainingMs = Math.max(0, (activeMatch?.guessEndsAt ?? 0) - now);
-  const guessRemaining = Math.ceil(guessRemainingMs / 1000);
-
-  useEffect(() => {
-    if (
-      !activeMatch ||
-      activeMatch.resolutionStage !== 'guess' ||
-      guessRemainingMs > 0 ||
-      !activeMatch.guessEndsAt ||
-      guessTimeoutHandled.current
-    ) {
-      return;
-    }
-
-    guessTimeoutHandled.current = true;
-    void (async () => {
-      await updateActiveMatch({
-        spyGuess: '',
-        spyGuessCorrect: false,
-        guessTimedOut: true,
-        resolutionStage: 'result',
-        winner: 'citizens',
-      });
-    })();
-  }, [activeMatch, guessRemainingMs]);
-
-  // Reset timeout handler when entering a new guess stage
-  useEffect(() => {
-    if (activeMatch?.resolutionStage !== 'guess') {
-      guessTimeoutHandled.current = false;
-    }
-  }, [activeMatch?.resolutionStage]);
-
-  useEffect(() => {
-    if (!activeMatch || activeMatch.resolutionStage !== 'vote' || activeMatch.voteState) {
-      return;
-    }
-
-    void updateActiveMatch({
-      votedSpyIds: [],
-      voteOutcome: undefined,
-      voteState: {
-        phase: 'handoff',
-        voterIndex: 0,
-        ballots: {},
-        round: 1,
-      },
-    });
-  }, [activeMatch]);
-
-  if (!activeMatch) {
-    return null;
-  }
-
-  const currentMatch = activeMatch;
-  const guessDraft = guessInput || currentMatch.spyGuess;
-
-  async function startBallot() {
-    const refreshed = await db.activeMatch.get('active');
-    if (!refreshed || refreshed.match.status !== 'resolution' || refreshed.resolutionStage !== 'vote' || !refreshed.voteState) {
-      return;
-    }
-
-    await updateActiveMatch({
-      voteState: {
-        ...refreshed.voteState,
-        phase: 'ballot',
-      },
-    });
-  }
-
-  async function submitBallot() {
-    if (!ballotPick) {
+  async function submitBallotWithPick(pick: string) {
+    if (!pick) {
       return;
     }
 
@@ -162,7 +97,7 @@ export function ResolutionScreen() {
       return;
     }
 
-    const nextBallots = { ...voteState.ballots, [voterId]: ballotPick };
+    const nextBallots = { ...voteState.ballots, [voterId]: pick };
     const isLastVoter = voteState.voterIndex >= refreshed.match.playerIds.length - 1;
 
     if (!isLastVoter) {
@@ -267,6 +202,254 @@ export function ResolutionScreen() {
     });
   }
 
+  const guessStateKey =
+    activeMatch && activeMatch.resolutionStage === 'guess' ? `${activeMatch.match.id}:${activeMatch.guessEndsAt ?? 0}` : '';
+  const aiGuessManual = Boolean(guessStateKey && aiGuessManualKey === guessStateKey);
+
+  useEffect(() => {
+    if (!activeMatchState) {
+      return;
+    }
+    if (!activeMatch) {
+      navigate('/');
+      return;
+    }
+    if (activeMatch.match.status !== 'resolution') {
+      navigate('/play/discussion');
+    }
+  }, [activeMatch, activeMatchState, navigate]);
+
+  // Guess timeout auto-resolve: when timer expires without a guess, citizens win
+  const guessRemainingMs = Math.max(0, (activeMatch?.guessEndsAt ?? 0) - now);
+  const guessRemaining = Math.ceil(guessRemainingMs / 1000);
+
+  useEffect(() => {
+    if (
+      !activeMatch ||
+      activeMatch.resolutionStage !== 'guess' ||
+      guessRemainingMs > 0 ||
+      !activeMatch.guessEndsAt ||
+      guessTimeoutHandled.current
+    ) {
+      return;
+    }
+
+    guessTimeoutHandled.current = true;
+    void (async () => {
+      await updateActiveMatch({
+        spyGuess: '',
+        spyGuessCorrect: false,
+        guessTimedOut: true,
+        resolutionStage: 'result',
+        winner: 'citizens',
+      });
+    })();
+  }, [activeMatch, guessRemainingMs]);
+
+  // Reset timeout handler when entering a new guess stage
+  useEffect(() => {
+    if (activeMatch?.resolutionStage !== 'guess') {
+      guessTimeoutHandled.current = false;
+    }
+  }, [activeMatch?.resolutionStage]);
+
+  useEffect(() => {
+    if (!activeMatch || activeMatch.resolutionStage !== 'vote' || activeMatch.voteState) {
+      return;
+    }
+
+    void updateActiveMatch({
+      votedSpyIds: [],
+      voteOutcome: undefined,
+      voteState: {
+        phase: 'handoff',
+        voterIndex: 0,
+        ballots: {},
+        round: 1,
+      },
+    });
+  }, [activeMatch]);
+
+  useEffect(() => {
+    if (!settings?.aiEnabled || !settings.aiApiKey?.trim()) {
+      return;
+    }
+
+    if (!activeMatch) {
+      return;
+    }
+
+    const voteState = activeMatch.voteState;
+    if (!voteState) {
+      return;
+    }
+
+    if (activeMatch.resolutionStage !== 'vote' || voteState.phase !== 'handoff') {
+      return;
+    }
+
+    const voterId = activeMatch.match.playerIds[voteState.voterIndex];
+    const voter = voterId ? playerMap.get(voterId) ?? null : null;
+    if (!voterId || !voter || voter.kind !== 'ai') {
+      return;
+    }
+
+    if (aiVoteManualKey === voteStateKey) {
+      return;
+    }
+
+    if (aiVoteHandledKeyRef.current === voteStateKey) {
+      return;
+    }
+
+    aiVoteHandledKeyRef.current = voteStateKey;
+
+    void (async () => {
+      try {
+        const config = runtimeConfigFromSettings(settings);
+        const language = i18n.language as 'en' | 'ar';
+        const role = activeMatch.match.spyIds.includes(voterId) ? 'spy' : 'citizen';
+        const secretWord =
+          role === 'citizen' ? (language === 'ar' ? activeMatch.wordTextAr : activeMatch.wordTextEn) : undefined;
+        const spyHintText = role === 'spy' ? (language === 'ar' ? activeMatch.spyHintAr : activeMatch.spyHintEn) : undefined;
+        const spyTeammateNames =
+          role === 'spy'
+            ? activeMatch.match.spyIds.filter((id) => id !== voterId).map((id) => playerMap.get(id)?.name ?? id)
+            : [];
+
+        const context = {
+          language,
+          aiPlayer: { id: voter.id, name: voter.name },
+          role,
+          category: activeMatch.match.category,
+          secretWord,
+          spyHintText,
+          spyTeammateNames,
+        } as const;
+
+        const thread = activeMatch.ai?.threads?.[voterId] ?? { messages: [], summary: '' };
+        const candidateIds = (voteState.candidates ?? activeMatch.match.playerIds).filter((id) => id !== voterId);
+        const candidates = candidateIds.map((id) => ({ id, name: playerMap.get(id)?.name ?? id })).filter((item) => item.id);
+
+        const choice = await decideVote(config, context, thread, candidates);
+        await submitBallotWithPick(choice);
+      } catch (err) {
+        setAiVoteError({ key: voteStateKey, message: formatAiError(err) });
+      }
+    })();
+  }, [
+    activeMatch,
+    aiVoteManualKey,
+    aiVoteRetryNonce,
+    formatAiError,
+    i18n.language,
+    playerMap,
+    settings,
+    submitBallotWithPick,
+    voteStateKey,
+  ]);
+
+  useEffect(() => {
+    if (!activeMatch || activeMatch.resolutionStage !== 'guess') {
+      return;
+    }
+
+    const capturedSpyId = activeMatch.votedSpyIds[0] ?? '';
+    const capturedSpy = capturedSpyId ? playerMap.get(capturedSpyId) ?? null : null;
+
+    if (!capturedSpyId || !capturedSpy || capturedSpy.kind !== 'ai') {
+      return;
+    }
+
+    if (aiGuessManual) {
+      return;
+    }
+
+    const key = `${activeMatch.match.id}:${activeMatch.guessEndsAt ?? 0}`;
+    if (aiGuessHandledKeyRef.current === key) {
+      return;
+    }
+
+    if (!settings?.aiEnabled || !settings.aiApiKey?.trim()) {
+      return;
+    }
+
+    aiGuessHandledKeyRef.current = key;
+
+    void (async () => {
+      try {
+        const config = runtimeConfigFromSettings(settings);
+        const language = i18n.language as 'en' | 'ar';
+        const role = activeMatch.match.spyIds.includes(capturedSpyId) ? 'spy' : 'citizen';
+        const secretWord =
+          role === 'citizen' ? (language === 'ar' ? activeMatch.wordTextAr : activeMatch.wordTextEn) : undefined;
+        const spyHintText =
+          role === 'spy' ? (language === 'ar' ? activeMatch.spyHintAr : activeMatch.spyHintEn) : undefined;
+        const spyTeammateNames =
+          role === 'spy'
+            ? activeMatch.match.spyIds.filter((id) => id !== capturedSpyId).map((id) => playerMap.get(id)?.name ?? id)
+            : [];
+
+        const context = {
+          language,
+          aiPlayer: { id: capturedSpy.id, name: capturedSpy.name },
+          role,
+          category: activeMatch.match.category,
+          secretWord,
+          spyHintText,
+          spyTeammateNames,
+        } as const;
+
+        const thread = activeMatch.ai?.threads?.[capturedSpyId] ?? { messages: [], summary: '' };
+        const rawOptions = (language === 'ar' ? activeMatch.spyGuessOptionsAr : activeMatch.spyGuessOptionsEn).map((opt) =>
+          formatWordForDisplay(opt, language),
+        );
+        const guess = await decideGuess(config, context, thread, rawOptions);
+        await submitGuess(guess);
+      } catch (err) {
+        setAiGuessError({ key, message: formatAiError(err) });
+      }
+    })();
+  }, [
+    activeMatch,
+    aiGuessManual,
+    aiGuessRetryNonce,
+    formatAiError,
+    i18n.language,
+    playerMap,
+    settings,
+    submitGuess,
+  ]);
+
+  if (!activeMatch) {
+    return null;
+  }
+
+  const currentMatch = activeMatch;
+  const guessDraft = guessInput || currentMatch.spyGuess;
+
+  async function startBallot() {
+    const refreshed = await db.activeMatch.get('active');
+    if (!refreshed || refreshed.match.status !== 'resolution' || refreshed.resolutionStage !== 'vote' || !refreshed.voteState) {
+      return;
+    }
+
+    await updateActiveMatch({
+      voteState: {
+        ...refreshed.voteState,
+        phase: 'ballot',
+      },
+    });
+  }
+
+  async function submitBallot() {
+    if (!ballotPick) {
+      return;
+    }
+
+    await submitBallotWithPick(ballotPick);
+  }
+
   async function finishRound() {
     await completeActiveMatch();
     navigate('/play/summary');
@@ -283,6 +466,11 @@ export function ResolutionScreen() {
     clampedBallotPage * candidatesPerPage,
     (clampedBallotPage + 1) * candidatesPerPage,
   );
+  const isAiVoter = voter?.kind === 'ai';
+  const capturedSpyId = currentMatch.votedSpyIds[0] ?? '';
+  const capturedSpy = capturedSpyId ? playerMap.get(capturedSpyId) ?? null : null;
+  const isAiCapturedSpy = capturedSpy?.kind === 'ai';
+  const aiGuessErrorMessage = aiGuessError?.key === guessStateKey ? aiGuessError.message : '';
 
   const tieWasBroken = (() => {
     if (currentMatch.resolutionStage === 'vote' || voteState?.round !== 2 || !voteState.lastTally) {
@@ -310,25 +498,71 @@ export function ResolutionScreen() {
         !voteState || !voter ? (
           <StatusBanner>{t('votePhase')}</StatusBanner>
         ) : voteState.phase === 'handoff' ? (
-          <section className="glass-card handoff-card section-card cinematic-panel">
-            {voteState.round === 2 ? <StatusBanner tone="warning">{t('voteRunoff')}</StatusBanner> : null}
-            <PlayerAvatar avatarId={voter.avatarId} alt={voter.name} size={104} />
-            <h2>{t('voteHandoff', { name: voter.name })}</h2>
-            <p className="subtle">
-              {t('voteProgress', { current: voteState.voterIndex + 1, total: currentMatch.match.playerIds.length })}
-            </p>
-            <p className="subtle">{t('handoffSafetyNote')}</p>
-            <GameButton
-              variant="cta"
-              size="lg"
-              onClick={() => {
-                vibrate();
-                void startBallot();
-              }}
-            >
-              {t('continue')}
-            </GameButton>
-          </section>
+          isAiVoter ? (
+            <section className="glass-card handoff-card section-card cinematic-panel">
+              {voteState.round === 2 ? <StatusBanner tone="warning">{t('voteRunoff')}</StatusBanner> : null}
+              <PlayerAvatar avatarId={voter.avatarId} alt={voter.name} size={104} />
+              <h2>{t('aiVoteInProgress')}</h2>
+              <p className="subtle">
+                {t('voteProgress', { current: voteState.voterIndex + 1, total: currentMatch.match.playerIds.length })}
+              </p>
+              {settings?.aiEnabled && settings.aiApiKey?.trim() ? (
+                aiVoteError?.key === voteStateKey ? (
+                  <StatusBanner tone="danger">{aiVoteError.message}</StatusBanner>
+                ) : (
+                  <StatusBanner tone="warning">{t('aiThinking')}</StatusBanner>
+                )
+              ) : (
+                <StatusBanner tone="danger">{t('aiSetupRequired')}</StatusBanner>
+              )}
+              <div className="actions-row">
+                {settings?.aiEnabled && settings.aiApiKey?.trim() && aiVoteError?.key === voteStateKey ? (
+                  <GameButton
+                    variant="ghost"
+                    size="md"
+                    onClick={() => {
+                      setAiVoteError(null);
+                      aiVoteHandledKeyRef.current = '';
+                      setAiVoteRetryNonce((prev) => prev + 1);
+                    }}
+                  >
+                    {t('retry')}
+                  </GameButton>
+                ) : null}
+                <GameButton
+                  variant="cta"
+                  size="md"
+                  onClick={() => {
+                    setAiVoteManualKey(voteStateKey);
+                    vibrate();
+                    void startBallot();
+                  }}
+                >
+                  {t('aiManualVote')}
+                </GameButton>
+              </div>
+            </section>
+          ) : (
+            <section className="glass-card handoff-card section-card cinematic-panel">
+              {voteState.round === 2 ? <StatusBanner tone="warning">{t('voteRunoff')}</StatusBanner> : null}
+              <PlayerAvatar avatarId={voter.avatarId} alt={voter.name} size={104} />
+              <h2>{t('voteHandoff', { name: voter.name })}</h2>
+              <p className="subtle">
+                {t('voteProgress', { current: voteState.voterIndex + 1, total: currentMatch.match.playerIds.length })}
+              </p>
+              <p className="subtle">{t('handoffSafetyNote')}</p>
+              <GameButton
+                variant="cta"
+                size="lg"
+                onClick={() => {
+                  vibrate();
+                  void startBallot();
+                }}
+              >
+                {t('continue')}
+              </GameButton>
+            </section>
+          )
         ) : (
           <section className="glass-card phase-card section-card cinematic-panel">
             <h2>{t('votePhase')}</h2>
@@ -399,35 +633,74 @@ export function ResolutionScreen() {
       ) : null}
 
       {currentMatch.resolutionStage === 'guess' ? (
-        <section className="glass-card phase-card section-card cinematic-panel">
-          <StatusBanner tone="success">
-            {t('voteCapturedInfo')}
-          </StatusBanner>
-          {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
-          <p>{t('spyGuessPrompt')}</p>
-          <h2 className="countdown-value">{guessRemaining}</h2>
-          <p className="subtle">{t('spyGuessPick')}</p>
-          <div className="choice-grid">
-            {(i18n.language === 'ar' ? currentMatch.spyGuessOptionsAr : currentMatch.spyGuessOptionsEn).map((option) => {
-              const displayOption = formatWordForDisplay(option, i18n.language as 'en' | 'ar');
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  className={`glass-card choice-card ${guessDraft === displayOption ? 'selected' : ''}`}
+        isAiCapturedSpy && capturedSpy && !aiGuessManual ? (
+          <section className="glass-card phase-card section-card cinematic-panel">
+            <StatusBanner tone="success">
+              {t('voteCapturedInfo')}
+            </StatusBanner>
+            {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
+            <h2>{t('aiGuessInProgress')}</h2>
+            <p className="subtle">{t('spyGuessPrompt')}</p>
+            <h2 className="countdown-value">{guessRemaining}</h2>
+            {settings?.aiEnabled && settings.aiApiKey?.trim() ? (
+              aiGuessErrorMessage ? (
+                <StatusBanner tone="danger">{aiGuessErrorMessage}</StatusBanner>
+              ) : (
+                <StatusBanner tone="warning">{t('aiThinking')}</StatusBanner>
+              )
+            ) : (
+              <StatusBanner tone="danger">{t('aiSetupRequired')}</StatusBanner>
+            )}
+            <div className="actions-row">
+              {settings?.aiEnabled && settings.aiApiKey?.trim() && aiGuessErrorMessage ? (
+                <GameButton
+                  variant="ghost"
+                  size="md"
                   onClick={() => {
-                    setGuessInput(displayOption);
-                    vibrate();
-                    void submitGuess(displayOption);
+                    setAiGuessError(null);
+                    aiGuessHandledKeyRef.current = '';
+                    setAiGuessRetryNonce((prev) => prev + 1);
                   }}
                 >
-                  {t('confirmLocation', { location: displayOption }) || `Confirm: ${displayOption}`}
-                </button>
-              );
-            })}
-          </div>
-          {guessRemaining === 0 ? <StatusBanner tone="warning">{t('guessTimeoutMessage')}</StatusBanner> : null}
-        </section>
+                  {t('retry')}
+                </GameButton>
+              ) : null}
+              <GameButton variant="cta" size="md" onClick={() => setAiGuessManualKey(guessStateKey)}>
+                {t('aiManualGuess')}
+              </GameButton>
+            </div>
+          </section>
+        ) : (
+          <section className="glass-card phase-card section-card cinematic-panel">
+            <StatusBanner tone="success">
+              {t('voteCapturedInfo')}
+            </StatusBanner>
+            {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
+            <p>{t('spyGuessPrompt')}</p>
+            <h2 className="countdown-value">{guessRemaining}</h2>
+            <p className="subtle">{t('spyGuessPick')}</p>
+            <div className="choice-grid">
+              {(i18n.language === 'ar' ? currentMatch.spyGuessOptionsAr : currentMatch.spyGuessOptionsEn).map((option) => {
+                const displayOption = formatWordForDisplay(option, i18n.language as 'en' | 'ar');
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    className={`glass-card choice-card ${guessDraft === displayOption ? 'selected' : ''}`}
+                    onClick={() => {
+                      setGuessInput(displayOption);
+                      vibrate();
+                      void submitGuess(displayOption);
+                    }}
+                  >
+                    {t('confirmLocation', { location: displayOption }) || `Confirm: ${displayOption}`}
+                  </button>
+                );
+              })}
+            </div>
+            {guessRemaining === 0 ? <StatusBanner tone="warning">{t('guessTimeoutMessage')}</StatusBanner> : null}
+          </section>
+        )
       ) : null}
 
       {currentMatch.resolutionStage === 'result' ? (

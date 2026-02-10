@@ -24,6 +24,13 @@ export const defaultSettings: GlobalSettings = {
   guessSeconds: 30,
   wordDifficulty: 'any',
   hintMode: 'weak',
+  aiEnabled: true,
+  aiProvider: 'deepseek',
+  aiBaseUrl: 'https://api.deepseek.com/v1',
+  aiModel: 'deepseek-chat',
+  aiApiKey: '',
+  aiVoiceInputEnabled: true,
+  aiVoiceOutputEnabled: true,
 };
 
 export const defaultAccessibility = {

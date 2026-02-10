@@ -1,5 +1,6 @@
 import type {
   ActiveMatch,
+  ActiveMatchAiState,
   GlobalSettings,
   Match,
   MatchRecord,
@@ -41,6 +42,49 @@ export function buildQuickPlayers(): Player[] {
   return presets.map((preset) => buildPlayer(preset.name, preset.avatarId));
 }
 
+const AI_CODENAMES = [
+  'العميل صقر',
+  'العميل برق',
+  'العميل نسر',
+  'العميل ظل',
+  'العميل كود',
+  'العميل فهد',
+  'العميل موج',
+  'العميل رعد',
+  'العميلة ندى',
+  'العميلة لؤلؤ',
+  'العميلة فجر',
+  'العميلة ورد',
+  'العميلة سحاب',
+  'العميلة برق',
+  'العميلة مرجان',
+  'العميل حجر',
+  'العميل ميزان',
+  'العميلة عين',
+  'العميل نقطة',
+  'العميلة شيفرة',
+];
+
+function normalizePlayerName(name: string): string {
+  return name.replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+export async function buildAiPlayer(): Promise<Player> {
+  const existingNames = new Set((await db.players.toArray()).map((player) => normalizePlayerName(player.name)));
+  const baseName = AI_CODENAMES[Math.floor(Math.random() * AI_CODENAMES.length)] ?? 'العميل X';
+  let candidate = baseName;
+  let suffix = 2;
+  while (existingNames.has(normalizePlayerName(candidate))) {
+    candidate = `${baseName} ${suffix}`;
+    suffix += 1;
+  }
+
+  return {
+    ...buildPlayer(candidate, 'ai_bot'),
+    kind: 'ai',
+  };
+}
+
 export async function upsertPlayer(player: Player): Promise<void> {
   await db.players.put({
     ...player,
@@ -54,6 +98,14 @@ export async function togglePlayerEnabled(playerId: string, enabled: boolean): P
 
 export function assignSpies(playerIds: string[], spyCount: 1 | 2): string[] {
   return shuffle(playerIds).slice(0, spyCount);
+}
+
+export function minPlayersForSpyCount(spyCount: 1 | 2): number {
+  return spyCount === 2 ? 4 : 3;
+}
+
+export function isValidPlayerCount(playerCount: number, spyCount: 1 | 2): boolean {
+  return playerCount >= minPlayersForSpyCount(spyCount) && playerCount <= 10;
 }
 
 export function buildGuessOptions(
@@ -146,7 +198,7 @@ function mapRelatedWords(words: string[], relatedList: string[]): string[] {
 }
 
 export async function startMatch(playerIds: string[], spyCount: 1 | 2): Promise<ActiveMatch> {
-  if (playerIds.length < 4 || playerIds.length > 10) {
+  if (!isValidPlayerCount(playerIds.length, spyCount)) {
     throw new Error('INVALID_PLAYER_COUNT');
   }
 
@@ -169,6 +221,19 @@ export async function startMatch(playerIds: string[], spyCount: 1 | 2): Promise<
     category: selection.word.category,
     status: 'reveal',
   };
+
+  const playerEntities = await db.players.bulkGet(playerIds);
+  const aiPlayerIds = playerEntities
+    .filter((player): player is Player => Boolean(player))
+    .filter((player) => player.kind === 'ai')
+    .map((player) => player.id);
+  const aiState =
+    aiPlayerIds.length > 0
+      ? {
+          playerIds: aiPlayerIds,
+          threads: Object.fromEntries(aiPlayerIds.map((id) => [id, { messages: [], summary: '' }])),
+        }
+      : undefined;
 
   const wordTextEn = extractCoreWord(selection.word.text_en, 'en');
   const wordTextAr = extractCoreWord(selection.word.text_ar, 'ar');
@@ -206,6 +271,7 @@ export async function startMatch(playerIds: string[], spyCount: 1 | 2): Promise<
     uiPhaseLabel: 'reveal',
     transitionLock: false,
     resolutionStage: 'vote',
+    ai: aiState,
     votedSpyIds: [],
     voteState: {
       phase: 'handoff',
@@ -276,6 +342,17 @@ export async function updateActiveMatch(patch: Partial<ActiveMatch>): Promise<vo
     return;
   }
 
+  const patchAi = patch.ai as Partial<ActiveMatchAiState> | undefined;
+  const mergedAi = patchAi
+    ? {
+        playerIds: patchAi.playerIds ?? active.ai?.playerIds ?? [],
+        threads: {
+          ...(active.ai?.threads ?? {}),
+          ...(patchAi.threads ?? {}),
+        },
+      }
+    : active.ai;
+
   await db.activeMatch.put({
     ...active,
     ...patch,
@@ -287,6 +364,7 @@ export async function updateActiveMatch(patch: Partial<ActiveMatch>): Promise<vo
       ...active.revealState,
       ...(patch.revealState ?? {}),
     },
+    ai: mergedAi,
   });
 }
 
