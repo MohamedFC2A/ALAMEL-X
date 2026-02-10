@@ -135,50 +135,148 @@ function resolveAiTarget(utterance: string, aiPlayers: Player[]): Player | null 
   return aiPlayers[0];
 }
 
-function pickBestVoice(language: Language): SpeechSynthesisVoice | undefined {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return undefined;
+const voiceCache: Partial<Record<Language, SpeechSynthesisVoice>> = {};
+
+function splitForSpeech(text: string): string[] {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return [];
   }
 
-  const voices = window.speechSynthesis.getVoices();
+  const rough = normalized
+    .split(/(?<=[.!؟،,؛:])\s+/u)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+
+  const chunks: string[] = [];
+  for (const chunk of rough) {
+    if (chunk.length <= 140) {
+      chunks.push(chunk);
+      continue;
+    }
+    const words = chunk.split(' ');
+    let buffer = '';
+    for (const word of words) {
+      const next = buffer ? `${buffer} ${word}` : word;
+      if (next.length > 140 && buffer) {
+        chunks.push(buffer);
+        buffer = word;
+      } else {
+        buffer = next;
+      }
+    }
+    if (buffer) {
+      chunks.push(buffer);
+    }
+  }
+
+  return chunks.length ? chunks : [normalized];
+}
+
+function scoreVoice(voice: SpeechSynthesisVoice, language: Language): number {
+  const name = voice.name.toLowerCase();
+  const lang = voice.lang.toLowerCase();
+  const langPrefix = language === 'ar' ? 'ar' : 'en';
+
+  let score = 0;
+  if (lang.startsWith(langPrefix)) score += 25;
+  if (language === 'ar' && /(ar-sa|ar-eg|ar-ae|ar-jo|ar)\b/.test(lang)) score += 8;
+  if (voice.localService) score += 4;
+
+  if (/(natural|neural|premium|enhanced|online)/.test(name)) score += 7;
+  if (/(google|microsoft|samsung|apple)/.test(name)) score += 4;
+  if (language === 'ar' && /(arabic|arabi|hoda|naayf|maged|salma|tarik|amira)/.test(name)) score += 4;
+  if (/(compact|espeak|festival)/.test(name)) score -= 12;
+
+  return score;
+}
+
+async function loadVoices(): Promise<SpeechSynthesisVoice[]> {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    return [];
+  }
+
+  const initial = window.speechSynthesis.getVoices();
+  if (initial.length) {
+    return initial;
+  }
+
+  return await new Promise<SpeechSynthesisVoice[]>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
+      resolve(window.speechSynthesis.getVoices());
+    };
+    const onVoicesChanged = () => finish();
+    window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged);
+    window.setTimeout(finish, 900);
+  });
+}
+
+async function pickBestVoice(language: Language): Promise<SpeechSynthesisVoice | undefined> {
+  if (voiceCache[language]) {
+    return voiceCache[language];
+  }
+
+  const voices = await loadVoices();
   if (!voices.length) {
     return undefined;
   }
 
-  const langPrefix = language === 'ar' ? 'ar' : 'en';
-  const preferredName = language === 'ar' ? ['google', 'premium', 'neural', 'arabic'] : ['google', 'premium', 'neural'];
-  const candidates = voices.filter((voice) => voice.lang.toLowerCase().startsWith(langPrefix));
-  const pool = candidates.length ? candidates : voices;
+  const filtered = voices.filter((voice) => {
+    const lang = voice.lang.toLowerCase();
+    return language === 'ar' ? lang.startsWith('ar') : lang.startsWith('en');
+  });
+  const pool = filtered.length ? filtered : voices;
 
   let best: SpeechSynthesisVoice | undefined;
-  let bestScore = -1;
+  let bestScore = -Infinity;
   for (const voice of pool) {
-    const name = voice.name.toLowerCase();
-    let score = 0;
-    if (voice.lang.toLowerCase().startsWith(langPrefix)) score += 5;
-    if (voice.localService) score += 2;
-    if (preferredName.some((entry) => name.includes(entry))) score += 2;
+    const score = scoreVoice(voice, language);
     if (score > bestScore) {
       bestScore = score;
       best = voice;
     }
   }
 
+  if (best) {
+    voiceCache[language] = best;
+  }
   return best;
 }
 
-function speakText(text: string, language: Language) {
+function speakChunk(chunk: string, language: Language, voice?: SpeechSynthesisVoice): Promise<void> {
+  return new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(chunk);
+    utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
+    utterance.voice = voice ?? null;
+    utterance.rate = language === 'ar' ? 1.03 : 1;
+    utterance.pitch = language === 'ar' ? 0.98 : 1;
+    utterance.volume = 1;
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
+async function speakText(text: string, language: Language) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     return;
   }
+
+  const segments = splitForSpeech(text);
+  if (!segments.length) {
+    return;
+  }
+
   try {
+    const bestVoice = await pickBestVoice(language);
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
-    utterance.voice = pickBestVoice(language) ?? null;
-    utterance.rate = language === 'ar' ? 1.17 : 1.08;
-    utterance.pitch = 0.96;
-    window.speechSynthesis.speak(utterance);
+    for (const segment of segments) {
+      await speakChunk(segment, language, bestVoice);
+    }
   } catch {
     // ignore
   }
@@ -204,6 +302,13 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
       setStatus('idle');
       return;
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+    void loadVoices();
   }, [open]);
 
   useEffect(() => {
@@ -300,7 +405,7 @@ export function AiDeskModal({ open, onClose, activeMatch, aiPlayers, playerMap, 
       await appendMessages(targetAi.id, [{ from: 'ai', text: reply }]);
 
       if (canVoiceOut) {
-        speakText(reply, language);
+        void speakText(reply, language);
       }
     } catch (err) {
       setError(formatAiError(err, t));
