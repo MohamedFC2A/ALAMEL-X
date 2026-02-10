@@ -489,3 +489,6 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
 - `npm run build`: pass.
 - `npm run test:elevenlabs`: fail in current local environment because `ELEVENLABS_API_KEY` is still missing.
+
+## Progress Log
+- Updated ElevenLabs STT default model in `api/eleven/stt.js` from `scribe_v1` to `scribe_v2` for higher baseline transcription quality (still overridable via `ELEVENLABS_STT_MODEL_ID`).

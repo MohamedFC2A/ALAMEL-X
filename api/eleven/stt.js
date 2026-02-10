@@ -1,5 +1,5 @@
 const ELEVEN_STT_URL = 'https://api.elevenlabs.io/v1/speech-to-text';
-const DEFAULT_STT_MODEL = 'scribe_v1';
+const DEFAULT_STT_MODEL = 'scribe_v2';
 const MAX_AUDIO_BYTES = 8 * 1024 * 1024;
 const MAX_AUDIO_BASE64_LENGTH = Math.ceil((MAX_AUDIO_BYTES * 4) / 3) + 16;
 
