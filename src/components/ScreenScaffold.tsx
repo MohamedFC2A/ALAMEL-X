@@ -19,13 +19,15 @@ export function ScreenScaffold({
   subtitle,
   eyebrow,
   backHome = true,
-  scroll = 'auto',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  scroll: _scroll = 'auto',
   scrollClassName = '',
   children,
   className = '',
 }: ScreenScaffoldProps) {
   const { t } = useTranslation();
-  const scrollModeClass = scroll === 'none' ? 'screen-scroll-region--none' : 'screen-scroll-region--auto';
+  // Force auto scroll on mobile to prevent clipping, effectively ignoring 'none'
+  const scrollModeClass = 'screen-scroll-region--auto';
 
   return (
     <main className={`screen-frame ${className}`.trim()}>

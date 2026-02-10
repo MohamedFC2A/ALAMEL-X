@@ -276,3 +276,13 @@ select,
     -webkit-user-select: text;
     -webkit-touch-callout: default;
 }
+
+/* Mobile Spacing Override */
+@media (max-width: 560px) {
+    :root {
+        --space-2: 0.65rem;
+        --space-3: 0.85rem;
+        --space-4: 1.2rem;
+        --space-5: 1.6rem;
+    }
+}

@@ -1349,24 +1349,32 @@ html[dir='rtl'] .reveal-mask-progress-fill {
 
 /* ═══════════ MEDIA QUERIES (Components) ═══════════ */
 @media (max-width: 560px) {
+
     .sticky-action-bar,
     .reveal-action-bar {
-        position: static;
-        inset-block-end: auto;
-        margin-top: var(--space-2);
+        position: sticky;
+        inset-block-end: var(--space-2);
+        margin-top: auto;
     }
 
     .phase-indicator {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .modal-actions,
-    .primary-action-bar {
+    .modal-actions {
         flex-direction: column;
     }
 
     .primary-action-bar {
-        align-items: stretch;
+        flex-direction: row;
+        padding: var(--space-2);
+        gap: var(--space-2);
+        align-items: center;
+    }
+
+    .primary-action-bar .game-button {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.9rem;
     }
 
     .glass-card {
@@ -1392,25 +1400,31 @@ html[dir='rtl'] .reveal-mask-progress-fill {
     }
 
     .player-row {
-        grid-template-columns: auto minmax(0, 1fr);
-        grid-template-areas:
-            "avatar main"
-            "actions actions";
-        align-items: start;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: "avatar main actions";
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    .player-avatar {
+        width: 42px;
+        height: 42px;
     }
 
     .player-actions {
-        width: 100%;
-        justify-content: flex-start;
-        align-items: stretch;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        margin-block-start: var(--space-1);
+        flex-direction: row;
+        width: auto;
+        justify-content: flex-end;
+        margin-block-start: 0;
+        display: flex;
+        gap: var(--space-1);
     }
 
     .player-actions .game-button {
-        width: 100%;
+        flex: 0 0 auto;
         min-width: 0;
+        width: auto;
+        padding: 0.4rem;
     }
 
     .stats-grid {
@@ -1419,23 +1433,27 @@ html[dir='rtl'] .reveal-mask-progress-fill {
     }
 
     .case-actions {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: var(--space-1);
     }
 
     .case-actions .game-button {
-        width: 100%;
-        flex-basis: auto;
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 40%;
     }
 
     .section-heading {
-        align-items: flex-start;
+        align-items: flex-end;
+        flex-direction: row;
     }
 
     .section-count-badge {
         font-size: 0.74rem;
     }
 
+    .section-card,
     .player-card,
     .history-card,
     .setting-card,
@@ -1444,12 +1462,20 @@ html[dir='rtl'] .reveal-mask-progress-fill {
     .spy-count-panel,
     .handoff-card,
     .reveal-card {
-        padding: var(--space-3);
+        padding: var(--space-2);
+    }
+
+    .player-select-grid.compact {
+        grid-template-columns: repeat(auto-fit, minmax(min(5.8rem, 100%), 1fr));
+        gap: var(--space-1);
+    }
+
+    .pick-card {
+        padding: var(--space-2);
     }
 
     .reveal-action-bar {
-        inset-block-end: 0.15rem;
-        padding: 0.62rem 0.66rem;
+        padding: var(--space-2);
     }
 
     .reveal-action-bar .action-main,
@@ -1458,20 +1484,19 @@ html[dir='rtl'] .reveal-mask-progress-fill {
     }
 
     .spy-count-panel {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .pill-row {
-        width: 100%;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.25rem;
+        width: auto;
+        display: inline-flex;
     }
 
     .pill-btn {
-        width: 100%;
-        min-width: 0;
+        width: auto;
+        min-width: 44px;
     }
 
     .home-hud .game-button--icon {
