@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['avatars/*.svg'],
       manifest: {
-        name: 'سُسَاوي',
-        short_name: 'سُسَاوي',
+        name: 'العميل x',
+        short_name: 'العميل x',
         description: 'لعبة اجتماعية لكشف الجاسوس باللهجة العربية.',
         theme_color: '#08111f',
         background_color: '#08111f',
