@@ -21,6 +21,24 @@ export function SettingsScreen() {
     void ensureSettings();
   }, []);
 
+  // Auto-check for updates when entering settings
+  useEffect(() => {
+    if (needRefresh) {
+      return; // Already detected
+    }
+    const silentCheck = async () => {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.getRegistration();
+          await registration?.update();
+        }
+      } catch {
+        // ignore
+      }
+    };
+    void silentCheck();
+  }, [needRefresh]);
+
   const checkForUpdates = useCallback(async () => {
     if (needRefresh) {
       await updateServiceWorker(true);

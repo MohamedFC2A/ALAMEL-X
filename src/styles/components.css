@@ -1449,6 +1449,31 @@ html[dir='rtl'] .reveal-mask-progress-fill {
         padding-inline: var(--space-2);
     }
 
+    .metric-chip strong {
+        font-size: 1.05rem;
+    }
+
+    .metric-chip span {
+        font-size: 0.68rem;
+    }
+
+    .setup-insights,
+    .reveal-stage-hud,
+    .resolution-stage-hud {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .spy-count-panel {
+        gap: var(--space-2);
+    }
+
+    .pill-btn {
+        min-width: 46px;
+        min-height: 38px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.82rem;
+    }
+
     .home-hud .game-button--hero {
         padding-block: var(--space-4);
         font-size: 1rem;
