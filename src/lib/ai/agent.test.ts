@@ -21,7 +21,7 @@ vi.mock('./deepseek-client', () => {
   };
 });
 
-import { decideGuess, decideVote, generateChatReply } from './agent';
+import { decideGuess, decideVote, decideYesNo, generateChatReply } from './agent';
 import type { AiThreadState } from '../../types';
 
 describe('ai agent', () => {
@@ -164,5 +164,24 @@ describe('ai agent', () => {
 
     const guess = await decideGuess(config, context, thread, ['ميدان عام', 'محطة مترو', 'شارع جانبي']);
     expect(guess).toBe('محطة مترو');
+  });
+
+  it('returns strict yes/no decisions for binary questions', async () => {
+    const thread: AiThreadState = { messages: [], summary: '' };
+    const context = {
+      language: 'ar' as const,
+      aiPlayer: { id: 'ai1', name: 'العميل صقر' },
+      role: 'citizen' as const,
+      category: 'أماكن',
+      secretWord: 'ميدان عام',
+    };
+
+    chatCompleteMock.mockResolvedValueOnce('yes');
+    const first = await decideYesNo(config, context, thread, 'هل المكان ده يؤكل؟');
+    expect(first).toBe('yes');
+
+    chatCompleteMock.mockResolvedValueOnce('no');
+    const second = await decideYesNo(config, context, thread, 'هل المكان ده داخل بيت؟');
+    expect(second).toBe('no');
   });
 });

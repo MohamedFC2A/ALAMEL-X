@@ -1756,9 +1756,57 @@ html[dir='rtl'] .reveal-mask-progress-fill {
         width: 100%;
     }
 
-    .ai-voice-cta .game-button {
-        width: 100%;
-    }
+.ai-voice-cta .game-button {
+    width: 100%;
+}
+
+.ai-orchestrator-strip {
+    gap: 0.65rem;
+    display: grid;
+}
+
+.ai-orchestrator-strip-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.ai-monitor-grid {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+}
+
+.ai-monitor-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ai-monitor-text {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.ai-monitor-text p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.link-like-btn {
+    border: none;
+    background: none;
+    color: var(--tone-info-strong);
+    text-decoration: underline;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+}
 
     .ai-voice-agent-meta {
         flex-direction: column;

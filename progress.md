@@ -399,3 +399,56 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 
 ## Deployment Note
 - Vercel environment variable required: `DEEPSEEK_API_KEY`.
+## Progress Log
+- Implemented ElevenLabs server proxies with secure server-side key usage:
+  - `api/eleven/tts.js` (POST text -> audio/mpeg)
+  - `api/eleven/stt.js` (POST base64 audio -> transcript JSON)
+  - Added method guarding, payload-size limits, no-store cache headers, and upstream timeout/error mapping.
+- Added reusable client voice layers:
+  - `src/lib/ai/eleven-client.ts` for ElevenLabs STT/TTS and cancellable audio playback.
+  - `src/lib/ai/browser-voice.ts` for browser STT/TTS fallback and speech cancellation.
+- Added orchestrator domain logic:
+  - `src/lib/ai/discussion-orchestrator.ts` with silence trigger rules, round-robin + suspicion target pick, yes/no question detection, suspicion scoring, and named transcript formatting.
+  - `src/lib/ai/discussion-orchestrator.test.ts` with unit coverage.
+- Implemented auto discussion AI orchestration:
+  - `src/hooks/useAiDiscussionOrchestrator.ts` runs during discussion only, uses VAD (AnalyserNode + MediaRecorder), auto-intervenes on silence, tracks pending named target, applies yes/no strict replies, handles AI-to-AI responses, and writes thread lines with speaker names.
+  - Added ElevenLabs-first speech pipeline with browser fallback for both STT and TTS.
+- Upgraded AI behavior contract in `src/lib/ai/agent.ts`:
+  - stronger Egyptian Arabic persona constraints,
+  - new APIs: `generateDirectedQuestion`, `decideYesNo`, `generateSuspicionInterjection`.
+  - Added tests in `src/lib/ai/agent.test.ts` for strict yes/no output behavior.
+- Updated UI/UX for orchestrated discussion:
+  - `src/screens/DiscussionScreen.tsx` now starts orchestrator automatically in discussion phase and shows live status strip (`يسمع/بيحلل/بيتكلم/مستني رد`).
+  - Rebuilt `src/components/AiDeskModal.tsx` into a monitor/control panel (runtime pause/resume + last speaker/transcript/intervention + pending target).
+  - Added styles for monitor/strip in `src/styles/components.css`.
+- Extended settings/type model:
+  - `aiVoiceProvider: 'elevenlabs' | 'browser'`
+  - `aiAutoFacilitatorEnabled: boolean`
+  - `aiSilenceThresholdMs: number`
+  - Added orchestrator + Eleven request/response interfaces in `src/types.ts`.
+  - Added settings controls in `src/screens/SettingsScreen.tsx` and persistence test updates in `src/screens/SettingsScreen.ai.test.tsx`.
+- Added screen-level AI UI test: `src/screens/DiscussionScreen.ai.test.tsx`.
+- Added/updated i18n keys for orchestrator statuses, monitor text, fallback messages, and new settings labels.
+
+## Validation Update (AI Orchestrator + ElevenLabs Integration)
+- `npm run test`: pass (45 tests).
+- `npm run lint`: pass with existing pre-existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass (existing chunk-size warning unchanged).
+- Ran develop-web-game Playwright client smoke runs and reviewed generated artifacts:
+  - `output/web-game/ai-orchestrator-smoke/shot-0.png`
+  - `output/web-game/ai-orchestrator-discussion-entry/shot-0.png`
+  - `output/web-game/ai-orchestrator-step2/shot-0.png`
+- No new Playwright-captured runtime errors in generated artifact folders.
+
+## Remaining TODOs / Suggestions
+- Add a deterministic browser-seed helper for IndexedDB so Playwright smoke runs can directly enter discussion with pre-seeded AI players and showcase orchestrator visuals in screenshot artifacts.
+- Add focused tests for fallback branches inside `useAiDiscussionOrchestrator` (Eleven STT fail -> browser STT, Eleven TTS fail -> browser TTS) using mocked media APIs.
+- Expose optional advanced setting for post-question answer window (`7000ms`) if gameplay tuning requires it.
+
+## Deployment Note
+- Required new environment variables for production runtime:
+  - `ELEVENLABS_API_KEY`
+  - `ELEVENLABS_VOICE_ID` (recommended)
+- Optional tuning variables:
+  - `ELEVENLABS_TTS_MODEL_ID`
+  - `ELEVENLABS_STT_MODEL_ID`

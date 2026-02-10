@@ -36,6 +36,9 @@ export const defaultSettings: GlobalSettings = {
   aiMemoryDepth: 14,
   aiVoiceInputEnabled: true,
   aiVoiceOutputEnabled: true,
+  aiVoiceProvider: 'elevenlabs',
+  aiAutoFacilitatorEnabled: true,
+  aiSilenceThresholdMs: 6000,
 };
 
 export const defaultAccessibility = {

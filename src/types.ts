@@ -5,6 +5,7 @@ export type ContrastPreset = 'normal' | 'high';
 export type UiDensity = 'comfortable' | 'compact';
 export type AiHumanMode = 'strategic' | 'natural' | 'ultra';
 export type AiReplyLength = 'short' | 'balanced' | 'detailed';
+export type AiVoiceProvider = 'elevenlabs' | 'browser';
 
 export type PlayerKind = 'human' | 'ai';
 
@@ -67,6 +68,9 @@ export interface GlobalSettings {
   aiMemoryDepth: number;
   aiVoiceInputEnabled: boolean;
   aiVoiceOutputEnabled: boolean;
+  aiVoiceProvider: AiVoiceProvider;
+  aiAutoFacilitatorEnabled: boolean;
+  aiSilenceThresholdMs: number;
 }
 
 export interface WordEntry {
@@ -164,6 +168,41 @@ export interface ActiveMatch {
   spyHintAr: string;
   decoysEn: string[];
   decoysAr: string[];
+}
+
+export interface AiOrchestratorState {
+  status: 'idle' | 'listening' | 'processing' | 'speaking' | 'waiting_answer';
+  activeAiId: string;
+  activeAiName: string;
+  pendingTargetPlayerId: string;
+  pendingTargetName: string;
+  lastSpeakerName: string;
+  lastTranscript: string;
+  lastIntervention: string;
+  silenceMs: number;
+  isListening: boolean;
+  isSpeaking: boolean;
+  runtimeEnabled: boolean;
+  updatedAt: number;
+}
+
+export interface ElevenTtsRequest {
+  text: string;
+  voiceId?: string;
+  modelId?: string;
+}
+
+export interface ElevenSttRequest {
+  audioBase64: string;
+  mimeType: string;
+  languageCode?: string;
+  modelId?: string;
+}
+
+export interface ElevenSttResponse {
+  text: string;
+  confidence?: number;
+  provider: 'elevenlabs';
 }
 
 export interface MatchRecord {

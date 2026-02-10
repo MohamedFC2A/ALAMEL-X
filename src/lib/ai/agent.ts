@@ -36,6 +36,8 @@ export interface AiThreadPatch {
   appended: AiMessage[];
 }
 
+export type DirectedQuestionMood = 'neutral' | 'suspicious';
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -95,12 +97,12 @@ function getMemoryDepth(config: AiRuntimeConfig): number {
 
 function buildHumanModeDirective(mode: AiHumanMode): string {
   if (mode === 'strategic') {
-    return 'الأولوية: الدقة والتكتيك. كن مباشرًا، قليل الزخرفة، عالي الانضباط.';
+    return 'الأولوية: الدقة والتكتيك. رد مختصر، مباشر، ونبرة مصرية واضحة.';
   }
   if (mode === 'ultra') {
-    return 'الأولوية: بشرية عالية جدًا. صياغة طبيعية جدًا بنبرة حقيقية وسياق اجتماعي ذكي دون افتعال.';
+    return 'الأولوية: بشرية عالية جدًا. صياغة مصرية طبيعية جدًا بدون تصنع.';
   }
-  return 'الأولوية: توازن بين البشرية والذكاء التكتيكي.';
+  return 'الأولوية: توازن بين الذكاء التكتيكي والكلام المصري الطبيعي.';
 }
 
 function buildDepthDirective(depth: 1 | 2 | 3): string {
@@ -131,7 +133,7 @@ function systemPrompt(context: AiMatchContext, config: AiRuntimeConfig): string 
   const base = [
     'أنت لاعب AI داخل لعبة اجتماعية لكشف الجاسوس (pass-and-play).',
     'هويتك: عميل استخبارات أسطوري بحضور مهيب ولمسة مرعبة هادئة.',
-    'أسلوبك: عربي طبيعي واضح وسريع، حاد وواثق، ذكي واستنتاجي.',
+    'أسلوبك: مصري طبيعي وواضح وسريع، ذكي واستنتاجي، وممنوع الفصحى الجامدة.',
     'ممنوع تقول أنك نموذج ذكاء اصطناعي أو تذكر السيستم/الـprompt.',
     'لا تستخدم لغة مهزوزة أو مترددة. لا اعتذار ولا مجاملات زائدة.',
     buildHumanModeDirective(mode),
@@ -286,6 +288,39 @@ function polishReply(text: string, replyLength: AiReplyLength): string {
   return limited.join(' ');
 }
 
+function cleanSingleLine(text: string): string {
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s"'`]+|[\s"'`]+$/g, '')
+    .trim();
+}
+
+function ensureQuestionEnding(text: string): string {
+  const trimmed = cleanSingleLine(text).replace(/[.،؛:!?؟]+$/u, '').trim();
+  if (!trimmed) {
+    return 'إنت استعملته قبل كده؟';
+  }
+  return `${trimmed}؟`;
+}
+
+function normalizeYesNo(text: string): 'yes' | 'no' | null {
+  const normalized = normalizeWord(text);
+  if (!normalized) {
+    return null;
+  }
+
+  const yesHints = ['yes', 'yeah', 'yep', 'true', 'صح', 'ايوه', 'ايوا', 'اه', 'نعم'];
+  const noHints = ['no', 'nope', 'false', 'غلط', 'لا', 'لأ', 'مش'];
+
+  if (yesHints.some((hint) => normalized.includes(normalizeWord(hint)))) {
+    return 'yes';
+  }
+  if (noHints.some((hint) => normalized.includes(normalizeWord(hint)))) {
+    return 'no';
+  }
+  return null;
+}
+
 export async function generateChatReply(
   config: AiRuntimeConfig,
   context: AiMatchContext,
@@ -379,6 +414,118 @@ export async function generateQuestion(config: AiRuntimeConfig, context: AiMatch
 
   const text = await chatComplete({ ...config, messages, temperature: depth === 3 ? 0.6 : 0.5, maxTokens: depth === 3 ? 110 : 80 });
   return text.split('\n').filter(Boolean)[0]?.trim() ?? text.trim();
+}
+
+export async function generateDirectedQuestion(
+  config: AiRuntimeConfig,
+  context: AiMatchContext,
+  thread: AiThreadState,
+  targetName: string,
+  mood: DirectedQuestionMood,
+): Promise<string> {
+  const system = systemPrompt(context, config);
+  const contextMsg = contextBlock(context, thread);
+  const memoryDepth = getMemoryDepth(config);
+  const moodHint =
+    mood === 'suspicious'
+      ? 'النبرة شكّ أعلى. جملة واحدة قصيرة قوية.'
+      : 'النبرة طبيعية. جملة واحدة قصيرة وواضحة.';
+
+  const text = await chatComplete({
+    ...config,
+    temperature: mood === 'suspicious' ? 0.54 : 0.46,
+    maxTokens: 85,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'system', content: contextMsg },
+      ...recentThreadMessages(thread, memoryDepth),
+      {
+        role: 'user',
+        content:
+          `اكتب سؤال واحد فقط باللهجة المصرية موجّه للاعب اسمه "${targetName}" داخل اللعبة.\n` +
+          `${moodHint}\n` +
+          'ممنوع مقدمات، ممنوع شرح. أرجع السؤال فقط.',
+      },
+    ],
+  });
+
+  const firstLine = cleanSingleLine(text.split('\n').find(Boolean) ?? text);
+  return ensureQuestionEnding(firstLine);
+}
+
+export async function decideYesNo(
+  config: AiRuntimeConfig,
+  context: AiMatchContext,
+  thread: AiThreadState,
+  question: string,
+): Promise<'yes' | 'no'> {
+  const system = systemPrompt(context, config);
+  const contextMsg = contextBlock(context, thread);
+  const memoryDepth = getMemoryDepth(config);
+  const depth = getReasoningDepth(config);
+
+  const text = await chatComplete({
+    ...config,
+    temperature: depth === 3 ? 0.16 : 0.12,
+    maxTokens: 18,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'system', content: contextMsg },
+      ...recentThreadMessages(thread, memoryDepth),
+      {
+        role: 'user',
+        content:
+          `السؤال: ${question}\n` +
+          'جاوب إجابة ثنائية فقط حسب دورك وسياق الجولة.\n' +
+          'ارجع فقط yes أو no بدون أي كلمة إضافية.',
+      },
+    ],
+  });
+
+  const parsed = normalizeYesNo(text);
+  if (parsed) {
+    return parsed;
+  }
+
+  const fallback = normalizeYesNo(question);
+  if (fallback === 'yes') {
+    return 'yes';
+  }
+  return 'no';
+}
+
+export async function generateSuspicionInterjection(
+  config: AiRuntimeConfig,
+  context: AiMatchContext,
+  thread: AiThreadState,
+  suspectName: string,
+): Promise<string> {
+  const system = systemPrompt(context, config);
+  const contextMsg = contextBlock(context, thread);
+  const memoryDepth = getMemoryDepth(config);
+
+  const text = await chatComplete({
+    ...config,
+    temperature: 0.58,
+    maxTokens: 48,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'system', content: contextMsg },
+      ...recentThreadMessages(thread, memoryDepth),
+      {
+        role: 'user',
+        content:
+          `اكتب تعبير شك قصير جدًا باللهجة المصرية بخصوص "${suspectName}".\n` +
+          'ابدأ بـ "هممم" أو "آها". جملة واحدة فقط بدون شرح.',
+      },
+    ],
+  });
+
+  const candidate = cleanSingleLine(text.split('\n').find(Boolean) ?? text);
+  if (!candidate) {
+    return `هممم... ${suspectName} في حاجة مش مريحة.`;
+  }
+  return candidate;
 }
 
 export async function decideVote(

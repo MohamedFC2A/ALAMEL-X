@@ -8,12 +8,14 @@ import { nowMs } from '../lib/clock';
 import { ScreenScaffold } from '../components/ScreenScaffold';
 import { PrimaryActionBar } from '../components/PrimaryActionBar';
 import { PhaseIndicator } from '../components/PhaseIndicator';
+import { StatusBanner } from '../components/StatusBanner';
 import { useActiveMatch } from '../hooks/useActiveMatch';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { GameButton } from '../components/GameButton';
 import { Bot } from 'lucide-react';
 import type { Player } from '../types';
 import { AiDeskModal } from '../components/AiDeskModal';
+import { useAiDiscussionOrchestrator } from '../hooks/useAiDiscussionOrchestrator';
 
 export function DiscussionScreen() {
   const { t, i18n } = useTranslation();
@@ -46,6 +48,24 @@ export function DiscussionScreen() {
   }, [activeMatch, playerMap]);
 
   const hasAi = aiPlayers.length > 0;
+  const orchestrator = useAiDiscussionOrchestrator({
+    activeMatch,
+    aiPlayers,
+    playerMap,
+    settings,
+    language: i18n.language as 'en' | 'ar',
+  });
+
+  const orchestratorStatusLabel =
+    orchestrator.state.status === 'listening'
+      ? t('aiOrchestratorListening')
+      : orchestrator.state.status === 'processing'
+        ? t('aiOrchestratorProcessing')
+        : orchestrator.state.status === 'speaking'
+          ? t('aiOrchestratorSpeaking')
+          : orchestrator.state.status === 'waiting_answer'
+            ? t('aiOrchestratorWaitingAnswer')
+            : t('aiOrchestratorIdle');
 
   useEffect(() => {
     if (!activeMatchState) {
@@ -166,15 +186,36 @@ export function DiscussionScreen() {
         </GameButton>
       </PrimaryActionBar>
 
+      {hasAi && activeMatch.match.status === 'discussion' ? (
+        <section className="glass-card section-card cinematic-panel ai-orchestrator-strip">
+          <div className="ai-orchestrator-strip-row">
+            <span className="eyebrow">{t('aiOrchestratorStatus')}</span>
+            <strong>{orchestratorStatusLabel}</strong>
+          </div>
+          <div className="ai-orchestrator-strip-row subtle">
+            <span>
+              {orchestrator.state.pendingTargetName
+                ? t('aiOrchestratorPendingTarget', { name: orchestrator.state.pendingTargetName })
+                : t('aiOrchestratorNoPending')}
+            </span>
+            <span>
+              {t('aiMonitorSilence')}: {Math.round(orchestrator.state.silenceMs / 1000)} {t('seconds')}
+            </span>
+          </div>
+          {orchestrator.error ? <StatusBanner tone="danger">{orchestrator.error}</StatusBanner> : null}
+        </section>
+      ) : null}
+
       {activeMatch && hasAi ? (
         <AiDeskModal
           open={aiDeskOpen}
           onClose={() => setAiDeskOpen(false)}
-          activeMatch={activeMatch}
           aiPlayers={aiPlayers}
-          playerMap={playerMap}
-          settings={settings}
-          language={i18n.language as 'en' | 'ar'}
+          orchestratorState={orchestrator.state}
+          runtimeEnabled={orchestrator.runtimeEnabled}
+          onToggleRuntime={orchestrator.toggleRuntimeEnabled}
+          error={orchestrator.error}
+          onClearError={orchestrator.clearError}
         />
       ) : null}
     </ScreenScaffold>

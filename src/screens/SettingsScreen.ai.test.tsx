@@ -54,6 +54,23 @@ describe('settings screen AI section', () => {
       expect(settings?.aiVoiceOutputEnabled).toBe(false);
     });
 
+    const autoFacilitator = await screen.findByRole('checkbox', { name: /يدير النقاش تلقائيًا/i });
+    expect(autoFacilitator).toBeChecked();
+    await user.click(autoFacilitator);
+
+    await waitFor(async () => {
+      const settings = await db.settings.get('global');
+      expect(settings?.aiAutoFacilitatorEnabled).toBe(false);
+    });
+
+    const provider = await screen.findByRole('combobox', { name: /مزود الصوت/i });
+    await user.selectOptions(provider, 'browser');
+
+    await waitFor(async () => {
+      const settings = await db.settings.get('global');
+      expect(settings?.aiVoiceProvider).toBe('browser');
+    });
+
     expect(screen.queryByPlaceholderText(/ضع المفتاح هنا/i)).not.toBeInTheDocument();
     expect(screen.getByText(/مفتاح deepseek غير ظاهر للمستخدم/i)).toBeInTheDocument();
   });
