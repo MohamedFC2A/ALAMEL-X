@@ -61,7 +61,7 @@ export function SummaryScreen() {
       </section>
 
       <PrimaryActionBar leading={<GameButton variant="ghost" onClick={() => navigate('/')}>{t('returnHome')}</GameButton>}>
-        <GameButton variant="primary" size="lg" onClick={() => navigate('/play/setup')}>
+        <GameButton variant="cta" size="lg" onClick={() => navigate('/play/setup')}>
           {t('quickReplay')}
         </GameButton>
       </PrimaryActionBar>

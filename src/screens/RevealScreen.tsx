@@ -332,7 +332,7 @@ export function RevealScreen() {
           <PlayerAvatar avatarId={revealPlayer.avatarId} alt={revealPlayer.name} size={104} />
           <h2>{t('handoff', { name: revealPlayer.name })}</h2>
           <p className="subtle">{t('handoffSafetyNote')}</p>
-          <GameButton variant="primary" size="lg" onClick={() => void goToReveal()}>
+          <GameButton variant="cta" size="lg" onClick={() => void goToReveal()}>
             {t('continue')}
           </GameButton>
         </section>
@@ -409,7 +409,7 @@ export function RevealScreen() {
       >
         {currentMatch.revealState.phase === 'reveal' ? (
           <GameButton
-            variant="safe"
+            variant="cta"
             size="lg"
             className="next-btn"
             onClick={() => void goNext()}

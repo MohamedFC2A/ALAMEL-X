@@ -163,7 +163,7 @@ export function PlaySetupScreen() {
           </span>
         }
       >
-        <GameButton variant="primary" size="lg" onClick={() => void handleStart()} disabled={selectedPlayers.length < 4}>
+        <GameButton variant="cta" size="lg" onClick={() => void handleStart()} disabled={selectedPlayers.length < 4}>
           {t('startGame')}
         </GameButton>
       </PrimaryActionBar>

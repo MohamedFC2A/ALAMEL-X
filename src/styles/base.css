@@ -127,7 +127,7 @@
     --stamp: var(--accent-danger);
     --warning: #ecc94b;
     --danger: var(--accent-danger);
-    --success: var(--accent-primary);
+    --success: #22c55e;
 
     /* ═══════════ PANELS ═══════════ */
     --panel: rgba(14, 14, 16, 0.92);

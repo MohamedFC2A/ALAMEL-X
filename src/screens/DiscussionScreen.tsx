@@ -109,7 +109,7 @@ export function DiscussionScreen() {
         <section className="glass-card phase-card section-card cinematic-panel">
           <h2>{t('closePhone')}</h2>
           <p className="subtle">{t('discussionStartHint')}</p>
-          <GameButton variant="primary" size="lg" onClick={() => void startDiscussion()}>
+          <GameButton variant="cta" size="lg" onClick={() => void startDiscussion()}>
             {t('startDiscussion')}
           </GameButton>
         </section>

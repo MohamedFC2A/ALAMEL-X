@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { motion, type HTMLMotionProps } from 'framer-motion';
 
-type GameButtonVariant = 'primary' | 'ghost' | 'icon' | 'danger' | 'safe';
+type GameButtonVariant = 'primary' | 'ghost' | 'icon' | 'danger' | 'safe' | 'cta';
 type GameButtonSize = 'md' | 'lg' | 'hero' | 'icon';
 
 interface GameButtonProps extends HTMLMotionProps<'button'> {

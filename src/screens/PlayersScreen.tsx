@@ -316,7 +316,7 @@ export function PlayersScreen() {
               <GameButton type="button" variant="ghost" size="md" onClick={() => setModalOpen(false)}>
                 {t('cancel')}
               </GameButton>
-              <GameButton type="button" variant="primary" size="lg" onClick={() => void savePlayer()}>
+              <GameButton type="button" variant="cta" size="lg" onClick={() => void savePlayer()}>
                 {t('save')}
               </GameButton>
             </div>

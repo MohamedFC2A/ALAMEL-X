@@ -211,7 +211,7 @@ export function ResolutionScreen() {
           </div>
           <PrimaryActionBar className="sticky-action-bar">
             <GameButton
-              variant="primary"
+              variant="cta"
               size="lg"
               disabled={voteDraft.length !== spyCount}
               onClick={() => {
@@ -308,7 +308,7 @@ export function ResolutionScreen() {
             </span>
           </p>
           <PrimaryActionBar className="sticky-action-bar">
-            <GameButton variant="primary" size="lg" onClick={() => {
+            <GameButton variant="cta" size="lg" onClick={() => {
               vibrate();
               void finishRound();
             }}>

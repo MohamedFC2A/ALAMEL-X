@@ -11,20 +11,11 @@ export function HomeScreen() {
   const navigate = useNavigate();
   const activeMatch = useLiveQuery(() => db.activeMatch.get('active'), []);
 
-  const handleStart = () => {
+  const handleMission = () => {
     if (navigator.vibrate) navigator.vibrate(50);
-    navigate('/play/setup');
-  };
-
-  const handleResume = () => {
-    if (navigator.vibrate) navigator.vibrate(50);
-    navigate('/play/reveal'); // Or determine correct phase if possible, but reveal/discussion is safe
-  };
-
-  const handleAbort = async () => {
-    if (navigator.vibrate) navigator.vibrate(50);
-    if (window.confirm(t('abortConfirm') || 'Abort current mission? All progress will be lost.')) {
-      await db.activeMatch.delete('active');
+    if (activeMatch) {
+      navigate('/play/reveal');
+    } else {
       navigate('/play/setup');
     }
   };
@@ -37,56 +28,20 @@ export function HomeScreen() {
       </section>
 
       <section className="home-hud__center">
-        {activeMatch ? (
-          <div className="home-hud__dual-actions">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <GameButton
-                id="resume-mission-btn"
-                variant="primary"
-                size="hero"
-                onClick={handleResume}
-                className="btn-resume"
-              >
-                {t('resumeMission')}
-              </GameButton>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <GameButton
-                id="abort-mission-btn"
-                variant="danger" // Assuming 'danger' variant exists or will fall back
-                size="lg"
-                onClick={() => void handleAbort()}
-                className="btn-abort"
-              >
-                {t('abortMission') || 'ABORT MISSION'}
-              </GameButton>
-            </motion.div>
-          </div>
-        ) : (
-          <motion.div
-            className="home-hud__mission-wrap"
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+        <motion.div
+          className="home-hud__mission-wrap"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <GameButton
+            id="start-mission-btn"
+            variant="cta"
+            size="hero"
+            onClick={handleMission}
           >
-            <GameButton
-              id="start-mission-btn"
-              variant="primary"
-              size="hero"
-              onClick={handleStart}
-            >
-              {t('startMission')}
-            </GameButton>
-          </motion.div>
-        )}
+            {t('startMission')}
+          </GameButton>
+        </motion.div>
       </section>
 
       <nav className="home-hud__footer" aria-label={t('homeUtilities')}>
