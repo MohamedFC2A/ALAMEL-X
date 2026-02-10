@@ -509,3 +509,15 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 - `npm run test`: pass (47 tests).
 - `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
 - `npm run build`: pass.
+
+## Progress Log
+- Diagnosed production `/api/eleven/tts` failures as upstream 404 (`voice_id not found`) rather than missing endpoint.
+- Hardened `api/eleven/tts.js` with a one-time self-healing retry:
+  - First attempt uses configured/requested `voice_id`.
+  - If ElevenLabs returns `voice_id ... not found` (404), cache is cleared and a fallback valid voice is auto-resolved from account voices, then retried once.
+  - Prevented stale invalid voice IDs from being re-cached.
+
+## Validation Update (TTS Self-Healing Retry)
+- `npm run test`: pass (47 tests).
+- `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.

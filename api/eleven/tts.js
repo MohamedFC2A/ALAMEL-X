@@ -60,10 +60,63 @@ async function listVoices(apiKey, signal) {
   return Array.isArray(payload?.voices) ? payload.voices : [];
 }
 
+async function requestTts({ apiKey, voiceId, modelId, text, signal }) {
+  const upstream = await fetch(
+    `${ELEVEN_TTS_BASE_URL}/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
+    {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        accept: 'audio/mpeg',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: modelId,
+        voice_settings: {
+          stability: 0.46,
+          similarity_boost: 0.74,
+          style: 0.34,
+          use_speaker_boost: true,
+        },
+      }),
+      signal,
+    },
+  );
+
+  let raw = '';
+  let parsed = {};
+  let audioBuffer = null;
+  if (upstream.ok) {
+    audioBuffer = Buffer.from(await upstream.arrayBuffer());
+  } else {
+    raw = await upstream.text();
+    try {
+      parsed = raw ? JSON.parse(raw) : {};
+    } catch {
+      parsed = {};
+    }
+  }
+
+  return {
+    ok: upstream.ok,
+    status: upstream.status,
+    message: parsed?.detail?.message || parsed?.error?.message || `ElevenLabs TTS request failed (${upstream.status}).`,
+    raw,
+    audioBuffer,
+    contentType: upstream.headers.get('content-type') || 'audio/mpeg',
+  };
+}
+
+function isVoiceNotFound(status, message) {
+  if (status !== 404) return false;
+  const normalized = String(message || '').toLowerCase();
+  return normalized.includes('voice_id') && normalized.includes('not found');
+}
+
 async function resolveVoiceId(apiKey, preferredVoiceId, signal) {
   const now = Date.now();
   if (preferredVoiceId) {
-    cachedVoice = { id: preferredVoiceId, at: now };
     return preferredVoiceId;
   }
 
@@ -135,46 +188,48 @@ export default async function handler(req, res) {
   const timer = setTimeout(() => controller.abort(), 15_000);
 
   try {
-    const voiceId = await resolveVoiceId(apiKey, preferredVoiceId, controller.signal);
-    const upstream = await fetch(
-      `${ELEVEN_TTS_BASE_URL}/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
-      {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          accept: 'audio/mpeg',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          text,
-          model_id: modelId,
-          voice_settings: {
-            stability: 0.46,
-            similarity_boost: 0.74,
-            style: 0.34,
-            use_speaker_boost: true,
-          },
-        }),
-        signal: controller.signal,
-      },
-    );
+    let voiceId = await resolveVoiceId(apiKey, preferredVoiceId, controller.signal);
+    let tts = await requestTts({
+      apiKey,
+      voiceId,
+      modelId,
+      text,
+      signal: controller.signal,
+    });
 
-    if (!upstream.ok) {
-      const raw = await upstream.text();
-      let message = `ElevenLabs TTS request failed (${upstream.status}).`;
+    if (!tts.ok && isVoiceNotFound(tts.status, tts.message)) {
       try {
-        const parsed = JSON.parse(raw);
-        message = parsed?.detail?.message || parsed?.error?.message || message;
+        // Retry once with an auto-resolved valid voice when configured voice_id is stale/invalid.
+        cachedVoice = { id: '', at: 0 };
+        const fallbackVoiceId = await resolveVoiceId(apiKey, '', controller.signal);
+        if (fallbackVoiceId && fallbackVoiceId !== voiceId) {
+          voiceId = fallbackVoiceId;
+          tts = await requestTts({
+            apiKey,
+            voiceId,
+            modelId,
+            text,
+            signal: controller.signal,
+          });
+        }
       } catch {
-        // ignore parse error
+        // keep original failure below
       }
-      fail(res, upstream.status, message, 'upstream_tts_failed');
+    }
+
+    if (!tts.ok) {
+      fail(res, tts.status, tts.message, 'upstream_tts_failed');
       return;
     }
 
-    const audioBuffer = Buffer.from(await upstream.arrayBuffer());
+    const audioBuffer = tts.audioBuffer;
+    if (!audioBuffer || !audioBuffer.byteLength) {
+      fail(res, 502, 'ElevenLabs TTS returned empty audio buffer.', 'invalid_response');
+      return;
+    }
+
     res.status(200);
-    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Type', tts.contentType || 'audio/mpeg');
     res.setHeader('Content-Length', String(audioBuffer.byteLength));
     res.send(audioBuffer);
   } catch (error) {
