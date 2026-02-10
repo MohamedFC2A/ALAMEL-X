@@ -89,6 +89,7 @@ export async function ensureSettings(): Promise<GlobalSettings> {
       ...current,
       theme: 'onyx',
       language: 'ar',
+      aiVoiceProvider: 'elevenlabs',
       pendingLanguage: undefined,
     };
     if (JSON.stringify(merged) !== JSON.stringify(current)) {

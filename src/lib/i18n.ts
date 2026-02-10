@@ -212,6 +212,7 @@ const translation = {
   aiVoiceProvider: 'مزود الصوت',
   aiVoiceProviderEleven: 'ElevenLabs (أساسي)',
   aiVoiceProviderBrowser: 'المتصفح (احتياطي)',
+  aiVoiceProviderLocked: 'تم قفل مزود الصوت على ElevenLabs لضمان ثبات النطق.',
   aiAutoFacilitatorEnabled: 'AI يدير النقاش تلقائيًا',
   aiSilenceThreshold: 'حد الصمت قبل التدخل',
   aiInterventionRest: 'فترة راحة AI بين الأسئلة',

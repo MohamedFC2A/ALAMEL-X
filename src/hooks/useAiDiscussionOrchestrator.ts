@@ -16,7 +16,7 @@ import {
 } from '../lib/ai/discussion-orchestrator';
 import { runtimeConfigFromSettings, generateChatReply, generateDirectedQuestion, generateSuspicionInterjection, decideYesNo } from '../lib/ai/agent';
 import { ElevenError, transcribeWithEleven, speakWithEleven, cancelElevenSpeechOutput } from '../lib/ai/eleven-client';
-import { BrowserVoiceError, cancelBrowserSpeechOutput, speakWithBrowserSynthesis, transcribeWithBrowserRecognition } from '../lib/ai/browser-voice';
+import { BrowserVoiceError, cancelBrowserSpeechOutput, transcribeWithBrowserRecognition } from '../lib/ai/browser-voice';
 
 interface UseAiDiscussionOrchestratorParams {
   activeMatch: ActiveMatch | null;
@@ -156,6 +156,11 @@ export function useAiDiscussionOrchestrator({
   const { t } = useTranslation();
   const primaryAi = useMemo(() => activeAiFrom(aiPlayers), [aiPlayers]);
   const activeMatchId = activeMatch?.match.id ?? '';
+  const matchStatus = activeMatch?.match.status ?? '';
+  const aiEnabled = Boolean(settings?.aiEnabled);
+  const aiVoiceInputEnabled = Boolean(settings?.aiVoiceInputEnabled);
+  const configuredSilenceThresholdMs = settings?.aiSilenceThresholdMs ?? DEFAULT_SILENCE_THRESHOLD_MS;
+  const configuredInterventionRestMs = settings?.aiInterventionRestMs ?? 9_000;
   const [runtimeEnabled, setRuntimeEnabled] = useState<boolean>(settings?.aiAutoFacilitatorEnabled ?? true);
   const [state, setState] = useState<AiOrchestratorState>(() => defaultState(runtimeEnabled, primaryAi));
   const [error, setError] = useState('');
@@ -300,17 +305,7 @@ export function useAiDiscussionOrchestrator({
       updateState({ status: 'speaking', isSpeaking: true });
 
       try {
-        const preferEleven = (currentSettings.aiVoiceProvider ?? 'elevenlabs') === 'elevenlabs';
-        if (preferEleven) {
-          try {
-            await speakWithEleven({ text });
-            return;
-          } catch {
-            setError(t('aiVoiceFallbackTts'));
-          }
-        }
-
-        await speakWithBrowserSynthesis(text, languageRef.current);
+        await speakWithEleven({ text, playbackContext: audioContextRef.current });
       } catch (error) {
         setError(pickVoiceErrorMessage(error, t));
       } finally {
@@ -541,9 +536,7 @@ export function useAiDiscussionOrchestrator({
 
         let transcript: TranscriptResult | null = null;
         const currentLanguage = languageRef.current;
-        const currentSettings = settingsRef.current;
-
-        const preferEleven = (currentSettings?.aiVoiceProvider ?? 'elevenlabs') === 'elevenlabs';
+        const preferEleven = true;
 
         if (preferEleven) {
           try {
@@ -622,10 +615,10 @@ export function useAiDiscussionOrchestrator({
 
   useEffect(() => {
     const canRun =
-      Boolean(activeMatch) &&
-      activeMatch?.match.status === 'discussion' &&
-      Boolean(settings?.aiEnabled) &&
-      Boolean(settings?.aiVoiceInputEnabled) &&
+      Boolean(activeMatchId) &&
+      matchStatus === 'discussion' &&
+      aiEnabled &&
+      aiVoiceInputEnabled &&
       aiPlayers.length > 0 &&
       runtimeEnabled;
 
@@ -647,8 +640,8 @@ export function useAiDiscussionOrchestrator({
     queueRef.current = [];
     setError('');
 
-    const silenceThresholdMs = Math.max(3_000, settings?.aiSilenceThresholdMs ?? DEFAULT_SILENCE_THRESHOLD_MS);
-    const interventionRestMs = Math.max(4_000, settings?.aiInterventionRestMs ?? 9_000);
+    const silenceThresholdMs = Math.max(3_000, configuredSilenceThresholdMs);
+    const interventionRestMs = Math.max(4_000, configuredInterventionRestMs);
     const interventionCooldownMs = Math.max(interventionRestMs, Math.floor(silenceThresholdMs * 0.6));
     const timeDomain = new Uint8Array(2048);
 
@@ -827,7 +820,22 @@ export function useAiDiscussionOrchestrator({
         isSpeaking: false,
       });
     };
-  }, [activeMatch, aiPlayers.length, primaryAi, processQueue, runIntervention, runtimeEnabled, settings, stopAudio, t, updateState]);
+  }, [
+    activeMatchId,
+    matchStatus,
+    aiEnabled,
+    aiVoiceInputEnabled,
+    configuredSilenceThresholdMs,
+    configuredInterventionRestMs,
+    aiPlayers.length,
+    primaryAi,
+    processQueue,
+    runIntervention,
+    runtimeEnabled,
+    stopAudio,
+    t,
+    updateState,
+  ]);
 
   return {
     state: {

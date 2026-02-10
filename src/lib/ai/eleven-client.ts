@@ -25,6 +25,7 @@ let playbackNonce = 0;
 let activeAudio: HTMLAudioElement | null = null;
 let activeAudioUrl: string | null = null;
 let activeFetchAbort: AbortController | null = null;
+let activeBufferSource: AudioBufferSourceNode | null = null;
 
 function classifyStatus(status: number): ElevenErrorKind {
   if (status === 401 || status === 403) return 'auth';
@@ -48,6 +49,16 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 function cleanupActiveAudio() {
+  if (activeBufferSource) {
+    try {
+      activeBufferSource.stop();
+    } catch {
+      // ignore
+    }
+    activeBufferSource.disconnect();
+    activeBufferSource = null;
+  }
+
   if (activeAudio) {
     try {
       activeAudio.pause();
@@ -115,7 +126,9 @@ export async function transcribeWithEleven(audioBlob: Blob, language: Language):
   };
 }
 
-export async function speakWithEleven(request: ElevenTtsRequest): Promise<void> {
+export async function speakWithEleven(
+  request: ElevenTtsRequest & { playbackContext?: AudioContext | null },
+): Promise<void> {
   cancelElevenSpeechOutput();
   const nonce = playbackNonce;
 
@@ -179,6 +192,46 @@ export async function speakWithEleven(request: ElevenTtsRequest): Promise<void> 
 
   if (nonce !== playbackNonce) {
     return;
+  }
+
+  const playbackContext = request.playbackContext ?? null;
+  if (playbackContext) {
+    try {
+      const audioBuffer = await playbackContext.decodeAudioData(await audioBlob.arrayBuffer());
+      if (nonce !== playbackNonce) {
+        return;
+      }
+
+      if (playbackContext.state === 'suspended') {
+        await playbackContext.resume().catch(() => undefined);
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const source = playbackContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(playbackContext.destination);
+        activeBufferSource = source;
+
+        source.onended = () => {
+          if (activeBufferSource === source) {
+            activeBufferSource = null;
+          }
+          resolve();
+        };
+
+        try {
+          source.start();
+        } catch (error) {
+          if (activeBufferSource === source) {
+            activeBufferSource = null;
+          }
+          reject(new ElevenError('Failed to start ElevenLabs audio playback.', { kind: 'unknown', cause: error }));
+        }
+      });
+      return;
+    } catch {
+      // Fall through to HTMLAudioElement playback as a backup strategy.
+    }
   }
 
   cleanupActiveAudio();

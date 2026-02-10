@@ -10,7 +10,7 @@ import { ScreenScaffold } from '../components/ScreenScaffold';
 import { GameButton } from '../components/GameButton';
 import { StatusBanner } from '../components/StatusBanner';
 import { usePWAUpdate } from '../hooks/usePWAUpdate';
-import type { AiHumanMode, AiReplyLength, AiVoiceProvider, ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
+import type { AiHumanMode, AiReplyLength, ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date';
 type AsyncStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -596,14 +596,11 @@ export function SettingsScreen() {
         <div className="glass-card setting-card cinematic-panel section-card">
           <label className="form-field">
             <span>{t('aiVoiceProvider')}</span>
-            <select
-              value={settings.aiVoiceProvider}
-              onChange={(event) => void updateGlobalSettings({ aiVoiceProvider: event.target.value as AiVoiceProvider })}
-            >
+            <select value="elevenlabs" disabled>
               <option value="elevenlabs">{t('aiVoiceProviderEleven')}</option>
-              <option value="browser">{t('aiVoiceProviderBrowser')}</option>
             </select>
           </label>
+          <p className="subtle">{t('aiVoiceProviderLocked')}</p>
         </div>
 
         <div className="glass-card setting-card cinematic-panel section-card">

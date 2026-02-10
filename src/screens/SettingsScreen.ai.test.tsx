@@ -90,12 +90,10 @@ describe('settings screen AI section', () => {
     });
 
     const provider = await screen.findByRole('combobox', { name: /مزود الصوت/i });
-    await user.selectOptions(provider, 'browser');
-
-    await waitFor(async () => {
-      const settings = await db.settings.get('global');
-      expect(settings?.aiVoiceProvider).toBe('browser');
-    });
+    expect(provider).toBeDisabled();
+    expect(screen.getByRole('option', { name: /elevenlabs/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /المتصفح/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/تم قفل مزود الصوت على ElevenLabs/i)).toBeInTheDocument();
 
     expect(screen.queryByPlaceholderText(/ضع المفتاح هنا/i)).not.toBeInTheDocument();
     expect(screen.getByText(/مفتاح deepseek غير ظاهر للمستخدم/i)).toBeInTheDocument();

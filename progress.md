@@ -492,3 +492,20 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 
 ## Progress Log
 - Updated ElevenLabs STT default model in `api/eleven/stt.js` from `scribe_v1` to `scribe_v2` for higher baseline transcription quality (still overridable via `ELEVENLABS_STT_MODEL_ID`).
+
+## Progress Log
+- Fixed discussion-phase speech regression where AI voice playback was being interrupted by orchestrator re-bootstrap on every active-match thread update.
+  - `src/hooks/useAiDiscussionOrchestrator.ts` now derives run conditions from stable scalar deps (`activeMatchId`, `matchStatus`, voice flags, thresholds) instead of full `activeMatch/settings` objects.
+- Switched AI discussion TTS path to ElevenLabs-only (removed browser speech synthesis fallback in gameplay orchestrator).
+- Added WebAudio playback path for ElevenLabs output in `src/lib/ai/eleven-client.ts` (uses provided `AudioContext` when available, then falls back to `HTMLAudioElement`).
+- Locked UI provider control to ElevenLabs in settings and removed browser option from runtime selection:
+  - `src/screens/SettingsScreen.tsx`
+  - `src/lib/db.ts` (`ensureSettings` now normalizes `aiVoiceProvider` to `elevenlabs`)
+  - Added copy key `aiVoiceProviderLocked` in `src/lib/i18n.ts`.
+- Updated settings AI tests for provider lock behavior:
+  - `src/screens/SettingsScreen.ai.test.tsx`.
+
+## Validation Update (Discussion Voice Stability + Eleven-only TTS)
+- `npm run test`: pass (47 tests).
+- `npm run lint`: pass with existing warnings only in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.
