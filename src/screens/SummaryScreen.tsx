@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ import { GameButton } from '../components/GameButton';
 import { buildAwardSummaryText, getMedalDefinitionById } from '../lib/player-progression';
 import { speakWithEleven } from '../lib/ai/eleven-client';
 import { speakWithBrowserSynthesis } from '../lib/ai/browser-voice';
+import { playUiFeedback } from '../lib/ui-feedback';
 
 const narratedAwardMatches = new Set<string>();
 
@@ -20,6 +21,20 @@ export function SummaryScreen() {
   const navigate = useNavigate();
   const latestMatch = useLiveQuery(() => db.matches.orderBy('endedAt').last(), []);
   const settings = useLiveQuery(() => db.settings.get('global'), []);
+  const winnerCueRef = useRef('');
+
+  useEffect(() => {
+    if (!latestMatch) {
+      winnerCueRef.current = '';
+      return;
+    }
+    const cueKey = `${latestMatch.id}:${latestMatch.result.winner}`;
+    if (winnerCueRef.current === cueKey) {
+      return;
+    }
+    winnerCueRef.current = cueKey;
+    playUiFeedback(latestMatch.result.winner === 'citizens' ? 'confirm' : 'danger', 1.14);
+  }, [latestMatch]);
 
   useEffect(() => {
     if (!latestMatch) {

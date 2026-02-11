@@ -14,6 +14,7 @@ import {
   shouldPersistUiSelfHeal,
 } from '../lib/ui-self-heal';
 import { ScreenScaffold } from '../components/ScreenScaffold';
+import { useLoading } from '../components/loading-controller';
 import { usePWAUpdate } from '../hooks/usePWAUpdate';
 import type { GlobalSettings, HintMode, WordDifficulty } from '../types';
 import { DisplaySettingsSection } from './settings/DisplaySettingsSection';
@@ -84,6 +85,7 @@ export function SettingsScreen() {
   const [selfHealMessage, setSelfHealMessage] = useState('');
   const [selfHealTone, setSelfHealTone] = useState<BannerTone>('default');
   const { needRefresh, updateServiceWorker } = usePWAUpdate();
+  const { runWithLoading } = useLoading();
 
   useEffect(() => {
     void ensureSettings();
@@ -107,31 +109,37 @@ export function SettingsScreen() {
   }, [needRefresh]);
 
   const checkForUpdates = useCallback(async () => {
-    if (needRefresh) {
-      await updateServiceWorker(true);
-      return;
-    }
-
-    setUpdateStatus('checking');
-
-    try {
-      if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.getRegistration();
-        await registration?.update();
-        if (registration?.waiting) {
-          setUpdateStatus('idle');
+    await runWithLoading(
+      'update',
+      async () => {
+        if (needRefresh) {
+          await updateServiceWorker(true);
           return;
         }
-      }
 
-      setUpdateStatus('up-to-date');
-      window.setTimeout(() => {
-        setUpdateStatus('idle');
-      }, 1800);
-    } catch {
-      setUpdateStatus('idle');
-    }
-  }, [needRefresh, updateServiceWorker]);
+        setUpdateStatus('checking');
+
+        try {
+          if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.getRegistration();
+            await registration?.update();
+            if (registration?.waiting) {
+              setUpdateStatus('idle');
+              return;
+            }
+          }
+
+          setUpdateStatus('up-to-date');
+          window.setTimeout(() => {
+            setUpdateStatus('idle');
+          }, 1800);
+        } catch {
+          setUpdateStatus('idle');
+        }
+      },
+      { message: t('checking'), delayMs: 120, minVisibleMs: 320 },
+    );
+  }, [needRefresh, runWithLoading, t, updateServiceWorker]);
 
   const testAiConnection = useCallback(async () => {
     if (!settings) {

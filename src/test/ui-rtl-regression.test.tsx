@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { setupI18n } from '../lib/i18n';
 import { db, defaultSettings } from '../lib/db';
+import { LoadingProvider } from '../components/loading-controller';
 import { PlayersScreen } from '../screens/PlayersScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
@@ -54,9 +55,11 @@ describe('rtl ui regressions', () => {
 
   it('uses stacked section headings in settings and shows theme lock hint once', async () => {
     render(
-      <MemoryRouter>
-        <SettingsScreen />
-      </MemoryRouter>,
+      <LoadingProvider>
+        <MemoryRouter>
+          <SettingsScreen />
+        </MemoryRouter>
+      </LoadingProvider>,
     );
 
     const gameplayHeading = await screen.findByRole('heading', { name: /إعدادات اللعب/i, level: 2 });

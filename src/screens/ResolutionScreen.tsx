@@ -26,6 +26,7 @@ import { DeepSeekError } from '../lib/ai/deepseek-client';
 import { decideGuess, decideVoteDetailed, runtimeConfigFromSettings } from '../lib/ai/agent';
 import { speakWithEleven } from '../lib/ai/eleven-client';
 import { RestartRoundButton } from '../components/RestartRoundButton';
+import { playUiFeedback } from '../lib/ui-feedback';
 
 export function ResolutionScreen() {
   const { t, i18n } = useTranslation();
@@ -59,19 +60,14 @@ export function ResolutionScreen() {
   const [aiVoteError, setAiVoteError] = useState<{ key: string; message: string } | null>(null);
   const [aiGuessError, setAiGuessError] = useState<{ key: string; message: string } | null>(null);
   const [aiVoteNarration, setAiVoteNarration] = useState<{ key: string; message: string } | null>(null);
+  const stageCueRef = useRef('');
+  const resultCueRef = useRef('');
 
   const playerMap = useMemo(() => {
     const map = new Map<string, Player>();
     (players ?? []).forEach((player) => map.set(player.id, player));
     return map;
   }, [players]);
-
-  // Visual Polish: Haptics helper
-  const vibrate = () => {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(50);
-    }
-  };
 
   const formatAiError = useCallback((error: unknown): string => {
     if (error instanceof DeepSeekError) {
@@ -269,6 +265,38 @@ export function ResolutionScreen() {
         round: 1,
       },
     });
+  }, [activeMatch]);
+
+  useEffect(() => {
+    if (!activeMatch) {
+      stageCueRef.current = '';
+      resultCueRef.current = '';
+      return;
+    }
+
+    const stageKey = `${activeMatch.match.id}:${activeMatch.resolutionStage}`;
+    if (stageCueRef.current !== stageKey) {
+      stageCueRef.current = stageKey;
+      if (activeMatch.resolutionStage === 'guess') {
+        playUiFeedback('confirm', 1.04);
+      } else if (activeMatch.resolutionStage === 'result') {
+        playUiFeedback(activeMatch.winner === 'citizens' ? 'confirm' : 'danger', 1.12);
+      } else {
+        playUiFeedback('tap', 0.9);
+      }
+    }
+
+    if (activeMatch.resolutionStage !== 'result') {
+      resultCueRef.current = '';
+      return;
+    }
+
+    const winnerKey = `${activeMatch.match.id}:${activeMatch.winner}:${activeMatch.spyGuessCorrect ? 1 : 0}:${activeMatch.guessTimedOut ? 1 : 0}`;
+    if (resultCueRef.current === winnerKey) {
+      return;
+    }
+    resultCueRef.current = winnerKey;
+    playUiFeedback(activeMatch.winner === 'citizens' ? 'confirm' : 'danger', 1.16);
   }, [activeMatch]);
 
   useEffect(() => {
@@ -564,7 +592,6 @@ export function ResolutionScreen() {
                 variant="cta"
                 size="lg"
                 onClick={() => {
-                  vibrate();
                   void startBallot();
                 }}
               >
@@ -593,7 +620,6 @@ export function ResolutionScreen() {
                     type="button"
                     className={`glass-card pick-card ${picked ? 'selected' : ''}`}
                     onClick={() => {
-                      vibrate();
                       setBallotPick(id);
                     }}
                   >
@@ -637,7 +663,6 @@ export function ResolutionScreen() {
                 size="lg"
                 disabled={!ballotPick}
                 onClick={() => {
-                  vibrate();
                   void submitBallot();
                 }}
               >
@@ -704,7 +729,6 @@ export function ResolutionScreen() {
                     className={`glass-card choice-card ${guessDraft === displayOption ? 'selected' : ''}`}
                     onClick={() => {
                       setGuessInput(displayOption);
-                      vibrate();
                       void submitGuess(displayOption);
                     }}
                   >
@@ -772,7 +796,6 @@ export function ResolutionScreen() {
           </p>
           <PrimaryActionBar className="sticky-action-bar">
             <GameButton variant="cta" size="lg" onClick={() => {
-              vibrate();
               void finishRound();
             }}>
               {t('finishRound')}

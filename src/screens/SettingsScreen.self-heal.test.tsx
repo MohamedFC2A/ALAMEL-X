@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { defaultSettings, db } from '../lib/db';
 import { setupI18n } from '../lib/i18n';
+import { LoadingProvider } from '../components/loading-controller';
 import { clearUiRuntimeEvents, installUiRuntimeDebugger } from '../lib/ui-debugger';
 import { SettingsScreen } from './SettingsScreen';
 
@@ -40,9 +41,11 @@ describe('settings self-heal flow', () => {
   it('runs self-heal and persists compact display patch on small viewports', async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter>
-        <SettingsScreen />
-      </MemoryRouter>,
+      <LoadingProvider>
+        <MemoryRouter>
+          <SettingsScreen />
+        </MemoryRouter>
+      </LoadingProvider>,
     );
 
     const runButton = await screen.findByRole('button', { name: /تشغيل الإصلاح الذاتي الآن/i });
@@ -65,9 +68,11 @@ describe('settings self-heal flow', () => {
       value: { writeText: writeTextMock },
     });
     render(
-      <MemoryRouter>
-        <SettingsScreen />
-      </MemoryRouter>,
+      <LoadingProvider>
+        <MemoryRouter>
+          <SettingsScreen />
+        </MemoryRouter>
+      </LoadingProvider>,
     );
 
     const runDiagnosticsButton = await screen.findByRole('button', { name: /تشغيل تشخيص/i });
@@ -111,9 +116,11 @@ describe('settings self-heal flow', () => {
       value: { writeText: writeTextMock },
     });
     render(
-      <MemoryRouter>
-        <SettingsScreen />
-      </MemoryRouter>,
+      <LoadingProvider>
+        <MemoryRouter>
+          <SettingsScreen />
+        </MemoryRouter>
+      </LoadingProvider>,
     );
 
     const runDiagnosticsButton = await screen.findByRole('button', { name: /تشغيل تشخيص/i });

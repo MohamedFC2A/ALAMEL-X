@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/db';
@@ -17,6 +17,7 @@ import type { Player } from '../types';
 import { AiDeskModal } from '../components/AiDeskModal';
 import { useAiDiscussionOrchestrator } from '../hooks/useAiDiscussionOrchestrator';
 import { RestartRoundButton } from '../components/RestartRoundButton';
+import { playUiFeedback } from '../lib/ui-feedback';
 
 export function DiscussionScreen() {
   const { t, i18n } = useTranslation();
@@ -26,6 +27,8 @@ export function DiscussionScreen() {
   const settings = useLiveQuery(() => db.settings.get('global'), []);
   const players = useLiveQuery(() => db.players.toArray(), []);
   const [aiDeskOpen, setAiDeskOpen] = useState(false);
+  const warningCueRef = useRef(-1);
+  const phaseCueRef = useRef('');
   const now = useClockNow();
   const discussionMs = Math.max(60_000, (settings?.discussionMinutes ?? 3) * 60 * 1000);
 
@@ -94,6 +97,39 @@ export function DiscussionScreen() {
   const progress = activeMatch?.discussionEndsAt
     ? Math.max(0, Math.min(100, (remainingMs / discussionMs) * 100))
     : 100;
+
+  useEffect(() => {
+    if (!activeMatch) {
+      phaseCueRef.current = '';
+      return;
+    }
+
+    const phaseKey = `${activeMatch.match.id}:${activeMatch.match.status}:${activeMatch.resolutionStage ?? '-'}`;
+    if (phaseCueRef.current === phaseKey) {
+      return;
+    }
+    phaseCueRef.current = phaseKey;
+
+    if (activeMatch.match.status === 'discussion') {
+      playUiFeedback('confirm');
+    }
+  }, [activeMatch]);
+
+  useEffect(() => {
+    if (!activeMatch || activeMatch.match.status !== 'discussion') {
+      warningCueRef.current = -1;
+      return;
+    }
+
+    const warningBucket =
+      remainingSeconds <= 10 ? 10 : remainingSeconds <= 20 ? 20 : remainingSeconds <= 30 ? 30 : -1;
+    if (warningBucket === -1 || warningBucket === warningCueRef.current) {
+      return;
+    }
+
+    warningCueRef.current = warningBucket;
+    playUiFeedback('danger', warningBucket === 10 ? 1.18 : warningBucket === 20 ? 1.03 : 0.9);
+  }, [activeMatch, remainingSeconds]);
 
   useEffect(() => {
     if (!activeMatch || activeMatch.match.status !== 'discussion' || remainingMs > 0) {

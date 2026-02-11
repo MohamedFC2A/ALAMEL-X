@@ -729,3 +729,27 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
   - `output/web-game/uiheal-resolution`
   - `output/web-game/uiheal-summary`
 - Verified no `errors-*.json` artifacts were emitted in these runs.
+## Progress Log
+- Added unified UX feedback engine in `src/lib/ui-feedback.ts` (WebAudio micro-SFX + haptics + global interaction hooks).
+- Wired global feedback installation and settings sync in `src/App.tsx`.
+- Added route-transition and phase cue sounds for discussion/resolution/summary flow.
+- Reworked reveal hold feedback to progressive haptics/audio with escalating intensity based on hold progress.
+- Upgraded reveal concealment behavior:
+  - hidden card now keeps a stable constant envelope before reveal
+  - after reveal it adapts to content length to avoid leaking role/word heuristics.
+- Redesigned reveal hold progress UI and global timer progress bars for stronger visibility and clarity.
+- Disabled noisy loading overlays for route/task flows and restricted overlays to `update` intent only.
+- Connected game update check to the update-only loading overlay in Settings.
+- Updated Settings tests to render under `LoadingProvider` after new update-loading integration.
+
+## Validation Update (UX Feedback + Reveal + Loading)
+- `npm run lint`: pass.
+- Targeted suite pass:
+  - `src/screens/RevealScreen.test.tsx`
+  - `src/screens/SettingsScreen.self-heal.test.tsx`
+  - `src/screens/SettingsScreen.ai.test.tsx`
+  - `src/App.ui-heal.test.tsx`
+  - `src/screens/DiscussionScreen.ai.test.tsx`
+  - `src/screens/ResolutionScreen.test.tsx`
+  - `src/screens/ResolutionScreen.ai.test.tsx`
+  - `src/screens/SummaryScreen.ai-awards.test.tsx`

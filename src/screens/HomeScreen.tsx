@@ -31,7 +31,6 @@ export function HomeScreen() {
     })[0];
 
   const handleMission = () => {
-    if (navigator.vibrate) navigator.vibrate(50);
     if (activeMatch) {
       navigate('/play/reveal');
     } else {

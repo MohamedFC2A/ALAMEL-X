@@ -11,6 +11,7 @@ const INTENT_CLASSES: Record<LoadingIntent, string> = {
     boot: 'loading-overlay--boot',
     route: 'loading-overlay--route',
     task: 'loading-overlay--task',
+    update: 'loading-overlay--update',
 };
 
 export function LoadingOverlay({ intent, message, blocking = true, visible }: LoadingOverlayProps) {

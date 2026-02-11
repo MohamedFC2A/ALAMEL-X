@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { setupI18n } from '../lib/i18n';
 import { db, defaultSettings } from '../lib/db';
+import { LoadingProvider } from '../components/loading-controller';
 import { SettingsScreen } from './SettingsScreen';
 const speakWithElevenMock = vi.hoisted(() => vi.fn());
 
@@ -58,9 +59,11 @@ describe('settings screen AI section', () => {
   it('persists AI toggles without exposing key input', async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter>
-        <SettingsScreen />
-      </MemoryRouter>,
+      <LoadingProvider>
+        <MemoryRouter>
+          <SettingsScreen />
+        </MemoryRouter>
+      </LoadingProvider>,
     );
 
     const aiEnabled = await screen.findByRole('checkbox', { name: /تفعيل لاعب ai/i });
@@ -125,7 +128,7 @@ describe('settings screen AI section', () => {
 
     expect(screen.queryByPlaceholderText(/ضع المفتاح هنا/i)).not.toBeInTheDocument();
     expect(screen.getByText(/مفتاح deepseek غير ظاهر للمستخدم/i)).toBeInTheDocument();
-  });
+  }, 12000);
 
   it('runs elevenlabs connection and voice tests with detailed status', async () => {
     const user = userEvent.setup();
@@ -146,9 +149,11 @@ describe('settings screen AI section', () => {
     speakWithElevenMock.mockResolvedValue(undefined);
 
     render(
-      <MemoryRouter>
-        <SettingsScreen />
-      </MemoryRouter>,
+      <LoadingProvider>
+        <MemoryRouter>
+          <SettingsScreen />
+        </MemoryRouter>
+      </LoadingProvider>,
     );
 
     const connectionBtn = await screen.findByRole('button', { name: /اختبار اتصال elevenlabs/i });

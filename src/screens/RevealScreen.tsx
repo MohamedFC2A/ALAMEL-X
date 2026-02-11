@@ -18,6 +18,12 @@ import { clamp } from '../lib/utils';
 import { GameButton } from '../components/GameButton';
 import { PlayerNameplate } from '../components/PlayerNameplate';
 import { RestartRoundButton } from '../components/RestartRoundButton';
+import {
+  beginRevealHoldFeedback,
+  cancelRevealHoldFeedback,
+  completeRevealHoldFeedback,
+  updateRevealHoldFeedback,
+} from '../lib/ui-feedback';
 
 type HoldPhase = 'idle' | 'holding' | 'revealed';
 
@@ -117,6 +123,7 @@ export function RevealScreen() {
   const resetRevealLocalState = useCallback(() => {
     clearHoldTimers();
     clearUnlockTimer();
+    cancelRevealHoldFeedback();
     setHoldPhase('idle');
     setHoldProgress(0);
     setNextReadyAt(0);
@@ -134,6 +141,7 @@ export function RevealScreen() {
     () => () => {
       clearHoldTimers();
       clearUnlockTimer();
+      cancelRevealHoldFeedback();
     },
     [clearHoldTimers, clearUnlockTimer],
   );
@@ -238,6 +246,10 @@ export function RevealScreen() {
     : [];
   const isLastPlayer = currentMatch.revealState.currentRevealIndex === currentMatch.match.playerIds.length - 1;
   const canMoveNext = isRevealed && nextUnlocked && now >= nextReadyAt && !currentMatch.transitionLock;
+  const progressGlowShift = i18n.dir() === 'rtl' ? -Math.round(holdProgress * 100) : Math.round(holdProgress * 100);
+  const holdProgressPercent = Math.round(holdProgress * 100);
+  const holdHelperText =
+    holdProgress < 0.35 ? t('holdSteady') : holdProgress < 0.8 ? t('holdAlmostThere') : t('holdReleaseNow');
   const revealClass = [
     revealPlayer.accessibility.shortSightedMode ? 'access-magnify' : '',
     revealPlayer.accessibility.longSightedMode ? 'access-long' : '',
@@ -262,6 +274,7 @@ export function RevealScreen() {
     }
 
     clearHoldTimers();
+    completeRevealHoldFeedback();
     setHoldProgress(1);
     setHoldPhase('revealed');
 
@@ -281,6 +294,7 @@ export function RevealScreen() {
 
   function resetHoldOnly() {
     clearHoldTimers();
+    cancelRevealHoldFeedback();
     setHoldPhase('idle');
     setHoldProgress(0);
   }
@@ -322,10 +336,12 @@ export function RevealScreen() {
     resetHoldOnly();
     setHoldPhase('holding');
     holdStartedAtRef.current = nowMs();
+    beginRevealHoldFeedback();
 
     holdIntervalRef.current = window.setInterval(() => {
       const elapsed = nowMs() - holdStartedAtRef.current;
       const progress = clamp(elapsed / holdDuration, 0, 1);
+      updateRevealHoldFeedback(progress);
       setHoldProgress(progress);
       if (progress >= 1) {
         finishReveal();
@@ -350,6 +366,7 @@ export function RevealScreen() {
     const releasedProgress = clamp(elapsed / holdDurationRef.current, 0, 1);
     holdProgressRef.current = releasedProgress;
     setHoldProgress(releasedProgress);
+    updateRevealHoldFeedback(releasedProgress);
     if (releasedProgress >= HOLD_RELEASE_THRESHOLD) {
       finishReveal();
       return;
@@ -446,7 +463,7 @@ export function RevealScreen() {
         </section>
       ) : (
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={`glass-card reveal-card section-card ${revealClass}`.trim()}>
-          <div className="reveal-mask-wrapper">
+          <div className={`reveal-mask-wrapper ${isRevealed ? 'reveal-mask-wrapper--revealed' : 'reveal-mask-wrapper--concealed'}`}>
             <div className="reveal-content">
               {isSpy ? (
                 <div className="reveal-meta spy-meta-grid">
@@ -478,7 +495,8 @@ export function RevealScreen() {
             {!isRevealed ? (
               <button
                 type="button"
-                className={`reveal-mask ${holdPhase === 'holding' ? 'holding' : ''}`}
+                className={`reveal-mask ${holdPhase === 'holding' ? 'holding' : ''} ${holdProgress >= 0.8 ? 'charged' : ''}`}
+                data-sfx="off"
                 onPointerDown={handleHoldStart}
                 onPointerUp={handleHoldEnd}
                 onPointerLeave={handleHoldEnd}
@@ -488,11 +506,16 @@ export function RevealScreen() {
               >
                 <span className="reveal-mask-title">{t('pressHoldReveal')}</span>
                 <span className="reveal-mask-progress" aria-hidden>
-                  <span className="reveal-mask-progress-fill" style={{ transform: `scaleX(${holdProgress})` }} />
-                </span>
+                    <span className="reveal-mask-progress-track">
+                      <span className="reveal-mask-progress-grid" />
+                      <span className="reveal-mask-progress-fill" style={{ transform: `scaleX(${holdProgress})` }} />
+                      <span className="reveal-mask-progress-glow" style={{ transform: `translateX(${progressGlowShift}%)` }} />
+                    </span>
+                  </span>
                 <span className="reveal-mask-percentage" aria-hidden>
-                  {Math.round(holdProgress * 100)}%
+                  {holdProgressPercent}%
                 </span>
+                <span className="reveal-mask-helper">{holdHelperText}</span>
               </button>
             ) : null}
           </div>

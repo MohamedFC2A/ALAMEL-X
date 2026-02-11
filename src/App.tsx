@@ -15,6 +15,7 @@ import {
   shouldPersistUiSelfHeal,
 } from './lib/ui-self-heal';
 import { serializeUiDiagnosticsSnapshot } from './lib/ui-debugger';
+import { installGlobalUiFeedback, playUiFeedback, syncUiFeedbackSettings } from './lib/ui-feedback';
 import { LoadingProvider, useLoading } from './components/loading-controller';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import type { GlobalSettings } from './types';
@@ -71,6 +72,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
   const autoHealBusyRef = useRef(false);
   const lastAutoHealSignatureRef = useRef('');
   const lastAutoHealAtRef = useRef(0);
+  const routeAudioRef = useRef(location.pathname);
 
   useEffect(() => {
     if (!settings) {
@@ -84,6 +86,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     root.setAttribute('data-contrast', settings.contrastPreset);
     root.setAttribute('data-density', settings.uiDensity);
     root.setAttribute('data-motion', settings.reducedMotionMode ? 'reduced' : 'full');
+    syncUiFeedbackSettings(settings);
 
     const changeLanguage = (i18n as { changeLanguage?: (next: string) => Promise<unknown> | unknown }).changeLanguage;
     if (typeof changeLanguage === 'function' && i18n.language !== settings.language) {
@@ -92,6 +95,14 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
 
     applyDocumentLanguage(settings.language);
   }, [i18n, settings]);
+
+  useEffect(() => {
+    if (routeAudioRef.current === location.pathname) {
+      return;
+    }
+    routeAudioRef.current = location.pathname;
+    playUiFeedback('navigation', 0.92);
+  }, [location.pathname]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -198,33 +209,6 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
   return null;
 }
 
-function RouteLoadingController() {
-  const location = useLocation();
-  const { showLoading, hideLoading } = useLoading();
-  const prevPath = useRef(location.pathname);
-
-  useEffect(() => {
-    if (prevPath.current === location.pathname) return;
-    prevPath.current = location.pathname;
-
-    const showTimer = setTimeout(() => {
-      showLoading('route');
-    }, 120);
-
-    const hideTimer = setTimeout(() => {
-      hideLoading('route');
-    }, 340);
-
-    return () => {
-      clearTimeout(showTimer);
-      clearTimeout(hideTimer);
-      hideLoading('route');
-    };
-  }, [location.pathname, showLoading, hideLoading]);
-
-  return null;
-}
-
 function GlobalLoadingOverlay() {
   const { state } = useLoading();
   if (!state) return null;
@@ -281,6 +265,10 @@ function App() {
   useEffect(() => {
     void ensureSettings();
     installClockDebugHooks();
+    const uninstallUiFeedback = installGlobalUiFeedback();
+    return () => {
+      uninstallUiFeedback();
+    };
   }, []);
 
   return (
@@ -292,7 +280,6 @@ function App() {
           <div className="app-shell__noise" style={{ backgroundImage: noiseTexture }} />
           <div className="app-shell__content">
             <ThemeController settings={settings} />
-            <RouteLoadingController />
             <AnimatedRoutes />
           </div>
         </div>

@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 import type { ReactNode } from 'react';
 
 /* ═══════════ Types ═══════════ */
-export type LoadingIntent = 'boot' | 'route' | 'task';
+export type LoadingIntent = 'boot' | 'route' | 'task' | 'update';
 
 interface LoadingState {
     visible: boolean;
@@ -28,6 +28,10 @@ const DEFAULTS = {
     minVisible: 220,
 } as const;
 
+function isOverlayIntentEnabled(intent: LoadingIntent): boolean {
+    return intent === 'update';
+}
+
 const LoadingContext = createContext<LoadingAPI | null>(null);
 
 /* ═══════════ Provider ═══════════ */
@@ -44,8 +48,11 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
 
     const showLoading = useCallback(
         (intent: LoadingIntent, message?: string) => {
+            if (!isOverlayIntentEnabled(intent)) {
+                return;
+            }
             clearTimer();
-            setState({ visible: true, intent, message, blocking: intent === 'task' });
+            setState({ visible: true, intent, message, blocking: true });
         },
         [clearTimer],
     );
@@ -68,6 +75,10 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
             fn: () => Promise<T>,
             options?: { message?: string; delayMs?: number; minVisibleMs?: number },
         ): Promise<T> => {
+            if (!isOverlayIntentEnabled(intent)) {
+                return fn();
+            }
+
             const delayMs = options?.delayMs ?? DEFAULTS.showDelay;
             const minVisibleMs = options?.minVisibleMs ?? DEFAULTS.minVisible;
 
