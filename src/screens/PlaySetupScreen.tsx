@@ -10,6 +10,7 @@ import { StatusBanner } from '../components/StatusBanner';
 import { PrimaryActionBar } from '../components/PrimaryActionBar';
 import { PhaseIndicator } from '../components/PhaseIndicator';
 import { GameButton } from '../components/GameButton';
+import { useLoading } from '../components/loading-controller';
 import type { AiMatchMode, Player } from '../types';
 
 function recommendedSpyCount(playerCount: number): 1 | 2 {
@@ -19,6 +20,7 @@ function recommendedSpyCount(playerCount: number): 1 | 2 {
 export function PlaySetupScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { runWithLoading } = useLoading();
   const players = useLiveQuery(() => db.players.filter((player) => player.enabled).toArray(), []);
   const settings = useLiveQuery(() => db.settings.get('global'), []);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
@@ -90,9 +92,9 @@ export function PlaySetupScreen() {
     setErrorKey('');
 
     try {
-      await startMatch(selectedPlayers, spyCount, {
+      await runWithLoading('task', () => startMatch(selectedPlayers, spyCount, {
         aiMode: hasAiSelected ? aiMatchMode : 'full',
-      });
+      }), { message: 'جارٍ تجهيز المهمة...' });
       navigate('/play/reveal');
     } catch (error) {
       if (error instanceof Error && error.message === 'WORD_EXHAUSTED') {
@@ -108,10 +110,12 @@ export function PlaySetupScreen() {
     if (!confirmed) {
       return;
     }
-    await resetWordLocks();
-    const summary = await wordsUsageSummary();
-    setUsageSummary(summary);
-    setErrorKey('');
+    await runWithLoading('task', async () => {
+      await resetWordLocks();
+      const summary = await wordsUsageSummary();
+      setUsageSummary(summary);
+      setErrorKey('');
+    }, { message: 'جارٍ إعادة تعيين الكلمات...' });
   }
 
   return (

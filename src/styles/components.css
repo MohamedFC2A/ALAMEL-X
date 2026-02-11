@@ -699,6 +699,21 @@ input[type='range'] {
     width: 100%;
 }
 
+.phase-label {
+    font-size: 0.78rem;
+}
+
+/* ─── Player Row/Card ─── */
+.player-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "avatar main actions";
+    align-items: start;
+    column-gap: var(--space-2);
+    row-gap: var(--space-1);
+    width: 100%;
+}
+
 .player-row .player-avatar {
     grid-area: avatar;
 }
@@ -706,9 +721,36 @@ input[type='range'] {
 .player-avatar {
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid rgba(134, 188, 255, 0.55);
-    background: rgba(136, 188, 255, 0.14);
-    box-shadow: 0 0 0 2px rgba(77, 215, 255, 0.2);
+    border: 2px solid rgba(79, 209, 197, 0.45);
+    background: rgba(14, 26, 36, 0.8);
+    box-shadow: 0 0 0 2px rgba(79, 209, 197, 0.15);
+}
+
+.player-avatar-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.player-avatar-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(79, 209, 197, 0.25);
+    pointer-events: none;
+}
+
+.player-avatar-wrap--ai::after {
+    border-color: rgba(229, 62, 62, 0.4);
+    box-shadow: 0 0 8px rgba(229, 62, 62, 0.2);
+}
+
+.player-avatar-wrap--ai .player-avatar {
+    border-color: rgba(229, 62, 62, 0.5);
 }
 
 .player-main {
@@ -782,24 +824,6 @@ input[type='range'] {
     display: block;
     min-width: 0;
     word-break: break-word;
-}
-
-/* ─── Avatar Grid ─── */
-.avatar-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--space-1);
-}
-
-.avatar-option {
-    border: 1px solid var(--stroke-1);
-    border-radius: var(--radius-1);
-    background: rgba(13, 22, 38, 0.9);
-    padding: 0.3rem;
-}
-
-.avatar-option.selected {
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 50%, transparent);
 }
 
 /* ─── Player Selection ─── */
@@ -1762,57 +1786,57 @@ html[dir='rtl'] .reveal-mask-progress-fill {
         width: 100%;
     }
 
-.ai-voice-cta .game-button {
-    width: 100%;
-}
+    .ai-voice-cta .game-button {
+        width: 100%;
+    }
 
-.ai-orchestrator-strip {
-    gap: 0.65rem;
-    display: grid;
-}
+    .ai-orchestrator-strip {
+        gap: 0.65rem;
+        display: grid;
+    }
 
-.ai-orchestrator-strip-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-}
+    .ai-orchestrator-strip-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
 
-.ai-monitor-grid {
-    display: grid;
-    gap: 0.5rem;
-    margin-top: 0.35rem;
-}
+    .ai-monitor-grid {
+        display: grid;
+        gap: 0.5rem;
+        margin-top: 0.35rem;
+    }
 
-.ai-monitor-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.45rem 0.6rem;
-    border-radius: 0.5rem;
-    background: rgba(255, 255, 255, 0.03);
-}
+    .ai-monitor-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.45rem 0.6rem;
+        border-radius: 0.5rem;
+        background: rgba(255, 255, 255, 0.03);
+    }
 
-.ai-monitor-text {
-    display: grid;
-    gap: 0.4rem;
-}
+    .ai-monitor-text {
+        display: grid;
+        gap: 0.4rem;
+    }
 
-.ai-monitor-text p {
-    margin: 0;
-    line-height: 1.5;
-}
+    .ai-monitor-text p {
+        margin: 0;
+        line-height: 1.5;
+    }
 
-.link-like-btn {
-    border: none;
-    background: none;
-    color: var(--tone-info-strong);
-    text-decoration: underline;
-    cursor: pointer;
-    font: inherit;
-    padding: 0;
-}
+    .link-like-btn {
+        border: none;
+        background: none;
+        color: var(--tone-info-strong);
+        text-decoration: underline;
+        cursor: pointer;
+        font: inherit;
+        padding: 0;
+    }
 
     .ai-voice-agent-meta {
         flex-direction: column;
