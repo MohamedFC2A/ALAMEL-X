@@ -1735,6 +1735,10 @@ input[type='range'] {
     gap: var(--space-2);
 }
 
+.settings-section .actions-row {
+    flex-wrap: wrap;
+}
+
 .settings-section .section-heading {
     margin-block-end: var(--space-1);
     padding: 0;
@@ -1744,6 +1748,35 @@ input[type='range'] {
     font-size: clamp(1.05rem, 4vw, 1.45rem);
     line-height: var(--lh-heading);
     letter-spacing: 0.06em;
+}
+
+.ui-debugger-panel,
+.ui-debugger-report,
+.ui-debugger-errors {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.ui-debugger-actions {
+    justify-content: flex-start;
+}
+
+.ui-debugger-list {
+    margin: 0;
+    padding-inline-start: 1rem;
+    display: grid;
+    gap: var(--space-1);
+}
+
+.ui-debugger-list li {
+    line-height: var(--lh-body);
+}
+
+.ui-debugger-list li p {
+    margin-block-start: 0.2rem;
+    color: var(--text-soft);
+    overflow-wrap: anywhere;
 }
 
 .modal-backdrop {
@@ -2405,6 +2438,14 @@ html[dir='rtl'] .reveal-mask-progress-fill {
     .case-badge {
         min-height: 1.85rem;
         font-size: 0.7rem;
+    }
+
+    .ui-debugger-actions .game-button {
+        flex: 1 1 100%;
+    }
+
+    .ui-debugger-list li p {
+        font-size: 0.77rem;
     }
 }
 

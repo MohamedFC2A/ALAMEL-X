@@ -12,6 +12,9 @@ describe('ui self-heal diagnostics', () => {
       prefersReducedMotion: false,
       horizontalOverflowPx: 0,
       headerOverflowPx: 0,
+      headerTitleTruncated: false,
+      actionBarBottomOverlapPx: 0,
+      touchTargetRiskCount: 0,
     });
 
     expect(result.report.issues.length).toBeGreaterThan(0);
@@ -35,6 +38,9 @@ describe('ui self-heal diagnostics', () => {
         prefersReducedMotion: true,
         horizontalOverflowPx: 0,
         headerOverflowPx: 0,
+        headerTitleTruncated: false,
+        actionBarBottomOverlapPx: 0,
+        touchTargetRiskCount: 0,
       },
     );
 
@@ -51,10 +57,32 @@ describe('ui self-heal diagnostics', () => {
       prefersReducedMotion: false,
       horizontalOverflowPx: 0,
       headerOverflowPx: 0,
+      headerTitleTruncated: false,
+      actionBarBottomOverlapPx: 0,
+      touchTargetRiskCount: 0,
     });
 
     expect(result.report.issues).toEqual([]);
     expect(result.patch).toEqual({});
     expect(result.report.score).toBe(100);
+  });
+
+  it('applies stronger correction when action bar overlaps viewport', () => {
+    const result = analyzeUiHealth(defaultSettings, {
+      viewportWidth: 390,
+      viewportHeight: 590,
+      devicePixelRatio: 2,
+      rootFontSizePx: 16,
+      prefersReducedMotion: false,
+      horizontalOverflowPx: 0,
+      headerOverflowPx: 0,
+      headerTitleTruncated: false,
+      actionBarBottomOverlapPx: 12,
+      touchTargetRiskCount: 0,
+    });
+
+    expect(result.report.issues.some((issue) => issue.code === 'action-bar-overlap')).toBe(true);
+    expect(result.patch.uiDensity).toBe('compact');
+    expect(result.patch.uiScale).toBeLessThan(1);
   });
 });

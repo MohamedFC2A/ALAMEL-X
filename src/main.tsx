@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import { setupI18n } from './lib/i18n';
+import { installUiRuntimeDebugger } from './lib/ui-debugger';
 
 function stringifyReason(value: unknown): string {
   if (!value) return '';
@@ -67,6 +68,7 @@ async function bootstrap() {
   const fallback = setTimeout(removeBootLoader, BOOT_FALLBACK_MS);
 
   await setupI18n('ar');
+  installUiRuntimeDebugger();
   installRuntimeErrorNoiseFilter();
 
   if (import.meta.env.DEV && 'serviceWorker' in navigator) {

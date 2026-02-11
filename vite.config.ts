@@ -38,6 +38,34 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalized = id.replace(/\\/g, '/');
+          if (!normalized.includes('/node_modules/')) {
+            return undefined;
+          }
+          if (normalized.includes('/react/') || normalized.includes('/react-dom/') || normalized.includes('/react-router')) {
+            return 'vendor-react';
+          }
+          if (normalized.includes('/dexie')) {
+            return 'vendor-data';
+          }
+          if (
+            normalized.includes('/framer-motion/') ||
+            normalized.includes('/i18next/') ||
+            normalized.includes('/react-i18next/') ||
+            normalized.includes('/lucide-react/')
+          ) {
+            return 'vendor-ui';
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',

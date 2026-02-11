@@ -1,31 +1,50 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { HomeScreen } from './screens/HomeScreen';
-import { PlayersScreen } from './screens/PlayersScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { PlaySetupScreen } from './screens/PlaySetupScreen';
-import { RevealScreen } from './screens/RevealScreen';
-import { DiscussionScreen } from './screens/DiscussionScreen';
-import { ResolutionScreen } from './screens/ResolutionScreen';
-import { SummaryScreen } from './screens/SummaryScreen';
-import { db, ensureSettings } from './lib/db';
+import { db, defaultSettings, ensureSettings } from './lib/db';
 import { applyDocumentLanguage } from './lib/i18n';
 import { installClockDebugHooks } from './lib/clock';
 import { updateGlobalSettings } from './lib/game-repository';
-import { analyzeUiHealth, collectUiDiagnosticsContext, hasUiSelfHealPatch } from './lib/ui-self-heal';
+import {
+  analyzeUiHealth,
+  buildUiSelfHealPersistedPatch,
+  collectUiDiagnosticsContext,
+  shouldPersistUiSelfHeal,
+} from './lib/ui-self-heal';
+import { serializeUiDiagnosticsSnapshot } from './lib/ui-debugger';
 import { LoadingProvider, useLoading } from './components/loading-controller';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import type { GlobalSettings } from './types';
 import './index.css';
 
+const PlayersScreen = lazy(async () => ({ default: (await import('./screens/PlayersScreen')).PlayersScreen }));
+const SettingsScreen = lazy(async () => ({ default: (await import('./screens/SettingsScreen')).SettingsScreen }));
+const PlaySetupScreen = lazy(async () => ({ default: (await import('./screens/PlaySetupScreen')).PlaySetupScreen }));
+const RevealScreen = lazy(async () => ({ default: (await import('./screens/RevealScreen')).RevealScreen }));
+const DiscussionScreen = lazy(async () => ({ default: (await import('./screens/DiscussionScreen')).DiscussionScreen }));
+const ResolutionScreen = lazy(async () => ({ default: (await import('./screens/ResolutionScreen')).ResolutionScreen }));
+const SummaryScreen = lazy(async () => ({ default: (await import('./screens/SummaryScreen')).SummaryScreen }));
+
+const AUTO_HEAL_RESIZE_DEBOUNCE_MS = 260;
+const AUTO_HEAL_DEDUPE_WINDOW_MS = 4500;
+
 function generateNoise(opacity = 0.04): string {
+  if (typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent)) {
+    return '';
+  }
+
   const canvas = document.createElement('canvas');
   canvas.width = 64;
   canvas.height = 64;
-  const ctx = canvas.getContext('2d');
+  let ctx: CanvasRenderingContext2D | null = null;
+  try {
+    ctx = canvas.getContext('2d');
+  } catch {
+    return '';
+  }
   if (!ctx) return '';
 
   const imageData = ctx.createImageData(64, 64);
@@ -33,10 +52,10 @@ function generateNoise(opacity = 0.04): string {
 
   for (let i = 0; i < data.length; i += 4) {
     if (Math.random() < 0.5) {
-      data[i] = 0;     // R
-      data[i + 1] = 0; // G
-      data[i + 2] = 0; // B
-      data[i + 3] = Math.floor(255 * opacity); // A
+      data[i] = 0;
+      data[i + 1] = 0;
+      data[i + 2] = 0;
+      data[i + 3] = Math.floor(255 * opacity);
     }
   }
 
@@ -50,6 +69,8 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
   const activeMatch = useLiveQuery(() => db.activeMatch.get('active'), []);
   const resizeHealTimerRef = useRef<number | null>(null);
   const autoHealBusyRef = useRef(false);
+  const lastAutoHealSignatureRef = useRef('');
+  const lastAutoHealAtRef = useRef(0);
 
   useEffect(() => {
     if (!settings) {
@@ -64,12 +85,13 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     root.setAttribute('data-density', settings.uiDensity);
     root.setAttribute('data-motion', settings.reducedMotionMode ? 'reduced' : 'full');
 
-    if (i18n.language !== settings.language) {
-      void i18n.changeLanguage(settings.language);
+    const changeLanguage = (i18n as { changeLanguage?: (next: string) => Promise<unknown> | unknown }).changeLanguage;
+    if (typeof changeLanguage === 'function' && i18n.language !== settings.language) {
+      void changeLanguage.call(i18n, settings.language);
     }
 
     applyDocumentLanguage(settings.language);
-  }, [activeMatch, i18n, settings]);
+  }, [i18n, settings]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -99,12 +121,27 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
       }
       autoHealBusyRef.current = true;
       try {
+        const now = Date.now();
         const context = collectUiDiagnosticsContext();
-        const { patch } = analyzeUiHealth(settings, context);
-        if (!hasUiSelfHealPatch(patch)) {
+        const result = analyzeUiHealth(settings, context);
+        if (!shouldPersistUiSelfHeal(settings, result, { mode: 'auto' })) {
           return;
         }
-        await updateGlobalSettings(patch);
+
+        const signature = JSON.stringify({
+          patch: result.patch,
+          score: result.report.score,
+        });
+        if (
+          signature === lastAutoHealSignatureRef.current &&
+          now - lastAutoHealAtRef.current < AUTO_HEAL_DEDUPE_WINDOW_MS
+        ) {
+          return;
+        }
+
+        await updateGlobalSettings(buildUiSelfHealPersistedPatch(result));
+        lastAutoHealSignatureRef.current = signature;
+        lastAutoHealAtRef.current = now;
       } finally {
         autoHealBusyRef.current = false;
       }
@@ -116,7 +153,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
       }
       resizeHealTimerRef.current = window.setTimeout(() => {
         void runAutoHeal();
-      }, 260);
+      }, AUTO_HEAL_RESIZE_DEBOUNCE_MS);
     };
 
     scheduleAutoHeal();
@@ -138,6 +175,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     settings?.uiDensity,
     settings?.animationSpeed,
     settings?.reducedMotionMode,
+    settings?.uiSelfHealScore,
   ]);
 
   useEffect(() => {
@@ -153,10 +191,13 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
       });
   }, [activeMatch, i18n.language, location.pathname]);
 
+  useEffect(() => {
+    window.get_ui_debug_snapshot = () => serializeUiDiagnosticsSnapshot(settings ?? defaultSettings);
+  }, [settings]);
+
   return null;
 }
 
-/* ═══ Route Loading — adaptive overlay on route change ═══ */
 function RouteLoadingController() {
   const location = useLocation();
   const { showLoading, hideLoading } = useLoading();
@@ -172,7 +213,7 @@ function RouteLoadingController() {
 
     const hideTimer = setTimeout(() => {
       hideLoading('route');
-    }, 340); // 120ms delay + 220ms min visible
+    }, 340);
 
     return () => {
       clearTimeout(showTimer);
@@ -184,7 +225,6 @@ function RouteLoadingController() {
   return null;
 }
 
-/* ═══ Global Loading Overlay Renderer ═══ */
 function GlobalLoadingOverlay() {
   const { state } = useLoading();
   if (!state) return null;
@@ -216,17 +256,19 @@ function AnimatedRoutes() {
         exit={{ opacity: 0, y: -yOffset, pointerEvents: 'none' }}
         transition={{ duration }}
       >
-        <Routes location={location}>
-          <Route path="/" element={<HomeScreen />} />
-          <Route path="/players" element={<PlayersScreen />} />
-          <Route path="/settings" element={<SettingsScreen />} />
-          <Route path="/play/setup" element={<PlaySetupScreen />} />
-          <Route path="/play/reveal" element={<RevealScreen />} />
-          <Route path="/play/discussion" element={<DiscussionScreen />} />
-          <Route path="/play/resolution" element={<ResolutionScreen />} />
-          <Route path="/play/summary" element={<SummaryScreen />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes location={location}>
+            <Route path="/" element={<HomeScreen />} />
+            <Route path="/players" element={<PlayersScreen />} />
+            <Route path="/settings" element={<SettingsScreen />} />
+            <Route path="/play/setup" element={<PlaySetupScreen />} />
+            <Route path="/play/reveal" element={<RevealScreen />} />
+            <Route path="/play/discussion" element={<DiscussionScreen />} />
+            <Route path="/play/resolution" element={<ResolutionScreen />} />
+            <Route path="/play/summary" element={<SummaryScreen />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );
@@ -265,5 +307,6 @@ export default App;
 declare global {
   interface Window {
     render_game_to_text: () => string;
+    get_ui_debug_snapshot: () => string;
   }
 }

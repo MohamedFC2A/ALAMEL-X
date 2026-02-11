@@ -1,7 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw } from 'lucide-react';
 import { db, ensureSettings } from '../lib/db';
 import { updateGlobalSettings } from '../lib/game-repository';
 import { chatComplete, DeepSeekError } from '../lib/ai/deepseek-client';
@@ -9,26 +8,20 @@ import { ElevenError, speakWithEleven } from '../lib/ai/eleven-client';
 import {
   analyzeUiHealth,
   buildUiAuditPrompt,
+  buildUiSelfHealPersistedPatch,
   buildUiSelfHealSummary,
   collectUiDiagnosticsContext,
-  hasUiSelfHealPatch,
+  shouldPersistUiSelfHeal,
 } from '../lib/ui-self-heal';
 import { ScreenScaffold } from '../components/ScreenScaffold';
-import { GameButton } from '../components/GameButton';
-import { StatusBanner } from '../components/StatusBanner';
 import { usePWAUpdate } from '../hooks/usePWAUpdate';
-import type {
-  AiHumanMode,
-  AiReplyLength,
-  ContrastPreset,
-  GlobalSettings,
-  HintMode,
-  UiDensity,
-  WordDifficulty,
-} from '../types';
+import type { GlobalSettings, HintMode, WordDifficulty } from '../types';
+import { DisplaySettingsSection } from './settings/DisplaySettingsSection';
+import { AiSettingsSection } from './settings/AiSettingsSection';
+import { SystemSettingsSection } from './settings/SystemSettingsSection';
+import type { AsyncStatus, BannerTone } from './settings/types';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date';
-type AsyncStatus = 'idle' | 'testing' | 'success' | 'error';
 
 interface ElevenVoicePreview {
   id: string;
@@ -89,17 +82,16 @@ export function SettingsScreen() {
   const [elevenVoiceTestMessage, setElevenVoiceTestMessage] = useState('');
   const [selfHealStatus, setSelfHealStatus] = useState<AsyncStatus>('idle');
   const [selfHealMessage, setSelfHealMessage] = useState('');
-  const [selfHealTone, setSelfHealTone] = useState<'default' | 'success' | 'warning' | 'danger'>('default');
+  const [selfHealTone, setSelfHealTone] = useState<BannerTone>('default');
   const { needRefresh, updateServiceWorker } = usePWAUpdate();
 
   useEffect(() => {
     void ensureSettings();
   }, []);
 
-  // Auto-check for updates when entering settings
   useEffect(() => {
     if (needRefresh) {
-      return; // Already detected
+      return;
     }
     const silentCheck = async () => {
       try {
@@ -156,7 +148,7 @@ export function SettingsScreen() {
     setAiTestMessage('');
 
     try {
-      const text = await chatComplete({
+      await chatComplete({
         model: settings.aiModel,
         messages: [
           { role: 'system', content: 'Reply only with "pong".' },
@@ -167,13 +159,8 @@ export function SettingsScreen() {
         timeoutMs: 10_000,
       });
 
-      if (text.toLowerCase().includes('pong')) {
-        setAiTestStatus('success');
-        setAiTestMessage(t('aiTestOk'));
-      } else {
-        setAiTestStatus('success');
-        setAiTestMessage(t('aiTestOk'));
-      }
+      setAiTestStatus('success');
+      setAiTestMessage(t('aiTestOk'));
     } catch (error) {
       if (error instanceof DeepSeekError) {
         const msg =
@@ -275,6 +262,9 @@ export function SettingsScreen() {
   const describePatch = useCallback(
     (patch: Partial<GlobalSettings>): string[] => {
       const changes: string[] = [];
+      if (!patch) {
+        return changes;
+      }
       if (patch.uiScale !== undefined) {
         changes.push(`${t('uiScale')}: ${patch.uiScale.toFixed(2)}x`);
       }
@@ -304,17 +294,12 @@ export function SettingsScreen() {
     const context = collectUiDiagnosticsContext();
     const result = analyzeUiHealth(settings, context);
     const changes = describePatch(result.patch);
-    const tone: 'success' | 'warning' | 'danger' =
+    const tone: BannerTone =
       result.report.score >= 85 ? 'success' : result.report.score >= 65 ? 'warning' : 'danger';
-
-    const persistedPatch: Partial<GlobalSettings> = {
-      ...result.patch,
-      uiSelfHealScore: result.report.score,
-      uiSelfHealLastRunAt: result.report.checkedAt,
-    };
+    const persistedPatch = buildUiSelfHealPersistedPatch(result);
 
     try {
-      if (hasUiSelfHealPatch(result.patch) || settings.uiSelfHealScore !== result.report.score) {
+      if (shouldPersistUiSelfHeal(settings, result, { mode: 'manual' })) {
         await updateGlobalSettings(persistedPatch);
       }
 
@@ -433,114 +418,13 @@ export function SettingsScreen() {
         </div>
       </section>
 
-      <section className="stack-list settings-section">
-        <div className="section-heading section-heading--stack">
-          <h2>{t('displaySettings')}</h2>
-          <span className="subtle">{t('themeLocked')}</span>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>{t('uiScale')} ({settings.uiScale.toFixed(2)}x)</span>
-            <input
-              type="range"
-              min={0.85}
-              max={1.2}
-              step={0.05}
-              value={settings.uiScale}
-              onChange={(event) => void updateGlobalSettings({ uiScale: Number(event.target.value) })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>{t('animationSpeed')} ({settings.animationSpeed.toFixed(2)}x)</span>
-            <input
-              type="range"
-              min={0.5}
-              max={1.5}
-              step={0.1}
-              value={settings.animationSpeed}
-              onChange={(event) => void updateGlobalSettings({ animationSpeed: Number(event.target.value) })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="switch-row">
-            <span>{t('reducedMotion')}</span>
-            <input
-              type="checkbox"
-              checked={settings.reducedMotionMode}
-              onChange={(event) => void updateGlobalSettings({ reducedMotionMode: event.target.checked })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>{t('contrastPreset')}</span>
-            <select
-              value={settings.contrastPreset}
-              onChange={(event) => void updateGlobalSettings({ contrastPreset: event.target.value as ContrastPreset })}
-            >
-              <option value="normal">{t('contrastNormal')}</option>
-              <option value="high">{t('contrastHigh')}</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>{t('uiDensity')}</span>
-            <select value={settings.uiDensity} onChange={(event) => void updateGlobalSettings({ uiDensity: event.target.value as UiDensity })}>
-              <option value="comfortable">{t('densityComfortable')}</option>
-              <option value="compact">{t('densityCompact')}</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="switch-row">
-            <span>{t('uiAutoFixEnabled')}</span>
-            <input
-              type="checkbox"
-              checked={settings.uiAutoFixEnabled}
-              onChange={(event) => void updateGlobalSettings({ uiAutoFixEnabled: event.target.checked })}
-            />
-          </label>
-          <p className="subtle">{t('uiAutoFixHint')}</p>
-          <div className="actions-row">
-            <GameButton
-              variant="primary"
-              size="md"
-              onClick={() => void runUiSelfHeal()}
-              disabled={selfHealStatus === 'testing'}
-            >
-              {selfHealStatus === 'testing' ? t('uiSelfHealRunning') : t('uiSelfHealRun')}
-            </GameButton>
-          </div>
-          {settings.uiSelfHealLastRunAt ? (
-            <StatusBanner>
-              {t('uiSelfHealLastRun', {
-                score: settings.uiSelfHealScore ?? 0,
-                time: new Date(settings.uiSelfHealLastRunAt).toLocaleString('ar'),
-              })}
-            </StatusBanner>
-          ) : null}
-          {selfHealStatus !== 'idle' ? (
-            <StatusBanner tone={selfHealStatus === 'error' ? 'danger' : selfHealTone}>
-              {selfHealMessage ||
-                (selfHealStatus === 'success'
-                  ? t('uiSelfHealDone', { score: settings.uiSelfHealScore ?? 0 })
-                  : selfHealStatus === 'testing'
-                    ? t('uiSelfHealRunning')
-                    : t('uiSelfHealFail'))}
-            </StatusBanner>
-          ) : null}
-        </div>
-      </section>
+      <DisplaySettingsSection
+        settings={settings}
+        selfHealStatus={selfHealStatus}
+        selfHealMessage={selfHealMessage}
+        selfHealTone={selfHealTone}
+        onRunSelfHeal={() => void runUiSelfHeal()}
+      />
 
       <section className="stack-list settings-section">
         <div className="section-heading">
@@ -559,290 +443,25 @@ export function SettingsScreen() {
         </div>
       </section>
 
-      <section className="stack-list settings-section">
-        <div className="section-heading section-heading--stack">
-          <h2>{t('aiSettings')}</h2>
-          <span className="subtle">{t('aiSettingsHint')}</span>
-        </div>
+      <AiSettingsSection
+        settings={settings}
+        aiTestStatus={aiTestStatus}
+        aiTestMessage={aiTestMessage}
+        elevenStatus={elevenStatus}
+        elevenMessage={elevenMessage}
+        elevenVoiceTestStatus={elevenVoiceTestStatus}
+        elevenVoiceTestMessage={elevenVoiceTestMessage}
+        onTestAiConnection={() => void testAiConnection()}
+        onTestElevenConnection={() => void testElevenConnection()}
+        onTestElevenSpeech={() => void testElevenSpeech()}
+      />
 
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="switch-row">
-            <span>{t('aiEnabled')}</span>
-            <input
-              type="checkbox"
-              checked={settings.aiEnabled}
-              onChange={(event) => void updateGlobalSettings({ aiEnabled: event.target.checked })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>{t('aiHumanMode')}</span>
-            <select
-              value={settings.aiHumanMode}
-              onChange={(event) => {
-                const nextMode = event.target.value as AiHumanMode;
-                void updateGlobalSettings({
-                  aiHumanMode: nextMode,
-                  ...(nextMode !== 'ultra' ? { aiHumanSimulationEnabled: false } : {}),
-                });
-              }}
-            >
-              <option value="strategic">{t('aiHumanModeStrategic')}</option>
-              <option value="natural">{t('aiHumanModeNatural')}</option>
-              <option value="ultra">{t('aiHumanModeUltra')}</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="switch-row">
-            <span>{t('aiHumanSimulation')}</span>
-            <input
-              type="checkbox"
-              checked={settings.aiHumanSimulationEnabled}
-              disabled={settings.aiHumanMode !== 'ultra'}
-              onChange={(event) => void updateGlobalSettings({ aiHumanSimulationEnabled: event.target.checked })}
-            />
-          </label>
-          <p className="subtle">{t('aiHumanSimulationHint')}</p>
-          {settings.aiHumanMode !== 'ultra' ? (
-            <StatusBanner tone="warning">{t('aiHumanSimulationRequiresUltra')}</StatusBanner>
-          ) : settings.aiHumanSimulationEnabled ? (
-            <StatusBanner tone="success">{t('aiHumanSimulationEnabledBadge')}</StatusBanner>
-          ) : null}
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>
-              {t('aiReasoningDepth')} ({t('aiDepthLevel', { level: settings.aiReasoningDepth })})
-            </span>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={1}
-              value={settings.aiReasoningDepth}
-              onChange={(event) => void updateGlobalSettings({ aiReasoningDepth: Number(event.target.value) as 1 | 2 | 3 })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>{t('aiReplyLength')}</span>
-            <select value={settings.aiReplyLength} onChange={(event) => void updateGlobalSettings({ aiReplyLength: event.target.value as AiReplyLength })}>
-              <option value="short">{t('aiReplyLengthShort')}</option>
-              <option value="balanced">{t('aiReplyLengthBalanced')}</option>
-              <option value="detailed">{t('aiReplyLengthDetailed')}</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>
-              {t('aiInitiativeLevel')} ({t('aiInitiativeValue', { value: settings.aiInitiativeLevel })})
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={settings.aiInitiativeLevel}
-              onChange={(event) => void updateGlobalSettings({ aiInitiativeLevel: Number(event.target.value) })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>
-              {t('aiMemoryDepth')} ({t('aiMemoryTurns', { value: settings.aiMemoryDepth })})
-            </span>
-            <input
-              type="range"
-              min={8}
-              max={24}
-              step={2}
-              value={settings.aiMemoryDepth}
-              onChange={(event) => void updateGlobalSettings({ aiMemoryDepth: Number(event.target.value) })}
-            />
-          </label>
-        </div>
-
-        <StatusBanner tone="default">{t('aiServerManaged')}</StatusBanner>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <div className="actions-row">
-            <GameButton
-              variant="primary"
-              size="md"
-              onClick={() => void testAiConnection()}
-              disabled={aiTestStatus === 'testing' || !settings.aiEnabled}
-            >
-              {aiTestStatus === 'testing' ? t('aiTesting') : t('aiTestConnection')}
-            </GameButton>
-          </div>
-
-          {aiTestStatus !== 'idle' ? (
-            <StatusBanner tone={aiTestStatus === 'success' ? 'success' : aiTestStatus === 'error' ? 'danger' : 'default'}>
-              {aiTestMessage || (aiTestStatus === 'success' ? t('aiTestOk') : aiTestStatus === 'testing' ? t('aiTesting') : t('aiTestFail'))}
-            </StatusBanner>
-          ) : null}
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <div className="section-heading section-heading--stack">
-            <h2>{t('elevenSettingsTitle')}</h2>
-            <span className="subtle">{t('elevenSettingsHint')}</span>
-          </div>
-          <div className="actions-row">
-            <GameButton
-              variant="primary"
-              size="md"
-              onClick={() => void testElevenConnection()}
-              disabled={elevenStatus === 'testing'}
-            >
-              {elevenStatus === 'testing' ? t('elevenTesting') : t('elevenConnectionTest')}
-            </GameButton>
-
-            <GameButton
-              variant="ghost"
-              size="md"
-              onClick={() => void testElevenSpeech()}
-              disabled={elevenVoiceTestStatus === 'testing' || !settings.soundEnabled || !settings.aiVoiceOutputEnabled}
-            >
-              {elevenVoiceTestStatus === 'testing' ? t('elevenVoiceTesting') : t('elevenVoiceTest')}
-            </GameButton>
-          </div>
-
-          {elevenStatus !== 'idle' ? (
-            <StatusBanner tone={elevenStatus === 'success' ? 'success' : elevenStatus === 'error' ? 'danger' : 'default'}>
-              {elevenMessage ||
-                (elevenStatus === 'success' ? t('elevenConnectionOk') : elevenStatus === 'testing' ? t('elevenTesting') : t('elevenConnectionFail'))}
-            </StatusBanner>
-          ) : null}
-
-          {elevenVoiceTestStatus !== 'idle' ? (
-            <StatusBanner
-              tone={
-                elevenVoiceTestStatus === 'success' ? 'success' : elevenVoiceTestStatus === 'error' ? 'danger' : 'default'
-              }
-            >
-              {elevenVoiceTestMessage ||
-                (elevenVoiceTestStatus === 'success'
-                  ? t('elevenVoiceTestOk')
-                  : elevenVoiceTestStatus === 'testing'
-                    ? t('elevenVoiceTesting')
-                    : t('elevenVoiceTestFail'))}
-            </StatusBanner>
-          ) : null}
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="switch-row">
-            <span>{t('aiVoiceInput')}</span>
-            <input
-              type="checkbox"
-              checked={settings.aiVoiceInputEnabled}
-              onChange={(event) => void updateGlobalSettings({ aiVoiceInputEnabled: event.target.checked })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="switch-row">
-            <span>{t('aiVoiceOutput')}</span>
-            <input
-              type="checkbox"
-              checked={settings.aiVoiceOutputEnabled}
-              onChange={(event) => void updateGlobalSettings({ aiVoiceOutputEnabled: event.target.checked })}
-            />
-          </label>
-          <p className="subtle">{t('aiVoiceNote')}</p>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>{t('aiVoiceProvider')}</span>
-            <select value="elevenlabs" disabled>
-              <option value="elevenlabs">{t('aiVoiceProviderEleven')}</option>
-            </select>
-          </label>
-          <p className="subtle">{t('aiVoiceProviderLocked')}</p>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="switch-row">
-            <span>{t('aiAutoFacilitatorEnabled')}</span>
-            <input
-              type="checkbox"
-              checked={settings.aiAutoFacilitatorEnabled}
-              onChange={(event) => void updateGlobalSettings({ aiAutoFacilitatorEnabled: event.target.checked })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>
-              {t('aiSilenceThreshold')} ({Math.round(settings.aiSilenceThresholdMs / 1000)} {t('seconds')})
-            </span>
-            <input
-              type="range"
-              min={3000}
-              max={12000}
-              step={500}
-              value={settings.aiSilenceThresholdMs}
-              onChange={(event) => void updateGlobalSettings({ aiSilenceThresholdMs: Number(event.target.value) })}
-            />
-          </label>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <label className="form-field">
-            <span>
-              {t('aiInterventionRest')} ({Math.round(settings.aiInterventionRestMs / 1000)} {t('seconds')})
-            </span>
-            <input
-              type="range"
-              min={4000}
-              max={20000}
-              step={1000}
-              value={settings.aiInterventionRestMs}
-              onChange={(event) => void updateGlobalSettings({ aiInterventionRestMs: Number(event.target.value) })}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="stack-list settings-section">
-        <div className="section-heading">
-          <h2>{t('systemSettings')}</h2>
-        </div>
-
-        <div className="glass-card setting-card cinematic-panel section-card">
-          <GameButton
-            variant="primary"
-            size="md"
-            className={`update-check-btn ${needRefresh ? 'game-button--update-available' : ''}`}
-            icon={<RefreshCw size={18} aria-hidden />}
-            onClick={() => void checkForUpdates()}
-            disabled={updateStatus === 'checking'}
-          >
-            {updateStatus === 'checking'
-              ? t('checking')
-              : needRefresh
-                ? t('updateAvailable')
-                : updateStatus === 'up-to-date'
-                  ? t('upToDate')
-                  : t('checkForUpdates')}
-          </GameButton>
-        </div>
-      </section>
+      <SystemSettingsSection
+        settings={settings}
+        needRefresh={needRefresh}
+        updateStatus={updateStatus}
+        onCheckForUpdates={() => void checkForUpdates()}
+      />
     </ScreenScaffold>
   );
 }

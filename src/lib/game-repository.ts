@@ -690,7 +690,7 @@ export async function resetWordLocks(): Promise<void> {
 
 export async function wordsUsageSummary(): Promise<{ used: number; total: number }> {
   const used = await db.wordUsage.count();
-  const allWords = await (await import('./word-engine')).loadWordPack();
+  const allWords = await loadWordPack();
   return { used, total: allWords.length };
 }
 

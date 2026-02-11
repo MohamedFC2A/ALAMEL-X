@@ -1,9 +1,10 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { defaultSettings, db } from '../lib/db';
 import { setupI18n } from '../lib/i18n';
+import { clearUiRuntimeEvents, installUiRuntimeDebugger } from '../lib/ui-debugger';
 import { SettingsScreen } from './SettingsScreen';
 
 async function resetState() {
@@ -26,11 +27,13 @@ afterEach(() => {
 describe('settings self-heal flow', () => {
   beforeAll(async () => {
     await setupI18n('ar');
+    installUiRuntimeDebugger();
   });
 
   beforeEach(async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 340 });
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 640 });
+    clearUiRuntimeEvents();
     await resetState();
   });
 
@@ -51,6 +54,78 @@ describe('settings self-heal flow', () => {
       expect((settings?.uiScale ?? 1)).toBeLessThan(1);
       expect(settings?.uiSelfHealLastRunAt).toBeTypeOf('number');
       expect((settings?.uiSelfHealScore ?? 0)).toBeGreaterThan(0);
+    });
+  });
+
+  it('supports diagnostics copy and clear runtime error actions', async () => {
+    const user = userEvent.setup();
+    const writeTextMock = vi.fn(async () => undefined);
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: writeTextMock },
+    });
+    render(
+      <MemoryRouter>
+        <SettingsScreen />
+      </MemoryRouter>,
+    );
+
+    const runDiagnosticsButton = await screen.findByRole('button', { name: /تشغيل تشخيص/i });
+    await user.click(runDiagnosticsButton);
+    await screen.findByText(/وقت التشخيص/i);
+
+    const copyButton = await screen.findByRole('button', { name: /نسخ تقرير json/i });
+    await user.click(copyButton);
+
+    await waitFor(() => {
+      expect(writeTextMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(/تم نسخ التقرير/i)).toBeInTheDocument();
+    });
+
+    window.dispatchEvent(
+      new ErrorEvent('error', {
+        message: 'panel-runtime-error',
+        filename: 'http://localhost/runtime.js',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/panel-runtime-error/i)).toBeInTheDocument();
+    });
+
+    const clearButton = await screen.findByRole('button', { name: /مسح سجل الأخطاء/i });
+    await user.click(clearButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/لا توجد أخطاء runtime مسجلة/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows fallback banner when copy snapshot fails', async () => {
+    const user = userEvent.setup();
+    const writeTextMock = vi.fn(async () => {
+      throw new Error('copy-fail');
+    });
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: writeTextMock },
+    });
+    render(
+      <MemoryRouter>
+        <SettingsScreen />
+      </MemoryRouter>,
+    );
+
+    const runDiagnosticsButton = await screen.findByRole('button', { name: /تشغيل تشخيص/i });
+    await user.click(runDiagnosticsButton);
+    await screen.findByText(/وقت التشخيص/i);
+
+    const copyButton = await screen.findByRole('button', { name: /نسخ تقرير json/i });
+    await user.click(copyButton);
+
+    await waitFor(() => {
+      expect(writeTextMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByText(/تعذّر نسخ التقرير/i)).toBeInTheDocument();
     });
   });
 });

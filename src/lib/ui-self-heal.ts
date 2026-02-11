@@ -10,6 +10,9 @@ export interface UiDiagnosticsContext {
   prefersReducedMotion: boolean;
   horizontalOverflowPx: number;
   headerOverflowPx: number;
+  headerTitleTruncated: boolean;
+  actionBarBottomOverlapPx: number;
+  touchTargetRiskCount: number;
 }
 
 export interface UiDiagnosticIssue {
@@ -53,7 +56,34 @@ function createFallbackContext(): UiDiagnosticsContext {
     prefersReducedMotion: false,
     horizontalOverflowPx: 0,
     headerOverflowPx: 0,
+    headerTitleTruncated: false,
+    actionBarBottomOverlapPx: 0,
+    touchTargetRiskCount: 0,
   };
+}
+
+function collectTouchTargetRiskCount(): number {
+  if (typeof document === 'undefined') {
+    return 0;
+  }
+
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>('button, a, input[type="checkbox"]'));
+  let riskCount = 0;
+
+  for (const element of candidates) {
+    if ((element as HTMLButtonElement).disabled) {
+      continue;
+    }
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      continue;
+    }
+    if (rect.width < 40 || rect.height < 40) {
+      riskCount += 1;
+    }
+  }
+
+  return riskCount;
 }
 
 export function collectUiDiagnosticsContext(): UiDiagnosticsContext {
@@ -64,6 +94,10 @@ export function collectUiDiagnosticsContext(): UiDiagnosticsContext {
   const root = document.documentElement;
   const body = document.body;
   const header = document.querySelector<HTMLElement>('.screen-header');
+  const headerTitle = document.querySelector<HTMLElement>('.header-grid__center h1');
+  const actionBarNodes = Array.from(
+    document.querySelectorAll<HTMLElement>('.sticky-action-bar, .reveal-action-bar'),
+  );
 
   const viewportWidth = Math.max(0, Math.round(window.innerWidth || root.clientWidth || 0));
   const viewportHeight = Math.max(
@@ -77,6 +111,12 @@ export function collectUiDiagnosticsContext(): UiDiagnosticsContext {
     Math.round((body?.scrollWidth || 0) - viewportWidth),
   );
   const headerOverflowPx = header ? Math.max(0, Math.round(header.scrollWidth - header.clientWidth)) : 0;
+  const headerTitleTruncated = headerTitle ? headerTitle.scrollWidth - headerTitle.clientWidth > 2 : false;
+  const actionBarBottomOverlapPx = actionBarNodes.reduce((maxValue, node) => {
+    const rect = node.getBoundingClientRect();
+    return Math.max(maxValue, Math.round(rect.bottom - viewportHeight));
+  }, 0);
+  const touchTargetRiskCount = collectTouchTargetRiskCount();
 
   return {
     viewportWidth,
@@ -86,13 +126,18 @@ export function collectUiDiagnosticsContext(): UiDiagnosticsContext {
     prefersReducedMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
     horizontalOverflowPx,
     headerOverflowPx,
+    headerTitleTruncated,
+    actionBarBottomOverlapPx: Math.max(0, actionBarBottomOverlapPx),
+    touchTargetRiskCount,
   };
 }
 
 interface PatchComposer {
   patch: Partial<GlobalSettings>;
   setCompactDensity: () => void;
+  setComfortableDensity: () => void;
   lowerScaleTo: (next: number) => void;
+  raiseScaleTo: (next: number) => void;
   lowerAnimationSpeedTo: (next: number) => void;
   enableReducedMotion: () => void;
 }
@@ -107,10 +152,22 @@ function createPatchComposer(settings: GlobalSettings): PatchComposer {
         patch.uiDensity = 'compact';
       }
     },
+    setComfortableDensity: () => {
+      if (settings.uiDensity !== 'comfortable') {
+        patch.uiDensity = 'comfortable';
+      }
+    },
     lowerScaleTo: (next: number) => {
       const currentBase = patch.uiScale ?? settings.uiScale;
       const target = normalizeScale(Math.min(currentBase, next));
       if (target < settings.uiScale || (patch.uiScale !== undefined && target < patch.uiScale)) {
+        patch.uiScale = target;
+      }
+    },
+    raiseScaleTo: (next: number) => {
+      const currentBase = patch.uiScale ?? settings.uiScale;
+      const target = normalizeScale(Math.max(currentBase, next));
+      if (target > settings.uiScale || (patch.uiScale !== undefined && target > patch.uiScale)) {
         patch.uiScale = target;
       }
     },
@@ -182,6 +239,19 @@ export function analyzeUiHealth(settings: GlobalSettings, context: UiDiagnostics
     patchComposer.lowerScaleTo(0.92);
   }
 
+  if (context.viewportHeight > 0 && context.viewportHeight <= 600) {
+    addIssue(
+      'very-short-height',
+      'high',
+      16,
+      'ارتفاع شديد القِصر',
+      'الارتفاع أقل من 600px وقد يسبب تراكبًا في شريط الإجراءات السفلي.',
+    );
+    patchComposer.setCompactDensity();
+    patchComposer.lowerScaleTo(0.9);
+    patchComposer.lowerAnimationSpeedTo(0.85);
+  }
+
   if (context.horizontalOverflowPx >= 8) {
     addIssue(
       'horizontal-overflow',
@@ -204,6 +274,47 @@ export function analyzeUiHealth(settings: GlobalSettings, context: UiDiagnostics
     );
     patchComposer.setCompactDensity();
     patchComposer.lowerScaleTo(0.93);
+  }
+
+  if (context.headerTitleTruncated) {
+    addIssue(
+      'header-title-truncation',
+      'medium',
+      11,
+      'عنوان الصفحة مقصوص',
+      'العنوان في الهيدر يتجاوز المساحة المتاحة ويحتاج تقليل كثافة الواجهة.',
+    );
+    patchComposer.setCompactDensity();
+    patchComposer.lowerScaleTo(0.92);
+  }
+
+  if (context.actionBarBottomOverlapPx >= 6) {
+    addIssue(
+      'action-bar-overlap',
+      'high',
+      18,
+      'تراكب في شريط الإجراءات',
+      `شريط الإجراءات السفلي خارج حدود العرض بحوالي ${context.actionBarBottomOverlapPx}px.`,
+    );
+    patchComposer.setCompactDensity();
+    patchComposer.lowerScaleTo(0.9);
+  }
+
+  if (
+    context.touchTargetRiskCount >= 3 &&
+    context.viewportWidth >= 400 &&
+    context.horizontalOverflowPx === 0 &&
+    context.headerOverflowPx === 0
+  ) {
+    addIssue(
+      'touch-target-risk',
+      'medium',
+      9,
+      'أهداف لمس صغيرة',
+      `تم رصد ${context.touchTargetRiskCount} عنصر قابل للنقر أصغر من الحجم المريح للمس.`,
+    );
+    patchComposer.setComfortableDensity();
+    patchComposer.raiseScaleTo(1);
   }
 
   if (context.rootFontSizePx >= 19 && settings.uiScale > 1) {
@@ -241,6 +352,30 @@ export function analyzeUiHealth(settings: GlobalSettings, context: UiDiagnostics
     },
     patch: patchComposer.patch,
   };
+}
+
+export function buildUiSelfHealPersistedPatch(result: UiSelfHealResult): Partial<GlobalSettings> {
+  return {
+    ...result.patch,
+    uiSelfHealScore: result.report.score,
+    uiSelfHealLastRunAt: result.report.checkedAt,
+  };
+}
+
+interface PersistOptions {
+  mode?: 'manual' | 'auto';
+}
+
+export function shouldPersistUiSelfHeal(
+  settings: GlobalSettings,
+  result: UiSelfHealResult,
+  options: PersistOptions = {},
+): boolean {
+  const mode = options.mode ?? 'auto';
+  if (mode === 'manual') {
+    return true;
+  }
+  return hasUiSelfHealPatch(result.patch) || settings.uiSelfHealScore !== result.report.score;
 }
 
 export function buildUiSelfHealSummary(result: UiSelfHealResult): string {

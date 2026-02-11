@@ -474,3 +474,19 @@ html[dir='rtl'] .screen-header-main {
         font-size: 0.7rem;
     }
 }
+
+@media (max-width: 360px) {
+    .header-grid {
+        grid-template-columns: minmax(3rem, auto) minmax(0, 1fr) minmax(3rem, auto);
+        gap: 0.4rem;
+    }
+
+    .header-grid__center h1 {
+        font-size: 1rem;
+        letter-spacing: 0.04em;
+    }
+
+    .header-subtitle {
+        font-size: 0.68rem;
+    }
+}
