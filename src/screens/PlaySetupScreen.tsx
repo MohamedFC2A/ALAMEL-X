@@ -38,9 +38,11 @@ export function PlaySetupScreen() {
     return Math.round((usageSummary.used / usageSummary.total) * 100);
   }, [usageSummary]);
   const remainingWords = Math.max(0, usageSummary.total - usageSummary.used);
+  const enabledPlayersCount = players?.length ?? 0;
   const spyCount = spyCountOverride ?? recommendedSpyCount(selectedPlayers.length);
   const overridden = spyCountOverride !== null;
   const minPlayers = minPlayersForSpyCount(spyCount);
+  const hasMinimumPlayersConfigured = enabledPlayersCount >= minPlayersForSpyCount(1);
   const playersPerPage = 6;
   const totalPlayerPages = Math.max(1, Math.ceil((players?.length ?? 0) / playersPerPage));
   const clampedPlayerPage = Math.min(playerPage, totalPlayerPages - 1);
@@ -61,16 +63,6 @@ export function PlaySetupScreen() {
   useEffect(() => {
     void wordsUsageSummary().then(setUsageSummary);
   }, []);
-
-  useEffect(() => {
-    if (!players) {
-      return;
-    }
-
-    if (players.length < minPlayersForSpyCount(1)) {
-      navigate('/players', { state: { reason: 'noPlayersRedirect' } });
-    }
-  }, [navigate, players]);
 
   function togglePlayer(playerId: string) {
     setSelectedPlayers((prev) => {
@@ -147,6 +139,16 @@ export function PlaySetupScreen() {
       </StatusBanner>
 
       {errorKey ? <StatusBanner tone="danger">{t(errorKey)}</StatusBanner> : null}
+      {!hasMinimumPlayersConfigured ? (
+        <StatusBanner tone="warning">
+          {t('noPlayersRedirect')}
+          <div className="actions-row banner-actions">
+            <GameButton variant="primary" size="md" onClick={() => navigate('/players')}>
+              {t('playersRecords')}
+            </GameButton>
+          </div>
+        </StatusBanner>
+      ) : null}
       {hasAiSelected && !aiReady ? (
         <StatusBanner tone="danger">
           {t('aiSetupRequired')}
@@ -159,6 +161,26 @@ export function PlaySetupScreen() {
       ) : hasAiSelected ? (
         <StatusBanner tone="warning">{t('aiInternetHint')}</StatusBanner>
       ) : null}
+
+      <section className="glass-card spy-count-panel setup-spy-panel setup-spy-panel--primary section-card cinematic-panel toggle-panel">
+        <div className="setup-spy-panel__header">
+          <p>{t('spiesCount')}</p>
+          <span className="setup-spy-panel__current">
+            {t('selectedCount')}: {spyCount}
+          </span>
+        </div>
+        <div className="pill-row setup-pill-row" role="group" aria-label={t('spiesCount')}>
+          <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => setSpyCountOverride(1)}>
+            1 {!overridden && recommendedSpyCount(selectedPlayers.length) === 1 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
+          </button>
+          <button type="button" className={`pill-btn ${spyCount === 2 ? 'active' : ''}`} onClick={() => setSpyCountOverride(2)}>
+            2 {!overridden && recommendedSpyCount(selectedPlayers.length) === 2 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
+          </button>
+        </div>
+        <p className="subtle">
+          {t('spiesCount')}: 1 (3+ {t('players')}) | 2 (4+ {t('players')})
+        </p>
+      </section>
 
       {hasAiSelected ? (
         <section className="glass-card spy-count-panel section-card cinematic-panel toggle-panel">
@@ -231,23 +253,6 @@ export function PlaySetupScreen() {
           </GameButton>
         </div>
       ) : null}
-
-      <section className="glass-card spy-count-panel setup-spy-panel section-card cinematic-panel toggle-panel">
-        <div className="setup-spy-panel__header">
-          <p>{t('spiesCount')}</p>
-          <span className="setup-spy-panel__current">
-            {t('selectedCount')}: {spyCount}
-          </span>
-        </div>
-        <div className="pill-row setup-pill-row" role="group" aria-label={t('spiesCount')}>
-          <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => setSpyCountOverride(1)}>
-            1 {!overridden && recommendedSpyCount(selectedPlayers.length) === 1 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
-          </button>
-          <button type="button" className={`pill-btn ${spyCount === 2 ? 'active' : ''}`} onClick={() => setSpyCountOverride(2)}>
-            2 {!overridden && recommendedSpyCount(selectedPlayers.length) === 2 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
-          </button>
-        </div>
-      </section>
 
       <PrimaryActionBar
         className="sticky-action-bar setup-action-bar"

@@ -1207,6 +1207,13 @@ input[type='range'] {
     gap: var(--space-2);
 }
 
+.setup-spy-panel--primary {
+    border-color: color-mix(in oklab, var(--accent) 45%, var(--stroke-1));
+    box-shadow:
+        inset 0 0 0 1px color-mix(in oklab, var(--accent) 18%, transparent),
+        0 0 0 1px rgba(0, 0, 0, 0.16);
+}
+
 .setup-spy-panel__header {
     display: flex;
     align-items: baseline;

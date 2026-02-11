@@ -88,4 +88,25 @@ describe('play setup spy count controls', () => {
     await user.click(screen.getByRole('button', { name: /ندى/i }));
     expect(startButton).toBeEnabled();
   });
+
+  it('keeps spy selector visible even when players are below minimum', async () => {
+    await db.players.clear();
+
+    render(
+      <LoadingProvider>
+        <MemoryRouter initialEntries={['/play/setup']}>
+          <Routes>
+            <Route path="/play/setup" element={<PlaySetupScreen />} />
+            <Route path="/players" element={<div>players-screen</div>} />
+          </Routes>
+        </MemoryRouter>
+      </LoadingProvider>,
+    );
+
+    expect(await screen.findByText(/لازم يكون عندك ٣ لاعبين/i)).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /عدد الجواسيس/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^1/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^2/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /اللاعبون والسجل/i })).toBeInTheDocument();
+  });
 });

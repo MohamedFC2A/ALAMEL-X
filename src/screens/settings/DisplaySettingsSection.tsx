@@ -40,8 +40,8 @@ export function DisplaySettingsSection({
   }, []);
 
   const autoUiScale = useMemo(
-    () => resolveAutoUiScale(uiContext, settings),
-    [settings, uiContext],
+    () => resolveAutoUiScale(uiContext, { uiDensity: settings.uiDensity }),
+    [settings.uiDensity, uiContext],
   );
 
   return (

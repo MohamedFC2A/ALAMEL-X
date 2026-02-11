@@ -55,7 +55,7 @@ interface AutoUiScaleInput {
 
 export function resolveAutoUiScale(
   input: AutoUiScaleInput,
-  settings?: Pick<GlobalSettings, 'uiScale' | 'uiDensity'>,
+  settings?: Pick<GlobalSettings, 'uiDensity'>,
 ): number {
   const viewportWidth = Number.isFinite(input.viewportWidth) ? input.viewportWidth : 390;
   const viewportHeight = Number.isFinite(input.viewportHeight) ? input.viewportHeight : 780;
@@ -64,39 +64,40 @@ export function resolveAutoUiScale(
   let deviceScale = 1;
 
   if (viewportWidth <= 320) {
-    deviceScale -= 0.12;
-  } else if (viewportWidth <= 360) {
     deviceScale -= 0.09;
+  } else if (viewportWidth <= 360) {
+    deviceScale -= 0.06;
   } else if (viewportWidth <= 390) {
-    deviceScale -= 0.055;
+    deviceScale -= 0.035;
   } else if (viewportWidth <= 430) {
-    deviceScale -= 0.02;
+    deviceScale -= 0.012;
   } else if (viewportWidth >= 1440) {
-    deviceScale += 0.04;
+    deviceScale += 0.03;
   } else if (viewportWidth >= 1024) {
-    deviceScale += 0.02;
+    deviceScale += 0.015;
   }
 
   if (viewportHeight <= 600) {
-    deviceScale -= 0.075;
+    deviceScale -= 0.055;
   } else if (viewportHeight <= 690) {
-    deviceScale -= 0.045;
+    deviceScale -= 0.032;
   } else if (viewportHeight >= 920 && viewportWidth >= 430) {
-    deviceScale += 0.02;
+    deviceScale += 0.015;
   }
 
   if (viewportWidth <= 390 && devicePixelRatio >= 3) {
-    deviceScale -= 0.018;
+    deviceScale -= 0.01;
   } else if (viewportWidth >= 1280 && devicePixelRatio <= 1.2) {
-    deviceScale += 0.012;
+    deviceScale += 0.008;
   }
 
   if (settings?.uiDensity === 'compact') {
-    deviceScale -= 0.01;
+    deviceScale -= 0.006;
+  } else {
+    deviceScale += 0.004;
   }
 
-  const baseScale = Number.isFinite(settings?.uiScale) ? (settings?.uiScale ?? 1) : 1;
-  return Number(clamp(baseScale * deviceScale, 0.84, 1.12).toFixed(3));
+  return Number(clamp(deviceScale, 0.9, 1.08).toFixed(3));
 }
 
 function createFallbackContext(): UiDiagnosticsContext {

@@ -84,7 +84,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     if (!settings) {
       return 1;
     }
-    return resolveAutoUiScale(viewportScaleInput, settings);
+    return resolveAutoUiScale(viewportScaleInput, { uiDensity: settings.uiDensity });
   }, [settings, viewportScaleInput]);
 
   useEffect(() => {
