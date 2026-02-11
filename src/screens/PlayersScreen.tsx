@@ -5,7 +5,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { avatarPresets } from '../data/avatars';
-import { buildAiPlayer, buildPlayer, buildQuickPlayers, togglePlayerEnabled, upsertPlayer } from '../lib/game-repository';
+import { buildAiPlayer, buildPlayer, buildQuickPlayers, deletePlayer, upsertPlayer } from '../lib/game-repository';
 import { db, defaultAccessibility } from '../lib/db';
 import type { Player, PlayerAccessibility } from '../types';
 import { ScreenScaffold } from '../components/ScreenScaffold';
@@ -39,6 +39,7 @@ export function PlayersScreen() {
 
   const [formState, setFormState] = useState<PlayerFormState>(createDefaultForm());
   const [isModalOpen, setModalOpen] = useState(false);
+  const [actionError, setActionError] = useState('');
   const historySectionRef = useRef<HTMLElement | null>(null);
 
   const hasPlayers = (players?.length ?? 0) > 0;
@@ -55,6 +56,23 @@ export function PlayersScreen() {
     }
   }, [focusHistory]);
 
+  useEffect(() => {
+    if (!players) {
+      return;
+    }
+    const disabledPlayers = players.filter((player) => !player.enabled);
+    if (!disabledPlayers.length) {
+      return;
+    }
+    void db.players.bulkPut(
+      disabledPlayers.map((player) => ({
+        ...player,
+        enabled: true,
+        updatedAt: Date.now(),
+      })),
+    );
+  }, [players]);
+
   const playerMatches = useMemo(() => {
     const map = new Map<string, number>();
     for (const match of matches ?? []) {
@@ -66,16 +84,18 @@ export function PlayersScreen() {
   }, [matches]);
 
   function openCreateModal() {
+    setActionError('');
     setFormState(createDefaultForm());
     setModalOpen(true);
   }
 
   function openEditModal(player: Player) {
+    setActionError('');
     setFormState({
       id: player.id,
       name: player.name,
       avatarId: player.avatarId,
-      enabled: player.enabled,
+      enabled: true,
       accessibility: player.accessibility,
     });
     setModalOpen(true);
@@ -96,7 +116,7 @@ export function PlayersScreen() {
         ...existing,
         name: formState.name.trim(),
         avatarId: formState.avatarId,
-        enabled: formState.enabled,
+        enabled: true,
         accessibility: formState.accessibility,
       });
     } else {
@@ -111,8 +131,22 @@ export function PlayersScreen() {
     setFormState(createDefaultForm());
   }
 
-  async function handleToggle(player: Player) {
-    await togglePlayerEnabled(player.id, !player.enabled);
+  async function handleDelete(player: Player) {
+    const confirmed = window.confirm(t('confirmDeletePlayer', { name: player.name }));
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deletePlayer(player.id);
+      setActionError('');
+    } catch (error) {
+      if (error instanceof Error && error.message === 'PLAYER_IN_ACTIVE_MATCH') {
+        setActionError(t('deletePlayerBlockedActiveMatch'));
+        return;
+      }
+      setActionError(t('deletePlayerFailed'));
+    }
   }
 
   async function handleQuickAdd() {
@@ -132,6 +166,7 @@ export function PlayersScreen() {
   return (
     <ScreenScaffold title={t('playersRecords')} subtitle={t('playersManagementSubtitle')} eyebrow={t('players')}>
       {redirectMessage ? <StatusBanner tone="warning">{t(redirectMessage)}</StatusBanner> : null}
+      {actionError ? <StatusBanner tone="danger">{actionError}</StatusBanner> : null}
 
       <div className="actions-row case-actions">
         <GameButton type="button" variant="primary" size="lg" onClick={openCreateModal}>
@@ -162,14 +197,14 @@ export function PlayersScreen() {
                 <h3>
                   {player.name} {isAi ? <span className="ai-badge">{t('aiBadge')}</span> : null}
                 </h3>
-                <p>{player.enabled ? t('playerEnabled') : t('playerDisabled')}</p>
+                <p>{isAi ? t('aiPlayerProfileHint') : t('humanPlayerProfileHint')}</p>
               </div>
               <div className="player-actions">
                 <GameButton type="button" variant="ghost" size="md" onClick={() => openEditModal(player)}>
                   {t('editPlayer')}
                 </GameButton>
-                <GameButton type="button" variant="ghost" size="md" onClick={() => void handleToggle(player)}>
-                  {player.enabled ? t('disable') : t('enable')}
+                <GameButton type="button" variant="danger" size="md" onClick={() => void handleDelete(player)}>
+                  {t('deletePlayer')}
                 </GameButton>
               </div>
             </div>

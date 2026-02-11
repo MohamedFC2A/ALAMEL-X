@@ -48,9 +48,11 @@ export function DiscussionScreen() {
   }, [activeMatch, playerMap]);
 
   const hasAi = aiPlayers.length > 0;
+  const aiMatchMode = activeMatch?.ai?.mode ?? 'full';
+  const aiDiscussionEnabled = hasAi && aiMatchMode === 'full';
   const orchestrator = useAiDiscussionOrchestrator({
     activeMatch,
-    aiPlayers,
+    aiPlayers: aiDiscussionEnabled ? aiPlayers : [],
     playerMap,
     settings,
     language: i18n.language as 'en' | 'ar',
@@ -176,7 +178,7 @@ export function DiscussionScreen() {
       )}
 
       <PrimaryActionBar className="sticky-action-bar">
-        {hasAi ? (
+        {aiDiscussionEnabled ? (
           <GameButton variant="ghost" onClick={() => setAiDeskOpen(true)} icon={<Bot size={18} aria-hidden />}>
             {t('aiDeskButton')}
           </GameButton>
@@ -186,7 +188,11 @@ export function DiscussionScreen() {
         </GameButton>
       </PrimaryActionBar>
 
-      {hasAi && activeMatch.match.status === 'discussion' ? (
+      {hasAi && aiMatchMode === 'vote_only' && activeMatch.match.status === 'discussion' ? (
+        <StatusBanner tone="warning">{t('aiModeVoteOnlyDiscussionHint')}</StatusBanner>
+      ) : null}
+
+      {aiDiscussionEnabled && activeMatch.match.status === 'discussion' ? (
         <section className="glass-card section-card cinematic-panel ai-orchestrator-strip">
           <div className="ai-orchestrator-strip-row">
             <span className="eyebrow">{t('aiOrchestratorStatus')}</span>
@@ -206,7 +212,7 @@ export function DiscussionScreen() {
         </section>
       ) : null}
 
-      {activeMatch && hasAi ? (
+      {activeMatch && aiDiscussionEnabled ? (
         <AiDeskModal
           open={aiDeskOpen}
           onClose={() => setAiDeskOpen(false)}

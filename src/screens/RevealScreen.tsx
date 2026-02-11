@@ -430,11 +430,11 @@ export function RevealScreen() {
             <div className="reveal-content">
               {isSpy ? (
                 <div className="reveal-meta spy-meta-grid">
-                  <h2 className="role-title role-title-spy">{t('roleSpy')}</h2>
-                  <p className="spy-category-pill">
-                    <span>{t('category')}</span>
-                    <strong>{currentMatch.match.category}</strong>
-                  </p>
+                  <h2 className="role-title role-title-spy spy-hero-title">{t('roleSpy')}</h2>
+                  <div className="spy-category-display">
+                    <span className="spy-category-label">{t('category')}</span>
+                    <strong className="spy-category-name">{currentMatch.match.category}</strong>
+                  </div>
                   <div className="spy-hint-box">
                     <span className="spy-hint-label">{t('hint')}</span>
                     <p className="spy-hint">{spyHintText}</p>

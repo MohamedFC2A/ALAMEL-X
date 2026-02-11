@@ -83,6 +83,7 @@ function buildActiveMatch(overrides?: Partial<ActiveMatch>): ActiveMatch {
     resolutionStage: 'vote',
     ai: {
       playerIds: ['ai1'],
+      mode: 'full',
       threads: {
         ai1: { messages: [], summary: '' },
       },
@@ -183,5 +184,33 @@ describe('discussion screen AI orchestrator UI', () => {
     const pauseButton = screen.getByRole('button', { name: /إيقاف مؤقت/i });
     await user.click(pauseButton);
     expect(toggleRuntimeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables discussion orchestration when AI mode is vote_only', async () => {
+    await db.activeMatch.put(
+      buildActiveMatch({
+        ai: {
+          playerIds: ['ai1'],
+          mode: 'vote_only',
+          threads: {
+            ai1: { messages: [], summary: '' },
+          },
+        },
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <DiscussionScreen />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/AI للتصويت فقط/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^AI$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/حالة AI/i)).not.toBeInTheDocument();
+    expect(orchestratorHookMock).toHaveBeenCalled();
+    const calls = orchestratorHookMock.mock.calls;
+    const lastCall = calls[calls.length - 1]?.[0];
+    expect(lastCall?.aiPlayers).toEqual([]);
   });
 });

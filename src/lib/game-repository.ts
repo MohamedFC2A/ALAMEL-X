@@ -2,6 +2,7 @@ import type {
   ActiveMatch,
   ActiveMatchAiState,
   AiAdaptiveStats,
+  AiMatchMode,
   GlobalSettings,
   Match,
   MatchRecord,
@@ -93,8 +94,12 @@ export async function upsertPlayer(player: Player): Promise<void> {
   });
 }
 
-export async function togglePlayerEnabled(playerId: string, enabled: boolean): Promise<void> {
-  await db.players.update(playerId, { enabled, updatedAt: Date.now() });
+export async function deletePlayer(playerId: string): Promise<void> {
+  const active = await db.activeMatch.get('active');
+  if (active?.match.playerIds.includes(playerId)) {
+    throw new Error('PLAYER_IN_ACTIVE_MATCH');
+  }
+  await db.players.delete(playerId);
 }
 
 export function assignSpies(playerIds: string[], spyCount: 1 | 2): string[] {
@@ -291,7 +296,11 @@ function mapRelatedWords(words: string[], relatedList: string[]): string[] {
   return words.filter((item) => normalized.has(normalizeWord(item)));
 }
 
-export async function startMatch(playerIds: string[], spyCount: 1 | 2): Promise<ActiveMatch> {
+export interface StartMatchOptions {
+  aiMode?: AiMatchMode;
+}
+
+export async function startMatch(playerIds: string[], spyCount: 1 | 2, options: StartMatchOptions = {}): Promise<ActiveMatch> {
   if (!isValidPlayerCount(playerIds.length, spyCount)) {
     throw new Error('INVALID_PLAYER_COUNT');
   }
@@ -321,10 +330,12 @@ export async function startMatch(playerIds: string[], spyCount: 1 | 2): Promise<
     .filter((player): player is Player => Boolean(player))
     .filter((player) => player.kind === 'ai')
     .map((player) => player.id);
+  const aiMode: AiMatchMode = options.aiMode === 'vote_only' ? 'vote_only' : 'full';
   const aiState =
     aiPlayerIds.length > 0
       ? {
           playerIds: aiPlayerIds,
+          mode: aiMode,
           threads: Object.fromEntries(aiPlayerIds.map((id) => [id, { messages: [], summary: '' }])),
         }
       : undefined;
@@ -440,6 +451,7 @@ export async function updateActiveMatch(patch: Partial<ActiveMatch>): Promise<vo
   const mergedAi = patchAi
     ? {
         playerIds: patchAi.playerIds ?? active.ai?.playerIds ?? [],
+        mode: patchAi.mode ?? active.ai?.mode ?? 'full',
         threads: {
           ...(active.ai?.threads ?? {}),
           ...(patchAi.threads ?? {}),

@@ -1,13 +1,146 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>العميل x</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>العميل x</title>
+  <style>
+    /* ═══ Boot Loader (inline for instant render) ═══ */
+    .boot-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0c;
+      font-family: 'Rajdhani', system-ui, sans-serif;
+      color: #e8e8ea;
+      gap: 1.2rem;
+      transition: opacity .4s ease
+    }
+
+    .boot-loader[data-removing] {
+      opacity: 0;
+      pointer-events: none
+    }
+
+    .boot-loader__grid {
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(79, 209, 197, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(79, 209, 197, .06) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: .04;
+      animation: bl-drift 20s linear infinite
+    }
+
+    .boot-loader__sweep {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(79, 209, 197, .06) 50%, transparent 100%);
+      background-size: 100% 200%;
+      animation: bl-sweep 2.4s ease-in-out infinite
+    }
+
+    .boot-loader__insignia {
+      font-size: clamp(3rem, 12vw, 5rem);
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: #e8e8ea;
+      text-align: center;
+      line-height: 1
+    }
+
+    .boot-loader__insignia span {
+      color: #e53e3e;
+      font-size: 1.2em
+    }
+
+    .boot-loader__sub {
+      font-size: .85rem;
+      letter-spacing: .3em;
+      color: rgba(79, 209, 197, .7);
+      text-transform: uppercase
+    }
+
+    .boot-loader__pulse {
+      width: 48px;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(79, 209, 197, .35);
+      animation: bl-pulse 1.6s ease-in-out infinite
+    }
+
+    @keyframes bl-drift {
+      0% {
+        background-position: 0 0, 0 0
+      }
+
+      100% {
+        background-position: 40px 40px, 40px 40px
+      }
+    }
+
+    @keyframes bl-sweep {
+      0% {
+        background-position: 0 0
+      }
+
+      50% {
+        background-position: 0 100%
+      }
+
+      100% {
+        background-position: 0 0
+      }
+    }
+
+    @keyframes bl-pulse {
+
+      0%,
+      100% {
+        opacity: .3;
+        transform: scaleX(.6)
+      }
+
+      50% {
+        opacity: 1;
+        transform: scaleX(1)
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+
+      .boot-loader__grid,
+      .boot-loader__sweep,
+      .boot-loader__pulse {
+        animation: none
+      }
+
+      .boot-loader__pulse {
+        opacity: .6;
+        transform: scaleX(1)
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Boot Loader (removed after React mounts) -->
+  <div id="boot-loader" class="boot-loader">
+    <div class="boot-loader__grid" aria-hidden="true"></div>
+    <div class="boot-loader__sweep" aria-hidden="true"></div>
+    <div class="boot-loader__insignia">ALAMEL-<span>X</span></div>
+    <p class="boot-loader__sub">العميل X</p>
+    <div class="boot-loader__pulse" aria-hidden="true"></div>
+  </div>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,8 @@ import { SummaryScreen } from './screens/SummaryScreen';
 import { db, ensureSettings } from './lib/db';
 import { applyDocumentLanguage } from './lib/i18n';
 import { installClockDebugHooks } from './lib/clock';
+import { LoadingProvider, useLoading } from './components/loading-controller';
+import { LoadingOverlay } from './components/LoadingOverlay';
 import type { GlobalSettings } from './types';
 import './index.css';
 
@@ -81,6 +83,48 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
   return null;
 }
 
+/* ═══ Route Loading — adaptive overlay on route change ═══ */
+function RouteLoadingController() {
+  const location = useLocation();
+  const { showLoading, hideLoading } = useLoading();
+  const prevPath = useRef(location.pathname);
+
+  useEffect(() => {
+    if (prevPath.current === location.pathname) return;
+    prevPath.current = location.pathname;
+
+    const showTimer = setTimeout(() => {
+      showLoading('route');
+    }, 120);
+
+    const hideTimer = setTimeout(() => {
+      hideLoading('route');
+    }, 340); // 120ms delay + 220ms min visible
+
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+      hideLoading('route');
+    };
+  }, [location.pathname, showLoading, hideLoading]);
+
+  return null;
+}
+
+/* ═══ Global Loading Overlay Renderer ═══ */
+function GlobalLoadingOverlay() {
+  const { state } = useLoading();
+  if (!state) return null;
+  return (
+    <LoadingOverlay
+      intent={state.intent}
+      message={state.message}
+      blocking={state.blocking}
+      visible={state.visible}
+    />
+  );
+}
+
 function AnimatedRoutes() {
   const location = useLocation();
   const settings = useLiveQuery(() => db.settings.get('global'), []);
@@ -126,15 +170,19 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-shell">
-        <div className="app-shell__grid" aria-hidden="true" />
-        <div className="app-shell__vignette" />
-        <div className="app-shell__noise" style={{ backgroundImage: noiseTexture }} />
-        <div className="app-shell__content">
-          <ThemeController settings={settings} />
-          <AnimatedRoutes />
+      <LoadingProvider>
+        <div className="app-shell">
+          <div className="app-shell__grid" aria-hidden="true" />
+          <div className="app-shell__vignette" />
+          <div className="app-shell__noise" style={{ backgroundImage: noiseTexture }} />
+          <div className="app-shell__content">
+            <ThemeController settings={settings} />
+            <RouteLoadingController />
+            <AnimatedRoutes />
+          </div>
         </div>
-      </div>
+        <GlobalLoadingOverlay />
+      </LoadingProvider>
     </BrowserRouter>
   );
 }

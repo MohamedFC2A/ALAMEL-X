@@ -99,3 +99,153 @@
     white-space: nowrap;
     border: 0;
 }
+
+/* ═══════════ LOADING OVERLAY ═══════════ */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-hud);
+    animation: lo-fadeIn 200ms ease forwards;
+}
+
+.loading-overlay--blocking {
+    pointer-events: auto;
+}
+
+.loading-overlay--boot {
+    background: var(--bg-void);
+    z-index: 9999;
+}
+
+.loading-overlay--route {
+    background: rgba(10, 10, 12, 0.72);
+    backdrop-filter: blur(6px);
+}
+
+.loading-overlay--task {
+    background: rgba(10, 10, 12, 0.88);
+    backdrop-filter: blur(10px);
+}
+
+.loading-overlay__grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(79, 209, 197, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79, 209, 197, 0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.04;
+    animation: gridDrift 20s linear infinite;
+}
+
+.loading-overlay__sweep {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(79, 209, 197, 0.06) 50%, transparent 100%);
+    background-size: 100% 200%;
+    animation: lo-sweep 2.4s ease-in-out infinite;
+}
+
+.loading-overlay__content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+    text-align: center;
+}
+
+.loading-overlay__insignia {
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.loading-overlay__x {
+    color: var(--accent-danger);
+    font-size: 1.2em;
+}
+
+.loading-overlay__message {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    margin: 0;
+}
+
+.loading-overlay__pulse {
+    width: 48px;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(79, 209, 197, 0.35);
+    animation: lo-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes lo-fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes lo-sweep {
+    0% {
+        background-position: 0 0;
+    }
+
+    50% {
+        background-position: 0 100%;
+    }
+
+    100% {
+        background-position: 0 0;
+    }
+}
+
+@keyframes lo-pulse {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scaleX(0.6);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+}
+
+/* Scanline for spy theme (reusable) */
+@keyframes scanline {
+    0% {
+        transform: translateY(-100%);
+    }
+
+    100% {
+        transform: translateY(100vh);
+    }
+}
+
+/* Reduced motion: static loading overlay */
+:root[data-motion='reduced'] .loading-overlay__grid,
+:root[data-motion='reduced'] .loading-overlay__sweep,
+:root[data-motion='reduced'] .loading-overlay__pulse {
+    animation: none;
+}
+
+:root[data-motion='reduced'] .loading-overlay__pulse {
+    opacity: 0.6;
+    transform: scaleX(1);
+}

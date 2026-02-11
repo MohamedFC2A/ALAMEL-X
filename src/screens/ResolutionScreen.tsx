@@ -57,8 +57,6 @@ export function ResolutionScreen() {
   const [aiVoteError, setAiVoteError] = useState<{ key: string; message: string } | null>(null);
   const [aiGuessError, setAiGuessError] = useState<{ key: string; message: string } | null>(null);
   const [aiVoteNarration, setAiVoteNarration] = useState<{ key: string; message: string } | null>(null);
-  const [aiVoteManualKey, setAiVoteManualKey] = useState('');
-  const [aiGuessManualKey, setAiGuessManualKey] = useState('');
 
   const playerMap = useMemo(() => {
     const map = new Map<string, Player>();
@@ -206,7 +204,6 @@ export function ResolutionScreen() {
 
   const guessStateKey =
     activeMatch && activeMatch.resolutionStage === 'guess' ? `${activeMatch.match.id}:${activeMatch.guessEndsAt ?? 0}` : '';
-  const aiGuessManual = Boolean(guessStateKey && aiGuessManualKey === guessStateKey);
 
   useEffect(() => {
     if (!activeMatchState) {
@@ -296,10 +293,6 @@ export function ResolutionScreen() {
       return;
     }
 
-    if (aiVoteManualKey === voteStateKey) {
-      return;
-    }
-
     if (aiVoteHandledKeyRef.current === voteStateKey) {
       return;
     }
@@ -349,7 +342,6 @@ export function ResolutionScreen() {
     })();
   }, [
     activeMatch,
-    aiVoteManualKey,
     aiVoteRetryNonce,
     formatAiError,
     i18n.language,
@@ -368,10 +360,6 @@ export function ResolutionScreen() {
     const capturedSpy = capturedSpyId ? playerMap.get(capturedSpyId) ?? null : null;
 
     if (!capturedSpyId || !capturedSpy || capturedSpy.kind !== 'ai') {
-      return;
-    }
-
-    if (aiGuessManual) {
       return;
     }
 
@@ -422,7 +410,6 @@ export function ResolutionScreen() {
     })();
   }, [
     activeMatch,
-    aiGuessManual,
     aiGuessRetryNonce,
     formatAiError,
     i18n.language,
@@ -528,8 +515,8 @@ export function ResolutionScreen() {
               ) : (
                 <StatusBanner tone="danger">{t('aiSetupRequired')}</StatusBanner>
               )}
-              <div className="actions-row">
-                {settings?.aiEnabled && aiVoteError?.key === voteStateKey ? (
+              {settings?.aiEnabled && aiVoteError?.key === voteStateKey ? (
+                <div className="actions-row">
                   <GameButton
                     variant="ghost"
                     size="md"
@@ -541,19 +528,8 @@ export function ResolutionScreen() {
                   >
                     {t('retry')}
                   </GameButton>
-                ) : null}
-                <GameButton
-                  variant="cta"
-                  size="md"
-                  onClick={() => {
-                    setAiVoteManualKey(voteStateKey);
-                    vibrate();
-                    void startBallot();
-                  }}
-                >
-                  {t('aiManualVote')}
-                </GameButton>
-              </div>
+                </div>
+              ) : null}
             </section>
           ) : (
             <section className="glass-card handoff-card section-card cinematic-panel">
@@ -646,7 +622,7 @@ export function ResolutionScreen() {
       ) : null}
 
       {currentMatch.resolutionStage === 'guess' ? (
-        isAiCapturedSpy && capturedSpy && !aiGuessManual ? (
+        isAiCapturedSpy && capturedSpy ? (
           <section className="glass-card phase-card section-card cinematic-panel">
             <StatusBanner tone="success">
               {t('voteCapturedInfo')}
@@ -664,8 +640,8 @@ export function ResolutionScreen() {
             ) : (
               <StatusBanner tone="danger">{t('aiSetupRequired')}</StatusBanner>
             )}
-            <div className="actions-row">
-              {settings?.aiEnabled && aiGuessErrorMessage ? (
+            {settings?.aiEnabled && aiGuessErrorMessage ? (
+              <div className="actions-row">
                 <GameButton
                   variant="ghost"
                   size="md"
@@ -677,11 +653,8 @@ export function ResolutionScreen() {
                 >
                   {t('retry')}
                 </GameButton>
-              ) : null}
-              <GameButton variant="cta" size="md" onClick={() => setAiGuessManualKey(guessStateKey)}>
-                {t('aiManualGuess')}
-              </GameButton>
-            </div>
+              </div>
+            ) : null}
           </section>
         ) : (
           <section className="glass-card phase-card section-card cinematic-panel">

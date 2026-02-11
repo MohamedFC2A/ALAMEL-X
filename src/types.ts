@@ -6,6 +6,7 @@ export type UiDensity = 'comfortable' | 'compact';
 export type AiHumanMode = 'strategic' | 'natural' | 'ultra';
 export type AiReplyLength = 'short' | 'balanced' | 'detailed';
 export type AiVoiceProvider = 'elevenlabs' | 'browser';
+export type AiMatchMode = 'full' | 'vote_only';
 
 export type PlayerKind = 'human' | 'ai';
 
@@ -158,6 +159,7 @@ export interface AiThreadState {
 
 export interface ActiveMatchAiState {
   playerIds: string[];
+  mode?: AiMatchMode;
   threads: Record<string, AiThreadState>;
 }
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { setupI18n } from '../lib/i18n';
 import { db, defaultSettings } from '../lib/db';
@@ -111,6 +111,7 @@ function buildActiveMatch(overrides?: Partial<ActiveMatch>): ActiveMatch {
     resolutionStage: 'vote',
     ai: {
       playerIds: ['ai1'],
+      mode: 'full',
       threads: {
         ai1: { messages: [], summary: '' },
       },
@@ -175,6 +176,8 @@ describe('resolution screen AI automation', () => {
       </MemoryRouter>,
     );
 
+    expect(screen.queryByRole('button', { name: /تصويت يدوي بدل ai/i })).not.toBeInTheDocument();
+
     await waitFor(async () => {
       const updated = await db.activeMatch.get('active');
       expect(updated?.voteState?.voterIndex).toBe(1);
@@ -205,6 +208,8 @@ describe('resolution screen AI automation', () => {
         <ResolutionScreen />
       </MemoryRouter>,
     );
+
+    expect(screen.queryByRole('button', { name: /تخمين يدوي بدل ai/i })).not.toBeInTheDocument();
 
     await waitFor(async () => {
       const updated = await db.activeMatch.get('active');

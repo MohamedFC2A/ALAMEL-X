@@ -10,7 +10,7 @@ import { StatusBanner } from '../components/StatusBanner';
 import { PrimaryActionBar } from '../components/PrimaryActionBar';
 import { PhaseIndicator } from '../components/PhaseIndicator';
 import { GameButton } from '../components/GameButton';
-import type { Player } from '../types';
+import type { AiMatchMode, Player } from '../types';
 
 function recommendedSpyCount(playerCount: number): 1 | 2 {
   return playerCount >= 7 ? 2 : 1;
@@ -23,6 +23,7 @@ export function PlaySetupScreen() {
   const settings = useLiveQuery(() => db.settings.get('global'), []);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [spyCountOverride, setSpyCountOverride] = useState<1 | 2 | null>(null);
+  const [aiMatchMode, setAiMatchMode] = useState<AiMatchMode>('full');
   const [playerPage, setPlayerPage] = useState(0);
   const [errorKey, setErrorKey] = useState<string>('');
   const [usageSummary, setUsageSummary] = useState<{ used: number; total: number }>({ used: 0, total: 0 });
@@ -89,7 +90,9 @@ export function PlaySetupScreen() {
     setErrorKey('');
 
     try {
-      await startMatch(selectedPlayers, spyCount);
+      await startMatch(selectedPlayers, spyCount, {
+        aiMode: hasAiSelected ? aiMatchMode : 'full',
+      });
       navigate('/play/reveal');
     } catch (error) {
       if (error instanceof Error && error.message === 'WORD_EXHAUSTED') {
@@ -150,6 +153,29 @@ export function PlaySetupScreen() {
         </StatusBanner>
       ) : hasAiSelected ? (
         <StatusBanner tone="warning">{t('aiInternetHint')}</StatusBanner>
+      ) : null}
+
+      {hasAiSelected ? (
+        <section className="glass-card spy-count-panel section-card cinematic-panel toggle-panel">
+          <p>{t('aiMatchModeLabel')}</p>
+          <div className="pill-row" role="group" aria-label={t('aiMatchModeLabel')}>
+            <button
+              type="button"
+              className={`pill-btn ${aiMatchMode === 'full' ? 'active' : ''}`}
+              onClick={() => setAiMatchMode('full')}
+            >
+              {t('aiModeFullGameplay')}
+            </button>
+            <button
+              type="button"
+              className={`pill-btn ${aiMatchMode === 'vote_only' ? 'active' : ''}`}
+              onClick={() => setAiMatchMode('vote_only')}
+            >
+              {t('aiModeVoteOnly')}
+            </button>
+          </div>
+          <p className="subtle">{t('aiMatchModeHint')}</p>
+        </section>
       ) : null}
 
       <section className="player-select-grid compact panel-grid section-card">

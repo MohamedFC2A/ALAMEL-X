@@ -52,7 +52,20 @@ function installRuntimeErrorNoiseFilter() {
   );
 }
 
+/* ═══ Boot Loader Removal ═══ */
+function removeBootLoader() {
+  const loader = document.getElementById('boot-loader');
+  if (!loader) return;
+  loader.setAttribute('data-removing', '');
+  setTimeout(() => loader.remove(), 420);
+}
+
+const BOOT_FALLBACK_MS = 8000;
+
 async function bootstrap() {
+  // Safety fallback: remove boot loader after 8s no matter what
+  const fallback = setTimeout(removeBootLoader, BOOT_FALLBACK_MS);
+
   await setupI18n('ar');
   installRuntimeErrorNoiseFilter();
 
@@ -69,6 +82,14 @@ async function bootstrap() {
       <App />
     </StrictMode>,
   );
+
+  // Wait for first paint then remove boot loader
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      clearTimeout(fallback);
+      removeBootLoader();
+    });
+  });
 }
 
 void bootstrap();

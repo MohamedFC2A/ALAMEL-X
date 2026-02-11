@@ -631,3 +631,30 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
   - simulation directives on/off behavior
   - phase coverage (directed question, vote, guess)
   - runtime strict disable when mode is not Ultra.
+## Progress Log
+- Replaced player enable/disable flow with smooth delete flow in `PlayersScreen`.
+- Added repository guard `deletePlayer()` to block deleting players participating in an active match.
+- Added in-round AI mode selection in setup: `full` vs `vote_only` and persisted mode into `activeMatch.ai.mode`.
+- Wired discussion behavior to AI mode:
+  - `full`: orchestrator + AI desk remain active.
+  - `vote_only`: no discussion interventions, clear status banner shown.
+- Removed manual override paths for AI vote/guess in `ResolutionScreen`; AI now handles its own voting/guessing end-to-end.
+- Enhanced spy reveal hero UI so `أنت الجاسوس` is larger and centered, with category displayed clearly below.
+- Added/updated i18n copy for delete flow and AI mode labels/hints.
+- Added tests:
+  - `src/lib/game-repository.players.test.ts` (delete rules + active-match guard).
+  - `src/screens/DiscussionScreen.ai.test.tsx` vote-only mode behavior.
+  - `src/screens/ResolutionScreen.ai.test.tsx` manual AI override buttons are removed.
+
+## Validation Update (AI Mode + Delete + Reveal Hero)
+- `npm run lint`: pass with existing React Hook dependency warnings in `src/screens/ResolutionScreen.tsx` (warnings only, no errors).
+- `npm run test`: pass (61 tests).
+- `npm run build`: pass (PWA build complete).
+- Playwright visual loop (develop-web-game skill client) run on local dev server:
+  - `output/web-game/after-ai-mode-home/shot-0.png`
+  - `output/web-game/after-ai-mode-players/shot-0.png`
+  - State payloads confirm routes and no runtime console-error artifacts were emitted.
+
+## Remaining TODOs / Suggestions
+- Optional cleanup: convert `formatAiError`, `submitBallotWithPick`, and `submitGuess` in `ResolutionScreen` to `useCallback` to silence hook-dependency warnings.
+- Optional UX pass: add explicit per-player delete icon variant on very small screens to reduce button width in crowded rows.
