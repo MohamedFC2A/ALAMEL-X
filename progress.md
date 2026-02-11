@@ -689,3 +689,43 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 ## Remaining TODOs / Suggestions
 - Optional cleanup: wrap `formatAiError`, `submitBallotWithPick`, and `submitGuess` in `ResolutionScreen` with `useCallback` to clear lint warnings.
 - Optional Playwright expansion: seed an in-browser active match before capture to produce direct gameplay-phase screenshots (reveal/discussion/resolution with live round state) in one end-to-end run.
+## Progress Log
+- Added `src/lib/ui-self-heal.ts`: weighted UI diagnostics engine (viewport, overflow, header crowding, reduced-motion preference) with safe patch composer for `uiScale`, `uiDensity`, `animationSpeed`, and `reducedMotionMode`.
+- Extended global settings model with UI self-heal metadata:
+  - `uiAutoFixEnabled`
+  - `uiSelfHealScore`
+  - `uiSelfHealLastRunAt`
+- Hardened settings normalization in `src/lib/db.ts` by clamping critical ranges (ui scale/speed, discussion/guess timings, AI pacing thresholds).
+- Wired adaptive viewport resilience in `src/App.tsx`:
+  - runtime `--app-height` sync from `visualViewport` / `innerHeight`
+  - automatic self-heal pass on resize when auto-fix is enabled
+- Added a new Settings UI control block for self-heal:
+  - auto-fix toggle
+  - manual "Run self-heal now" action
+  - persisted health score/last-run display
+  - DeepSeek-based short UX insight (fallback-safe when unavailable)
+- Added localization keys for self-heal UX/status in `src/lib/i18n.ts`.
+
+## Added Tests
+- `src/lib/ui-self-heal.test.ts`:
+  - narrow viewport patch behavior
+  - reduced-motion preference behavior
+  - healthy layout no-op behavior
+- `src/screens/SettingsScreen.self-heal.test.tsx`:
+  - manual self-heal action persists compact patch and score metadata
+- Extended `src/lib/db.test.ts` with normalization clamp coverage.
+
+## Validation Update (UI Self-Heal + DeepSeek Insight)
+- `npm run lint`: pass (no warnings).
+- `npm run test`: pass (18 files, 76 tests).
+- `npm run build`: pass.
+- Ran develop-web-game Playwright skill smoke passes and produced fresh artifacts:
+  - `output/web-game/uiheal-home`
+  - `output/web-game/uiheal-players`
+  - `output/web-game/uiheal-settings`
+  - `output/web-game/uiheal-setup`
+  - `output/web-game/uiheal-reveal`
+  - `output/web-game/uiheal-discussion`
+  - `output/web-game/uiheal-resolution`
+  - `output/web-game/uiheal-summary`
+- Verified no `errors-*.json` artifacts were emitted in these runs.

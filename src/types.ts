@@ -109,6 +109,9 @@ export interface GlobalSettings {
   id: 'global';
   uiScale: number;
   animationSpeed: number;
+  uiAutoFixEnabled: boolean;
+  uiSelfHealScore?: number;
+  uiSelfHealLastRunAt?: number;
   reducedMotionMode: boolean;
   contrastPreset: ContrastPreset;
   uiDensity: UiDensity;

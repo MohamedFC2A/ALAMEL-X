@@ -14,6 +14,8 @@ import { SummaryScreen } from './screens/SummaryScreen';
 import { db, ensureSettings } from './lib/db';
 import { applyDocumentLanguage } from './lib/i18n';
 import { installClockDebugHooks } from './lib/clock';
+import { updateGlobalSettings } from './lib/game-repository';
+import { analyzeUiHealth, collectUiDiagnosticsContext, hasUiSelfHealPatch } from './lib/ui-self-heal';
 import { LoadingProvider, useLoading } from './components/loading-controller';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import type { GlobalSettings } from './types';
@@ -46,6 +48,8 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
   const { i18n } = useTranslation();
   const location = useLocation();
   const activeMatch = useLiveQuery(() => db.activeMatch.get('active'), []);
+  const resizeHealTimerRef = useRef<number | null>(null);
+  const autoHealBusyRef = useRef(false);
 
   useEffect(() => {
     if (!settings) {
@@ -66,6 +70,75 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
 
     applyDocumentLanguage(settings.language);
   }, [activeMatch, i18n, settings]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const applyAppHeight = () => {
+      const nextHeight = Math.max(480, Math.round(window.visualViewport?.height ?? window.innerHeight));
+      root.style.setProperty('--app-height', `${nextHeight}px`);
+    };
+
+    applyAppHeight();
+    window.addEventListener('resize', applyAppHeight, { passive: true });
+    window.visualViewport?.addEventListener('resize', applyAppHeight);
+    return () => {
+      window.removeEventListener('resize', applyAppHeight);
+      window.visualViewport?.removeEventListener('resize', applyAppHeight);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!settings?.uiAutoFixEnabled) {
+      return;
+    }
+
+    const runAutoHeal = async () => {
+      if (autoHealBusyRef.current) {
+        return;
+      }
+      autoHealBusyRef.current = true;
+      try {
+        const context = collectUiDiagnosticsContext();
+        const { patch } = analyzeUiHealth(settings, context);
+        if (!hasUiSelfHealPatch(patch)) {
+          return;
+        }
+        await updateGlobalSettings(patch);
+      } finally {
+        autoHealBusyRef.current = false;
+      }
+    };
+
+    const scheduleAutoHeal = () => {
+      if (resizeHealTimerRef.current !== null) {
+        window.clearTimeout(resizeHealTimerRef.current);
+      }
+      resizeHealTimerRef.current = window.setTimeout(() => {
+        void runAutoHeal();
+      }, 260);
+    };
+
+    scheduleAutoHeal();
+    window.addEventListener('resize', scheduleAutoHeal, { passive: true });
+    window.visualViewport?.addEventListener('resize', scheduleAutoHeal);
+
+    return () => {
+      window.removeEventListener('resize', scheduleAutoHeal);
+      window.visualViewport?.removeEventListener('resize', scheduleAutoHeal);
+      if (resizeHealTimerRef.current !== null) {
+        window.clearTimeout(resizeHealTimerRef.current);
+        resizeHealTimerRef.current = null;
+      }
+    };
+  }, [
+    settings,
+    settings?.uiAutoFixEnabled,
+    settings?.uiScale,
+    settings?.uiDensity,
+    settings?.animationSpeed,
+    settings?.reducedMotionMode,
+  ]);
 
   useEffect(() => {
     window.render_game_to_text = () =>

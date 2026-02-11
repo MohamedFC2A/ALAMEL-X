@@ -6,11 +6,26 @@ import { db, ensureSettings } from '../lib/db';
 import { updateGlobalSettings } from '../lib/game-repository';
 import { chatComplete, DeepSeekError } from '../lib/ai/deepseek-client';
 import { ElevenError, speakWithEleven } from '../lib/ai/eleven-client';
+import {
+  analyzeUiHealth,
+  buildUiAuditPrompt,
+  buildUiSelfHealSummary,
+  collectUiDiagnosticsContext,
+  hasUiSelfHealPatch,
+} from '../lib/ui-self-heal';
 import { ScreenScaffold } from '../components/ScreenScaffold';
 import { GameButton } from '../components/GameButton';
 import { StatusBanner } from '../components/StatusBanner';
 import { usePWAUpdate } from '../hooks/usePWAUpdate';
-import type { AiHumanMode, AiReplyLength, ContrastPreset, HintMode, UiDensity, WordDifficulty } from '../types';
+import type {
+  AiHumanMode,
+  AiReplyLength,
+  ContrastPreset,
+  GlobalSettings,
+  HintMode,
+  UiDensity,
+  WordDifficulty,
+} from '../types';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date';
 type AsyncStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -72,6 +87,9 @@ export function SettingsScreen() {
   const [elevenMessage, setElevenMessage] = useState('');
   const [elevenVoiceTestStatus, setElevenVoiceTestStatus] = useState<AsyncStatus>('idle');
   const [elevenVoiceTestMessage, setElevenVoiceTestMessage] = useState('');
+  const [selfHealStatus, setSelfHealStatus] = useState<AsyncStatus>('idle');
+  const [selfHealMessage, setSelfHealMessage] = useState('');
+  const [selfHealTone, setSelfHealTone] = useState<'default' | 'success' | 'warning' | 'danger'>('default');
   const { needRefresh, updateServiceWorker } = usePWAUpdate();
 
   useEffect(() => {
@@ -254,6 +272,93 @@ export function SettingsScreen() {
     }
   }, [fetchElevenHealth, settings, t]);
 
+  const describePatch = useCallback(
+    (patch: Partial<GlobalSettings>): string[] => {
+      const changes: string[] = [];
+      if (patch.uiScale !== undefined) {
+        changes.push(`${t('uiScale')}: ${patch.uiScale.toFixed(2)}x`);
+      }
+      if (patch.uiDensity) {
+        changes.push(`${t('uiDensity')}: ${patch.uiDensity === 'compact' ? t('densityCompact') : t('densityComfortable')}`);
+      }
+      if (patch.animationSpeed !== undefined) {
+        changes.push(`${t('animationSpeed')}: ${patch.animationSpeed.toFixed(2)}x`);
+      }
+      if (patch.reducedMotionMode !== undefined) {
+        changes.push(`${t('reducedMotion')}: ${patch.reducedMotionMode ? t('on') : t('off')}`);
+      }
+      return changes;
+    },
+    [t],
+  );
+
+  const runUiSelfHeal = useCallback(async () => {
+    if (!settings) {
+      return;
+    }
+
+    setSelfHealStatus('testing');
+    setSelfHealMessage('');
+    setSelfHealTone('default');
+
+    const context = collectUiDiagnosticsContext();
+    const result = analyzeUiHealth(settings, context);
+    const changes = describePatch(result.patch);
+    const tone: 'success' | 'warning' | 'danger' =
+      result.report.score >= 85 ? 'success' : result.report.score >= 65 ? 'warning' : 'danger';
+
+    const persistedPatch: Partial<GlobalSettings> = {
+      ...result.patch,
+      uiSelfHealScore: result.report.score,
+      uiSelfHealLastRunAt: result.report.checkedAt,
+    };
+
+    try {
+      if (hasUiSelfHealPatch(result.patch) || settings.uiSelfHealScore !== result.report.score) {
+        await updateGlobalSettings(persistedPatch);
+      }
+
+      let message = `${t('uiSelfHealDone', { score: result.report.score })}\n`;
+      message += changes.length
+        ? `${t('uiSelfHealApplied')}: ${changes.join(' | ')}`
+        : t('uiSelfHealNoChanges');
+
+      if (settings.aiEnabled) {
+        try {
+          const insight = await chatComplete({
+            model: settings.aiModel,
+            messages: [
+              { role: 'system', content: 'You are a senior mobile UI engineer. Keep response concise.' },
+              { role: 'user', content: buildUiAuditPrompt(result.report) },
+            ],
+            temperature: 0.2,
+            maxTokens: 180,
+            timeoutMs: 10_000,
+          });
+          if (insight.trim()) {
+            message += `\n${t('uiSelfHealAiInsight')}: ${insight.trim()}`;
+          }
+        } catch {
+          message += `\n${t('uiSelfHealAiInsightUnavailable')}`;
+        }
+      }
+
+      setSelfHealTone(tone);
+      setSelfHealStatus('success');
+      setSelfHealMessage(`${message}\n${buildUiSelfHealSummary(result)}`);
+    } catch (error) {
+      setSelfHealStatus('error');
+      setSelfHealTone('danger');
+      if (error instanceof DeepSeekError) {
+        setSelfHealMessage(error.message || t('uiSelfHealFail'));
+      } else if (error instanceof Error) {
+        setSelfHealMessage(error.message || t('uiSelfHealFail'));
+      } else {
+        setSelfHealMessage(t('uiSelfHealFail'));
+      }
+    }
+  }, [describePatch, settings, t]);
+
   if (!settings) {
     return null;
   }
@@ -394,6 +499,46 @@ export function SettingsScreen() {
               <option value="compact">{t('densityCompact')}</option>
             </select>
           </label>
+        </div>
+
+        <div className="glass-card setting-card cinematic-panel section-card">
+          <label className="switch-row">
+            <span>{t('uiAutoFixEnabled')}</span>
+            <input
+              type="checkbox"
+              checked={settings.uiAutoFixEnabled}
+              onChange={(event) => void updateGlobalSettings({ uiAutoFixEnabled: event.target.checked })}
+            />
+          </label>
+          <p className="subtle">{t('uiAutoFixHint')}</p>
+          <div className="actions-row">
+            <GameButton
+              variant="primary"
+              size="md"
+              onClick={() => void runUiSelfHeal()}
+              disabled={selfHealStatus === 'testing'}
+            >
+              {selfHealStatus === 'testing' ? t('uiSelfHealRunning') : t('uiSelfHealRun')}
+            </GameButton>
+          </div>
+          {settings.uiSelfHealLastRunAt ? (
+            <StatusBanner>
+              {t('uiSelfHealLastRun', {
+                score: settings.uiSelfHealScore ?? 0,
+                time: new Date(settings.uiSelfHealLastRunAt).toLocaleString('ar'),
+              })}
+            </StatusBanner>
+          ) : null}
+          {selfHealStatus !== 'idle' ? (
+            <StatusBanner tone={selfHealStatus === 'error' ? 'danger' : selfHealTone}>
+              {selfHealMessage ||
+                (selfHealStatus === 'success'
+                  ? t('uiSelfHealDone', { score: settings.uiSelfHealScore ?? 0 })
+                  : selfHealStatus === 'testing'
+                    ? t('uiSelfHealRunning')
+                    : t('uiSelfHealFail'))}
+            </StatusBanner>
+          ) : null}
         </div>
       </section>
 

@@ -14,6 +14,9 @@ export const defaultSettings: GlobalSettings = {
   id: 'global',
   uiScale: 1,
   animationSpeed: 1,
+  uiAutoFixEnabled: true,
+  uiSelfHealScore: 100,
+  uiSelfHealLastRunAt: undefined,
   reducedMotionMode: false,
   contrastPreset: 'normal',
   uiDensity: 'comfortable',
@@ -71,6 +74,13 @@ function normalizeAdaptiveStats(input: GlobalSettings['aiAdaptiveStats'] | undef
   };
 }
 
+function normalizeNumber(value: unknown, fallback: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.max(min, Math.min(max, Number(value)));
+}
+
 export function normalizeGlobalSettings(input: GlobalSettings): GlobalSettings {
   const normalized: GlobalSettings = {
     ...input,
@@ -79,6 +89,19 @@ export function normalizeGlobalSettings(input: GlobalSettings): GlobalSettings {
     language: 'ar',
     aiVoiceProvider: 'elevenlabs',
     pendingLanguage: undefined,
+    uiScale: Number(normalizeNumber(input.uiScale, defaultSettings.uiScale, 0.85, 1.2).toFixed(2)),
+    animationSpeed: Number(normalizeNumber(input.animationSpeed, defaultSettings.animationSpeed, 0.5, 1.5).toFixed(2)),
+    uiAutoFixEnabled: Boolean(input.uiAutoFixEnabled),
+    uiSelfHealScore: Number.isFinite(input.uiSelfHealScore)
+      ? Math.max(0, Math.min(100, Math.round(input.uiSelfHealScore as number)))
+      : undefined,
+    uiSelfHealLastRunAt: Number.isFinite(input.uiSelfHealLastRunAt) ? Math.max(0, Number(input.uiSelfHealLastRunAt)) : undefined,
+    discussionMinutes: Math.round(normalizeNumber(input.discussionMinutes, defaultSettings.discussionMinutes, 2, 6)),
+    guessSeconds: Math.round(normalizeNumber(input.guessSeconds, defaultSettings.guessSeconds, 15, 60)),
+    aiInitiativeLevel: Math.round(normalizeNumber(input.aiInitiativeLevel, defaultSettings.aiInitiativeLevel, 0, 100)),
+    aiMemoryDepth: Math.round(normalizeNumber(input.aiMemoryDepth, defaultSettings.aiMemoryDepth, 8, 24)),
+    aiSilenceThresholdMs: Math.round(normalizeNumber(input.aiSilenceThresholdMs, defaultSettings.aiSilenceThresholdMs, 3000, 12000)),
+    aiInterventionRestMs: Math.round(normalizeNumber(input.aiInterventionRestMs, defaultSettings.aiInterventionRestMs, 4000, 20000)),
     aiAdaptiveStats: normalizeAdaptiveStats(input.aiAdaptiveStats),
   };
 
