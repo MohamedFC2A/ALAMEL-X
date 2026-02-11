@@ -42,6 +42,7 @@ const translation = {
   citizenWins: 'مرات فوز المواطنين',
   settings: 'الإعدادات',
   uiScale: 'حجم الواجهة',
+  uiScaleAutoHint: 'يتم ضبط الحجم تلقائيًا حسب نوع الشاشة والمقاس الحالي ({{width}}×{{height}}).',
   animationSpeed: 'سرعة الحركة',
   sound: 'الصوت',
   gameSettings: 'إعدادات اللعب',

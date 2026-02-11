@@ -753,3 +753,39 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
   - `src/screens/ResolutionScreen.test.tsx`
   - `src/screens/ResolutionScreen.ai.test.tsx`
   - `src/screens/SummaryScreen.ai-awards.test.tsx`
+## Progress Log
+- Implemented mobile haptics hardening for reveal hold in `src/lib/ui-feedback.ts`:
+  - stronger progressive vibration buckets for coarse-pointer devices,
+  - start/complete pulse patterns tuned for phones,
+  - reduced-motion aware cadence retained.
+- Improved reveal hold pointer behavior in `src/screens/RevealScreen.tsx`:
+  - `onPointerLeave` now only cancels hold for mouse pointers,
+  - touch interactions remain stable on mobile.
+- Upgraded reveal mask touch behavior in `src/styles/components.css` by using `touch-action: none` to prevent gesture interference during hold-to-reveal.
+- Removed manual UI scale slider from settings in `src/screens/settings/DisplaySettingsSection.tsx` and replaced it with Auto scale diagnostics text.
+- Added smart Auto UI scale resolver in `src/lib/ui-self-heal.ts` and wired runtime usage in `src/App.tsx` so scale adapts to viewport/device characteristics.
+- Added i18n copy key `uiScaleAutoHint` for auto-scale explanation in settings.
+- Rebalanced setup layout weights in `src/screens/PlaySetupScreen.tsx` + `src/styles/components.css`:
+  - stronger priority styling for top metric chips (selected/spies),
+  - wider + clearer spy-count panel header and segmented choice pills,
+  - improved `ابدأ الجولة` bar/card balance with dedicated setup action styling,
+  - mobile behavior keeps setup action bar non-sticky to avoid awkward overlap.
+- Added unit coverage for Auto UI scale in `src/lib/ui-self-heal.test.ts`.
+
+## Validation Update (Mobile Haptics + Setup Weight + Auto Scale)
+- `npm run lint`: pass.
+- `npm run test`: pass (20 files, 85 tests).
+- `npm run build`: pass.
+- develop-web-game Playwright script runs completed with fresh artifacts:
+  - `output/web-game/ux-autoscale-settings`
+  - `output/web-game/ux-autoscale-home`
+  - `output/web-game/ux-autoscale-setup`
+- No `errors-*.json` emitted in these artifact folders.
+- Additional interactive Playwright validation covered:
+  - `/play/setup` structure after selecting players,
+  - round start navigation to reveal/discussion flow,
+  - mobile viewport checks (`390x844`).
+
+## Remaining TODOs / Suggestions
+- If you want iOS-specific stronger tactile feedback, consider adding a native wrapper (Capacitor) because Safari web vibration support is limited by platform policy.
+- Optional: add a dedicated visual regression snapshot test for `/play/setup` with seeded selected players to lock the new panel proportions.

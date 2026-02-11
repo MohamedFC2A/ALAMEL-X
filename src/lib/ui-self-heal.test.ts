@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings } from './db';
-import { analyzeUiHealth } from './ui-self-heal';
+import { analyzeUiHealth, resolveAutoUiScale } from './ui-self-heal';
 
 describe('ui self-heal diagnostics', () => {
   it('suggests compact layout and smaller scale on very narrow screens', () => {
@@ -84,5 +84,33 @@ describe('ui self-heal diagnostics', () => {
     expect(result.report.issues.some((issue) => issue.code === 'action-bar-overlap')).toBe(true);
     expect(result.patch.uiDensity).toBe('compact');
     expect(result.patch.uiScale).toBeLessThan(1);
+  });
+
+  it('computes lower auto scale for narrow high-density phones', () => {
+    const autoScale = resolveAutoUiScale(
+      {
+        viewportWidth: 360,
+        viewportHeight: 640,
+        devicePixelRatio: 3,
+      },
+      defaultSettings,
+    );
+
+    expect(autoScale).toBeLessThan(1);
+    expect(autoScale).toBeGreaterThan(0.84);
+  });
+
+  it('computes slightly larger auto scale for wide desktop layouts', () => {
+    const autoScale = resolveAutoUiScale(
+      {
+        viewportWidth: 1366,
+        viewportHeight: 768,
+        devicePixelRatio: 1,
+      },
+      defaultSettings,
+    );
+
+    expect(autoScale).toBeGreaterThan(1);
+    expect(autoScale).toBeLessThanOrEqual(1.12);
   });
 });

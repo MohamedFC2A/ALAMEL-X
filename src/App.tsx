@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,7 @@ import {
   analyzeUiHealth,
   buildUiSelfHealPersistedPatch,
   collectUiDiagnosticsContext,
+  resolveAutoUiScale,
   shouldPersistUiSelfHeal,
 } from './lib/ui-self-heal';
 import { serializeUiDiagnosticsSnapshot } from './lib/ui-debugger';
@@ -73,6 +74,18 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
   const lastAutoHealSignatureRef = useRef('');
   const lastAutoHealAtRef = useRef(0);
   const routeAudioRef = useRef(location.pathname);
+  const [viewportScaleInput, setViewportScaleInput] = useState(() => ({
+    viewportWidth: 390,
+    viewportHeight: 780,
+    devicePixelRatio: 1,
+  }));
+
+  const effectiveUiScale = useMemo(() => {
+    if (!settings) {
+      return 1;
+    }
+    return resolveAutoUiScale(viewportScaleInput, settings);
+  }, [settings, viewportScaleInput]);
 
   useEffect(() => {
     if (!settings) {
@@ -80,7 +93,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     }
 
     const root = document.documentElement;
-    root.style.setProperty('--ui-scale', settings.uiScale.toString());
+    root.style.setProperty('--ui-scale', effectiveUiScale.toString());
     root.style.setProperty('--anim-speed', settings.reducedMotionMode ? '0' : settings.animationSpeed.toString());
     root.setAttribute('data-theme', settings.theme);
     root.setAttribute('data-contrast', settings.contrastPreset);
@@ -94,7 +107,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     }
 
     applyDocumentLanguage(settings.language);
-  }, [i18n, settings]);
+  }, [effectiveUiScale, i18n, settings]);
 
   useEffect(() => {
     if (routeAudioRef.current === location.pathname) {
@@ -110,6 +123,11 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     const applyAppHeight = () => {
       const nextHeight = Math.max(480, Math.round(window.visualViewport?.height ?? window.innerHeight));
       root.style.setProperty('--app-height', `${nextHeight}px`);
+      setViewportScaleInput({
+        viewportWidth: Math.max(280, Math.round(window.innerWidth || root.clientWidth || 390)),
+        viewportHeight: nextHeight,
+        devicePixelRatio: window.devicePixelRatio || 1,
+      });
     };
 
     applyAppHeight();

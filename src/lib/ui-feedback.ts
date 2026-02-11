@@ -98,6 +98,13 @@ const state = {
   lastRevealHapticAt: 0,
 };
 
+function isCoarsePointerDevice(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
 function canUseAudioApi() {
   if (typeof window === 'undefined') {
     return false;
@@ -214,12 +221,16 @@ export function beginRevealHoldFeedback(): void {
   state.revealBucket = -1;
   state.lastRevealHapticAt = 0;
   playUiFeedback('reveal-start');
+  if (canUseHaptics() && isCoarsePointerDevice() && !state.config.reducedMotionMode) {
+    navigator.vibrate([14, 18, 18]);
+    return;
+  }
   vibrateTap('normal');
 }
 
 export function updateRevealHoldFeedback(progress: number): void {
   const normalized = Math.max(0, Math.min(1, progress));
-  const bucket = Math.floor(normalized * 18);
+  const bucket = Math.floor(normalized * 24);
   if (bucket <= state.revealBucket) {
     return;
   }
@@ -228,26 +239,31 @@ export function updateRevealHoldFeedback(progress: number): void {
   playUiFeedback('reveal-tick', 0.72 + normalized * 0.9);
 
   if (canUseHaptics()) {
+    const coarsePointer = isCoarsePointerDevice();
     const now = Date.now();
-    const minGap = state.config.reducedMotionMode ? 95 : 70;
+    const minGap = state.config.reducedMotionMode ? 90 : coarsePointer ? 52 : 66;
     if (now - state.lastRevealHapticAt < minGap && normalized < 0.92) {
       return;
     }
     state.lastRevealHapticAt = now;
 
-    const motionMultiplier = state.config.reducedMotionMode ? 0.6 : 1;
+    const motionMultiplier = state.config.reducedMotionMode ? 0.62 : coarsePointer ? 1.1 : 1;
     const eased = normalized ** 1.45;
     const basePulse = Math.round((8 + eased * 24) * motionMultiplier);
-    const pulseA = Math.max(5, Math.min(34, basePulse));
-    const pulseB = Math.max(6, Math.min(40, pulseA + Math.round(2 + normalized * 7)));
-    const gap = Math.max(9, Math.round((24 - normalized * 12) * motionMultiplier));
+    const pulseA = Math.max(6, Math.min(38, basePulse));
+    const pulseB = Math.max(7, Math.min(44, pulseA + Math.round(2 + normalized * 9)));
+    const pulseC = Math.max(8, Math.min(48, pulseB + Math.round(2 + normalized * 7)));
+    const pulseD = Math.max(9, Math.min(54, pulseC + 5));
+    const gap = Math.max(7, Math.round((22 - normalized * 12) * motionMultiplier));
 
-    if (normalized < 0.4) {
+    if (normalized < 0.28) {
       vibratePulse(pulseA);
-    } else if (normalized < 0.82) {
+    } else if (normalized < 0.68) {
       navigator.vibrate([pulseA, gap, pulseB]);
+    } else if (normalized < 0.9) {
+      navigator.vibrate([pulseA, gap, pulseB, Math.max(6, gap - 2), pulseC]);
     } else {
-      navigator.vibrate([pulseA, gap, pulseB, Math.max(8, gap - 2), Math.min(44, pulseB + 8)]);
+      navigator.vibrate([pulseA, gap, pulseB, Math.max(6, gap - 2), pulseC, Math.max(5, gap - 3), pulseD]);
     }
   }
 }
@@ -257,6 +273,8 @@ export function completeRevealHoldFeedback(): void {
   if (canUseHaptics()) {
     if (state.config.reducedMotionMode) {
       navigator.vibrate([10, 16, 14, 18, 18]);
+    } else if (isCoarsePointerDevice()) {
+      navigator.vibrate([18, 14, 26, 14, 34, 16, 44]);
     } else {
       navigator.vibrate([16, 14, 24, 16, 30, 18, 40]);
     }

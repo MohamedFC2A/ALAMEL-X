@@ -374,6 +374,13 @@ export function RevealScreen() {
     resetHoldOnly();
   }
 
+  function handleHoldLeave(event: React.PointerEvent<HTMLButtonElement>) {
+    if (event.pointerType !== 'mouse') {
+      return;
+    }
+    handleHoldEnd(event);
+  }
+
   async function goNext() {
     if (!canMoveNext) {
       return;
@@ -499,7 +506,7 @@ export function RevealScreen() {
                 data-sfx="off"
                 onPointerDown={handleHoldStart}
                 onPointerUp={handleHoldEnd}
-                onPointerLeave={handleHoldEnd}
+                onPointerLeave={handleHoldLeave}
                 onPointerCancel={handleHoldEnd}
                 onContextMenu={(event) => event.preventDefault()}
                 onDragStart={(event) => event.preventDefault()}

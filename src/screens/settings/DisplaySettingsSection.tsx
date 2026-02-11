@@ -1,8 +1,10 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ContrastPreset, GlobalSettings, UiDensity } from '../../types';
 import { updateGlobalSettings } from '../../lib/game-repository';
 import { GameButton } from '../../components/GameButton';
 import { StatusBanner } from '../../components/StatusBanner';
+import { collectUiDiagnosticsContext, resolveAutoUiScale } from '../../lib/ui-self-heal';
 import type { AsyncStatus, BannerTone } from './types';
 
 interface DisplaySettingsSectionProps {
@@ -22,6 +24,25 @@ export function DisplaySettingsSection({
 }: DisplaySettingsSectionProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'ar' ? 'ar-EG' : 'en-US';
+  const [uiContext, setUiContext] = useState(() => collectUiDiagnosticsContext());
+
+  useEffect(() => {
+    const refreshContext = () => {
+      setUiContext(collectUiDiagnosticsContext());
+    };
+    refreshContext();
+    window.addEventListener('resize', refreshContext, { passive: true });
+    window.visualViewport?.addEventListener('resize', refreshContext);
+    return () => {
+      window.removeEventListener('resize', refreshContext);
+      window.visualViewport?.removeEventListener('resize', refreshContext);
+    };
+  }, []);
+
+  const autoUiScale = useMemo(
+    () => resolveAutoUiScale(uiContext, settings),
+    [settings, uiContext],
+  );
 
   return (
     <section className="stack-list settings-section">
@@ -31,17 +52,12 @@ export function DisplaySettingsSection({
       </div>
 
       <div className="glass-card setting-card cinematic-panel section-card">
-        <label className="form-field">
-          <span>{t('uiScale')} ({settings.uiScale.toFixed(2)}x)</span>
-          <input
-            type="range"
-            min={0.85}
-            max={1.2}
-            step={0.05}
-            value={settings.uiScale}
-            onChange={(event) => void updateGlobalSettings({ uiScale: Number(event.target.value) })}
-          />
-        </label>
+        <div className="form-field">
+          <span>{t('uiScale')} ({autoUiScale.toFixed(2)}x · Auto)</span>
+          <p className="subtle">
+            {t('uiScaleAutoHint', { width: uiContext.viewportWidth, height: uiContext.viewportHeight })}
+          </p>
+        </div>
       </div>
 
       <div className="glass-card setting-card cinematic-panel section-card">

@@ -124,11 +124,11 @@ export function PlaySetupScreen() {
       <PhaseIndicator current={1} labels={[t('phaseSetup'), t('phaseReveal'), t('phaseTalk'), t('phaseResolve')]} />
 
       <section className="setup-insights panel-grid glass-card section-card cinematic-panel">
-        <div className="metric-chip">
+        <div className="metric-chip metric-chip--priority">
           <strong>{selectedPlayers.length}</strong>
           <span>{t('selectedCount')}</span>
         </div>
-        <div className="metric-chip">
+        <div className="metric-chip metric-chip--priority">
           <strong>{spyCount}</strong>
           <span>{t('spiesCount')}</span>
         </div>
@@ -232,9 +232,14 @@ export function PlaySetupScreen() {
         </div>
       ) : null}
 
-      <section className="glass-card spy-count-panel section-card cinematic-panel toggle-panel">
-        <p>{t('spiesCount')}</p>
-        <div className="pill-row" role="group" aria-label={t('spiesCount')}>
+      <section className="glass-card spy-count-panel setup-spy-panel section-card cinematic-panel toggle-panel">
+        <div className="setup-spy-panel__header">
+          <p>{t('spiesCount')}</p>
+          <span className="setup-spy-panel__current">
+            {t('selectedCount')}: {spyCount}
+          </span>
+        </div>
+        <div className="pill-row setup-pill-row" role="group" aria-label={t('spiesCount')}>
           <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => setSpyCountOverride(1)}>
             1 {!overridden && recommendedSpyCount(selectedPlayers.length) === 1 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
           </button>
@@ -245,14 +250,20 @@ export function PlaySetupScreen() {
       </section>
 
       <PrimaryActionBar
-        className="sticky-action-bar"
+        className="sticky-action-bar setup-action-bar"
         leading={
-          <span>
+          <span className="setup-action-leading">
             {t('selectedCount')}: {selectedPlayers.length}/10
           </span>
         }
       >
-        <GameButton variant="cta" size="lg" onClick={() => void handleStart()} disabled={selectedPlayers.length < minPlayers || !aiReady}>
+        <GameButton
+          variant="cta"
+          size="lg"
+          className="setup-start-btn"
+          onClick={() => void handleStart()}
+          disabled={selectedPlayers.length < minPlayers || !aiReady}
+        >
           {t('startGame')}
         </GameButton>
         <GameButton variant="ghost" onClick={() => void handleResetWords()}>

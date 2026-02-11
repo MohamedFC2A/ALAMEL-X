@@ -47,6 +47,58 @@ function normalizeAnimSpeed(value: number): number {
   return Number(clamp(value, 0.5, 1.5).toFixed(2));
 }
 
+interface AutoUiScaleInput {
+  viewportWidth: number;
+  viewportHeight: number;
+  devicePixelRatio: number;
+}
+
+export function resolveAutoUiScale(
+  input: AutoUiScaleInput,
+  settings?: Pick<GlobalSettings, 'uiScale' | 'uiDensity'>,
+): number {
+  const viewportWidth = Number.isFinite(input.viewportWidth) ? input.viewportWidth : 390;
+  const viewportHeight = Number.isFinite(input.viewportHeight) ? input.viewportHeight : 780;
+  const devicePixelRatio = Number.isFinite(input.devicePixelRatio) ? input.devicePixelRatio : 1;
+
+  let deviceScale = 1;
+
+  if (viewportWidth <= 320) {
+    deviceScale -= 0.12;
+  } else if (viewportWidth <= 360) {
+    deviceScale -= 0.09;
+  } else if (viewportWidth <= 390) {
+    deviceScale -= 0.055;
+  } else if (viewportWidth <= 430) {
+    deviceScale -= 0.02;
+  } else if (viewportWidth >= 1440) {
+    deviceScale += 0.04;
+  } else if (viewportWidth >= 1024) {
+    deviceScale += 0.02;
+  }
+
+  if (viewportHeight <= 600) {
+    deviceScale -= 0.075;
+  } else if (viewportHeight <= 690) {
+    deviceScale -= 0.045;
+  } else if (viewportHeight >= 920 && viewportWidth >= 430) {
+    deviceScale += 0.02;
+  }
+
+  if (viewportWidth <= 390 && devicePixelRatio >= 3) {
+    deviceScale -= 0.018;
+  } else if (viewportWidth >= 1280 && devicePixelRatio <= 1.2) {
+    deviceScale += 0.012;
+  }
+
+  if (settings?.uiDensity === 'compact') {
+    deviceScale -= 0.01;
+  }
+
+  const baseScale = Number.isFinite(settings?.uiScale) ? (settings?.uiScale ?? 1) : 1;
+  return Number(clamp(baseScale * deviceScale, 0.84, 1.12).toFixed(3));
+}
+
 function createFallbackContext(): UiDiagnosticsContext {
   return {
     viewportWidth: 390,
