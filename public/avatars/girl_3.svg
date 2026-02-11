@@ -1,9 +1,25 @@
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>
-  <rect width='120' height='120' rx='24' fill='#f15bb5'/>
-  <circle cx='60' cy='48' r='26' fill='#ffd6c6'/>
-  <path d='M28 108c4-21 16-34 32-34s28 13 32 34z' fill='#ffd6c6'/>
-  <path d='M33 43c2-18 14-29 27-29 12 0 24 9 27 23-4 8-13 14-27 14-13 0-22-4-27-8z' fill='#a1256f'/>
-  <circle cx='51' cy='50' r='3' fill='#1e1e1e'/>
-  <circle cx='69' cy='50' r='3' fill='#1e1e1e'/>
-  <path d='M52 63c3 3 13 3 16 0' stroke='#6f4a35' stroke-width='3' fill='none' stroke-linecap='round'/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="24" fill="#0e1a24"/>
+  <!-- Hijab -->
+  <path d="M32 50c0-18 12-34 28-34s28 16 28 34c0 10-4 18-10 22v14c-4 4-12 6-18 6s-14-2-18-6V72c-6-4-10-12-10-22z" fill="#1a2a3a" stroke="#4fd1c5" stroke-width="1"/>
+  <!-- Face -->
+  <circle cx="60" cy="48" r="20" fill="#c68b5e"/>
+  <!-- Eyes (sharp, determined) -->
+  <ellipse cx="52" cy="46" rx="3" ry="2.5" fill="#1e1e1e"/>
+  <ellipse cx="68" cy="46" rx="3" ry="2.5" fill="#1e1e1e"/>
+  <circle cx="52" cy="46" r="1" fill="#fff"/>
+  <circle cx="68" cy="46" r="1" fill="#fff"/>
+  <!-- Eyebrows (strong) -->
+  <path d="M46 41l8-2" stroke="#2a1f14" stroke-width="2" stroke-linecap="round"/>
+  <path d="M74 41l-8-2" stroke="#2a1f14" stroke-width="2" stroke-linecap="round"/>
+  <!-- Mouth -->
+  <path d="M54 56c2 2 10 2 12 0" stroke="#8b6b4a" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Body -->
+  <path d="M28 108c4-18 16-28 32-28s28 10 32 28z" fill="#1a2a3a"/>
+  <!-- Hijab pin (star) -->
+  <circle cx="40" cy="56" r="4" fill="#e53e3e"/>
+  <circle cx="40" cy="56" r="2" fill="#ff6b6b"/>
+  <!-- Tactical vest detail -->
+  <line x1="60" y1="82" x2="60" y2="104" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
+  <circle cx="60" cy="86" r="3" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.5"/>
 </svg>

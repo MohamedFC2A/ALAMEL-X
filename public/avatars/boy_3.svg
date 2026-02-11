@@ -1,9 +1,21 @@
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'>
-  <rect width='120' height='120' rx='24' fill='#f2c14e'/>
-  <circle cx='60' cy='48' r='26' fill='#ffe0c2'/>
-  <path d='M28 108c4-21 16-34 32-34s28 13 32 34z' fill='#ffe0c2'/>
-  <path d='M33 43c2-18 14-29 27-29 12 0 24 9 27 23-4 8-13 14-27 14-13 0-22-4-27-8z' fill='#b57c22'/>
-  <circle cx='51' cy='50' r='3' fill='#1e1e1e'/>
-  <circle cx='69' cy='50' r='3' fill='#1e1e1e'/>
-  <path d='M52 63c3 3 13 3 16 0' stroke='#6f4a35' stroke-width='3' fill='none' stroke-linecap='round'/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="24" fill="#0e1a24"/>
+  <!-- Face -->
+  <circle cx="60" cy="46" r="24" fill="#e8c8a0"/>
+  <!-- Hair (slicked back) -->
+  <path d="M36 40c2-17 13-28 24-28s22 11 24 28c-4 2-12 4-24 4s-20-2-24-4z" fill="#3a2a1a"/>
+  <!-- Night vision monocle -->
+  <circle cx="48" cy="44" r="9" fill="#0a1118" stroke="#4fd1c5" stroke-width="2"/>
+  <circle cx="48" cy="44" r="4" fill="#4fd1c5" opacity="0.3"/>
+  <!-- Regular eye -->
+  <circle cx="72" cy="46" r="3" fill="#1e1e1e"/>
+  <circle cx="72" cy="46" r="1.5" fill="#4a3520"/>
+  <!-- Mouth (smirk) -->
+  <path d="M54 59c4 2 12 1 14-1" stroke="#8b6b4a" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Body (spy suit with collar) -->
+  <path d="M28 108c4-21 16-32 32-32s28 11 32 32z" fill="#111d2b"/>
+  <!-- Collar/Lapels -->
+  <path d="M50 76l10 12 10-12" stroke="#4fd1c5" stroke-width="1.5" fill="none" opacity="0.6"/>
+  <!-- Mic wire -->
+  <path d="M36 50c-4 4-6 16-2 30" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.5"/>
 </svg>

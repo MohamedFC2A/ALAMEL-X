@@ -1,11 +1,28 @@
 <svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="192" height="192" rx="96" fill="#0B162A"/>
-  <circle cx="96" cy="96" r="78" fill="#101F3A" stroke="#59C7FF" stroke-width="6"/>
-  <rect x="56" y="72" width="80" height="64" rx="18" fill="#08111F" stroke="#86BCFF" stroke-width="4"/>
-  <circle cx="80" cy="104" r="10" fill="#59C7FF"/>
-  <circle cx="112" cy="104" r="10" fill="#59C7FF"/>
-  <path d="M74 124C80 132 112 132 118 124" stroke="#FF4F6D" stroke-width="6" stroke-linecap="round"/>
-  <path d="M96 44V62" stroke="#86BCFF" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="96" cy="40" r="8" fill="#FF4F6D"/>
+  <!-- Background -->
+  <rect width="192" height="192" rx="96" fill="#0a1118"/>
+  <circle cx="96" cy="96" r="84" fill="#0e1a24" stroke="#4fd1c5" stroke-width="2" stroke-dasharray="6 4"/>
+  <!-- Head/Helmet -->
+  <rect x="52" y="60" width="88" height="72" rx="22" fill="#111d2b" stroke="#4fd1c5" stroke-width="3"/>
+  <!-- Visor -->
+  <rect x="62" y="80" width="68" height="24" rx="12" fill="#0a1118" stroke="#4fd1c5" stroke-width="2"/>
+  <line x1="66" y1="92" x2="126" y2="92" stroke="#4fd1c5" stroke-width="1" stroke-dasharray="3 2" opacity="0.6"/>
+  <!-- Eyes (scanning) -->
+  <circle cx="82" cy="92" r="6" fill="#4fd1c5"/>
+  <circle cx="82" cy="92" r="3" fill="#0a1118"/>
+  <circle cx="110" cy="92" r="6" fill="#4fd1c5"/>
+  <circle cx="110" cy="92" r="3" fill="#0a1118"/>
+  <!-- Antenna -->
+  <line x1="96" y1="40" x2="96" y2="60" stroke="#4fd1c5" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="96" cy="36" r="6" fill="#e53e3e"/>
+  <circle cx="96" cy="36" r="3" fill="#ff6b6b" opacity="0.8"/>
+  <!-- Mouth grid -->
+  <line x1="78" y1="114" x2="114" y2="114" stroke="#4fd1c5" stroke-width="2" opacity="0.4"/>
+  <line x1="82" y1="110" x2="82" y2="118" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
+  <line x1="92" y1="110" x2="92" y2="118" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
+  <line x1="102" y1="110" x2="102" y2="118" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
+  <line x1="112" y1="110" x2="112" y2="118" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
+  <!-- Badge -->
+  <rect x="68" y="136" width="56" height="14" rx="4" fill="#e53e3e" opacity="0.85"/>
+  <text x="96" y="147" text-anchor="middle" fill="#fff" font-size="9" font-family="monospace" font-weight="700">AI AGENT</text>
 </svg>
-
