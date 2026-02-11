@@ -128,6 +128,37 @@ describe('game-repository logic', () => {
     }
   });
 
+  it('prioritizes same-category decoys and only falls back to other categories when needed', () => {
+    const sameCategoryPool = ['ميدان المدينة', 'ميدان السوق', 'ميدان الجامعة', 'ميدان المحطة', 'ميدان النيل'];
+    const otherPool = ['قهوة بلدي', 'محطة وقود', 'مطار', 'مكتبة عامة'];
+    const options = buildGuessOptions(
+      'ar',
+      'ميدان عام',
+      [],
+      [],
+      undefined,
+      sameCategoryPool,
+      otherPool,
+    );
+
+    const decoys = options.filter((item) => normalizeWord(item) !== normalizeWord('ميدان عام'));
+    expect(decoys.every((item) => sameCategoryPool.includes(item))).toBe(true);
+    expect(options).toHaveLength(5);
+    expect(options).toContain('ميدان عام');
+
+    const fallbackOptions = buildGuessOptions(
+      'ar',
+      'ميدان عام',
+      [],
+      [],
+      undefined,
+      ['ميدان المدينة'],
+      otherPool,
+    );
+    const fallbackDecoys = fallbackOptions.filter((item) => normalizeWord(item) !== normalizeWord('ميدان عام'));
+    expect(fallbackDecoys.some((item) => otherPool.includes(item))).toBe(true);
+  });
+
   it('tallies ballots and returns a unique leader when one exists', () => {
     const { counts, leaders } = tallyBallots({
       voterA: 'p1',

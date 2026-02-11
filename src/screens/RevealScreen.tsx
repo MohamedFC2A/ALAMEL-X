@@ -16,6 +16,8 @@ import { useActiveMatch } from '../hooks/useActiveMatch';
 import { formatWordForDisplay } from '../lib/word-format';
 import { clamp } from '../lib/utils';
 import { GameButton } from '../components/GameButton';
+import { PlayerNameplate } from '../components/PlayerNameplate';
+import { RestartRoundButton } from '../components/RestartRoundButton';
 
 type HoldPhase = 'idle' | 'holding' | 'revealed';
 
@@ -46,6 +48,7 @@ export function RevealScreen() {
   const [nextUnlocked, setNextUnlocked] = useState(false);
   const now = useClockNow(120);
   const holdStartedAtRef = useRef(0);
+  const holdDurationRef = useRef(computeHoldDurationMs(0));
   const holdIntervalRef = useRef<number | null>(null);
   const holdFinishTimerRef = useRef<number | null>(null);
   const unlockTimerRef = useRef<number | null>(null);
@@ -315,6 +318,7 @@ export function RevealScreen() {
     event.currentTarget.setPointerCapture?.(event.pointerId);
 
     const holdDuration = computeHoldDurationMs(revealPlayer.accessibility.extraReadMs ?? 0);
+    holdDurationRef.current = holdDuration;
     resetHoldOnly();
     setHoldPhase('holding');
     holdStartedAtRef.current = nowMs();
@@ -342,7 +346,11 @@ export function RevealScreen() {
     if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    if (holdProgressRef.current >= HOLD_RELEASE_THRESHOLD) {
+    const elapsed = nowMs() - holdStartedAtRef.current;
+    const releasedProgress = clamp(elapsed / holdDurationRef.current, 0, 1);
+    holdProgressRef.current = releasedProgress;
+    setHoldProgress(releasedProgress);
+    if (releasedProgress >= HOLD_RELEASE_THRESHOLD) {
       finishReveal();
       return;
     }
@@ -412,12 +420,24 @@ export function RevealScreen() {
       {isAiPlayer ? (
         <section className="glass-card phase-card section-card cinematic-panel ai-skip-card">
           <PlayerAvatar avatarId={revealPlayer.avatarId} alt={revealPlayer.name} size={104} />
+          <PlayerNameplate
+            name={revealPlayer.name}
+            progression={revealPlayer.progression}
+            isAi
+            showMedals
+          />
           <h2>{t('aiRevealSkipping')}</h2>
           <p className="subtle">{t('aiRevealSkipHint')}</p>
         </section>
       ) : currentMatch.revealState.phase === 'handoff' ? (
         <section className="glass-card handoff-card section-card cinematic-panel">
           <PlayerAvatar avatarId={revealPlayer.avatarId} alt={revealPlayer.name} size={104} />
+          <PlayerNameplate
+            name={revealPlayer.name}
+            progression={revealPlayer.progression}
+            isAi={isAiPlayer}
+            showMedals
+          />
           <h2>{t('handoff', { name: revealPlayer.name })}</h2>
           <p className="subtle">{t('handoffSafetyNote')}</p>
           <GameButton variant="cta" size="lg" onClick={() => void goToReveal()}>
@@ -489,15 +509,19 @@ export function RevealScreen() {
 
       {isAiPlayer ? (
         <PrimaryActionBar className="reveal-action-bar">
+          <RestartRoundButton />
           <div className="subtle">{t('aiAutoContinue')}</div>
         </PrimaryActionBar>
       ) : (
         <PrimaryActionBar
           className="reveal-action-bar"
           leading={
-            <GameButton variant="ghost" onClick={() => void goBack()} disabled={currentMatch.revealState.phase === 'handoff'}>
-              {t('back')}
-            </GameButton>
+            <div className="restart-leading-actions">
+              <GameButton variant="ghost" onClick={() => void goBack()} disabled={currentMatch.revealState.phase === 'handoff'}>
+                {t('back')}
+              </GameButton>
+              <RestartRoundButton />
+            </div>
           }
         >
           {currentMatch.revealState.phase === 'reveal' ? (
@@ -515,6 +539,7 @@ export function RevealScreen() {
           )}
         </PrimaryActionBar>
       )}
+      <p className="subtle restart-round-note">{t('restartRoundNote')}</p>
     </ScreenScaffold>
   );
 }

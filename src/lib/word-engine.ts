@@ -34,6 +34,10 @@ export interface WordPick {
   extraDecoy?: WordEntry;
 }
 
+function normalizeDecoyKey(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
 export function chooseBalancedWord(
   words: WordEntry[],
   usage: { wordId: string; category: string; usedAt?: number }[],
@@ -76,14 +80,34 @@ export function chooseBalancedWord(
 
   const selectedCategory = shuffle(leastUsedCategories)[0] ?? categoryCandidates[0][0];
   const categoryWords = availableCategories.get(selectedCategory) ?? [];
-  const chosenWord = shuffle(categoryWords)[0];
+  const chosenWord = shuffle(categoryWords)[0] ?? unusedWords[0];
+  const sameCategoryCandidates = words.filter((word) => word.category === chosenWord.category && word.id !== chosenWord.id);
+  const candidateByText = new Map<string, WordEntry>();
+  for (const candidate of sameCategoryCandidates) {
+    candidateByText.set(normalizeDecoyKey(candidate.text_en), candidate);
+    candidateByText.set(normalizeDecoyKey(candidate.text_ar), candidate);
+  }
 
-  const decoys = shuffle(
-    words.filter((word) => word.category === chosenWord.category && word.id !== chosenWord.id),
-  ).slice(0, 3);
+  const preferredDecoys: WordEntry[] = [];
+  for (const raw of chosenWord.decoys ?? []) {
+    const found = candidateByText.get(normalizeDecoyKey(raw));
+    if (!found || preferredDecoys.some((entry) => entry.id === found.id)) {
+      continue;
+    }
+    preferredDecoys.push(found);
+    if (preferredDecoys.length >= 3) {
+      break;
+    }
+  }
 
-  const otherDecoyPool = words.filter((word) => word.category !== chosenWord.category);
-  const extraDecoy = otherDecoyPool.length > 0 ? shuffle(otherDecoyPool)[0] : undefined;
+  const fallbackSameCategory = shuffle(
+    sameCategoryCandidates.filter((candidate) => !preferredDecoys.some((entry) => entry.id === candidate.id)),
+  );
+  const decoys = [...preferredDecoys, ...fallbackSameCategory].slice(0, 3);
+
+  const extraDecoy =
+    fallbackSameCategory.find((candidate) => !decoys.some((entry) => entry.id === candidate.id)) ??
+    undefined;
 
   return {
     word: chosenWord,

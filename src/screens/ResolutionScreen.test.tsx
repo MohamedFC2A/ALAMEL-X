@@ -248,4 +248,49 @@ describe('resolution screen voting flow', () => {
     expect(updated?.voteOutcome).toBe('captured');
     expect(updated?.votedSpyIds).toEqual(['p2']);
   }, 12_000);
+
+  it('keeps guess mandatory for team spies when spy count is 2 and one spy is captured', async () => {
+    const user = userEvent.setup();
+    await db.activeMatch.put({
+      ...buildActiveMatch(),
+      match: {
+        ...buildActiveMatch().match,
+        spyIds: ['p2', 'p3'],
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <ResolutionScreen />
+      </MemoryRouter>,
+    );
+
+    // Voter 1 -> p2
+    await user.click(await screen.findByRole('button', { name: /متابعة/i }));
+    await user.click(await screen.findByRole('button', { name: /لاعب ٢/i }));
+    await user.click(await screen.findByRole('button', { name: /تأكيد التصويت/i }));
+
+    // Voter 2 -> p3 (cannot vote for self)
+    await user.click(await screen.findByRole('button', { name: /متابعة/i }));
+    await user.click(await screen.findByRole('button', { name: /لاعب ٣/i }));
+    await user.click(await screen.findByRole('button', { name: /تأكيد التصويت/i }));
+
+    // Voter 3 -> p2
+    await user.click(await screen.findByRole('button', { name: /متابعة/i }));
+    await user.click(await screen.findByRole('button', { name: /لاعب ٢/i }));
+    await user.click(await screen.findByRole('button', { name: /تأكيد التصويت/i }));
+
+    // Voter 4 -> p2
+    await user.click(await screen.findByRole('button', { name: /متابعة/i }));
+    await user.click(await screen.findByRole('button', { name: /لاعب ٢/i }));
+    await user.click(await screen.findByRole('button', { name: /تأكيد التصويت/i }));
+
+    expect(await screen.findByText(/التخمين النهائي واحد لفريق الجواسيس/i)).toBeInTheDocument();
+    expect(await screen.findByText(/يقدّم تخمينًا واحدًا/i)).toBeInTheDocument();
+
+    const updated = await db.activeMatch.get('active');
+    expect(updated?.resolutionStage).toBe('guess');
+    expect(updated?.voteOutcome).toBe('captured');
+    expect(updated?.votedSpyIds).toEqual(['p2']);
+  }, 12_000);
 });

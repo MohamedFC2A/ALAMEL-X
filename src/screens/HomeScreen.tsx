@@ -5,14 +5,30 @@ import { useNavigate } from 'react-router-dom';
 import { History, Settings2, UsersRound } from 'lucide-react';
 import { db } from '../lib/db';
 import { GameButton } from '../components/GameButton';
+import { PlayerNameplate } from '../components/PlayerNameplate';
+import { ensureProgressionState } from '../lib/player-progression';
 
 export function HomeScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const activeMatch = useLiveQuery(() => db.activeMatch.get('active'), []);
+  const players = useLiveQuery(() => db.players.toArray(), []);
   const settings = useLiveQuery(() => db.settings.get('global'), []);
   const reducedMotion = Boolean(settings?.reducedMotionMode);
   const motionSpeed = Math.max(0.35, settings?.animationSpeed ?? 1);
+  const topPlayer = (players ?? [])
+    .slice()
+    .sort((left, right) => {
+      const leftProgress = ensureProgressionState(left.progression);
+      const rightProgress = ensureProgressionState(right.progression);
+      if (rightProgress.level !== leftProgress.level) {
+        return rightProgress.level - leftProgress.level;
+      }
+      if (rightProgress.xp !== leftProgress.xp) {
+        return rightProgress.xp - leftProgress.xp;
+      }
+      return right.stats.gamesPlayed - left.stats.gamesPlayed;
+    })[0];
 
   const handleMission = () => {
     if (navigator.vibrate) navigator.vibrate(50);
@@ -31,6 +47,17 @@ export function HomeScreen() {
       </section>
 
       <section className="home-hud__center">
+        {topPlayer ? (
+          <div className="home-hud__champion glass-card">
+            <span className="subtle">أعلى رتبة الآن</span>
+            <PlayerNameplate
+              name={topPlayer.name}
+              progression={topPlayer.progression}
+              isAi={topPlayer.kind === 'ai'}
+              showMedals
+            />
+          </div>
+        ) : null}
         <motion.div
           className="home-hud__mission-wrap"
           animate={reducedMotion ? undefined : { scale: [1, 1.04, 1] }}

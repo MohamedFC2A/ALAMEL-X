@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { PlayerAvatar } from '../components/PlayerAvatar';
+import { PlayerNameplate } from '../components/PlayerNameplate';
 import { avatarPresets } from '../data/avatars';
 import { buildAiPlayer, buildPlayer, buildQuickPlayers, deletePlayer, upsertPlayer } from '../lib/game-repository';
 import { db, defaultAccessibility } from '../lib/db';
@@ -12,6 +13,13 @@ import { ScreenScaffold } from '../components/ScreenScaffold';
 import { StatusBanner } from '../components/StatusBanner';
 import { formatWordForDisplay } from '../lib/word-format';
 import { GameButton } from '../components/GameButton';
+import {
+  ensureProgressionState,
+  getLevelThreshold,
+  getMedalDefinitionById,
+  getNextLevelThreshold,
+  medalCatalog,
+} from '../lib/player-progression';
 
 interface PlayerFormState {
   id?: string;
@@ -163,6 +171,14 @@ export function PlayersScreen() {
     await upsertPlayer(player);
   }
 
+  function formatProgressEventLabel(event: { type: 'medal_unlocked' | 'level_up'; medalId?: string; level?: number }) {
+    if (event.type === 'medal_unlocked') {
+      const medal = event.medalId ? getMedalDefinitionById(event.medalId) : undefined;
+      return medal ? `ميدالية جديدة: ${medal.name}` : 'ميدالية جديدة';
+    }
+    return `ليفـل جديد: ${event.level ?? '-'}`;
+  }
+
   return (
     <ScreenScaffold title={t('playersRecords')} subtitle={t('playersManagementSubtitle')} eyebrow={t('players')}>
       {redirectMessage ? <StatusBanner tone="warning">{t(redirectMessage)}</StatusBanner> : null}
@@ -189,14 +205,26 @@ export function PlayersScreen() {
         </div>
         {(players ?? []).map((player) => {
           const isAi = player.kind === 'ai';
+          const progression = ensureProgressionState(player.progression);
+          const unlockedMedals = progression.medals.length;
+          const unlockedSet = new Set(progression.medals.map((entry) => entry.medalId));
+          const nextLevelXp = getNextLevelThreshold(progression.level);
+          const levelFloorXp = getLevelThreshold(progression.level);
+          const levelProgress =
+            nextLevelXp && nextLevelXp > levelFloorXp
+              ? Math.max(0, Math.min(1, (progression.xp - levelFloorXp) / (nextLevelXp - levelFloorXp)))
+              : 1;
           return (
           <GlassCard key={player.id} className="player-card section-card cinematic-panel">
             <div className="player-row">
               <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={58} />
               <div className="player-main">
-                <h3>
-                  {player.name} {isAi ? <span className="ai-badge">{t('aiBadge')}</span> : null}
-                </h3>
+                <PlayerNameplate
+                  name={player.name}
+                  progression={progression}
+                  isAi={isAi}
+                  showMedals
+                />
                 <p>{isAi ? t('aiPlayerProfileHint') : t('humanPlayerProfileHint')}</p>
               </div>
               <div className="player-actions">
@@ -214,7 +242,53 @@ export function PlayersScreen() {
               <span>{t('spyWins')}: {player.stats.spyWins}</span>
               <span>{t('citizenWins')}: {player.stats.citizenWins}</span>
               <span>{t('records')}: {playerMatches.get(player.id) ?? 0}</span>
+              <span>المستوى: {progression.level}</span>
+              <span>الميداليات: {unlockedMedals}/{medalCatalog.length}</span>
+              <span>XP: {progression.xp}</span>
             </div>
+
+            <section className="player-progress-log">
+              <div className="player-progress-head">
+                <strong>سجل الإنجازات</strong>
+                <span className="subtle">
+                  {nextLevelXp ? `التالي عند ${nextLevelXp} XP` : 'وصل للحد الأقصى'}
+                </span>
+              </div>
+              <div className="player-progress-track" aria-hidden>
+                <span className="player-progress-track__fill" style={{ transform: `scaleX(${levelProgress})` }} />
+              </div>
+
+              <div className="medal-catalog-grid">
+                {medalCatalog.map((medal) => {
+                  const unlocked = unlockedSet.has(medal.id);
+                  return (
+                    <div
+                      key={medal.id}
+                      className={`medal-catalog-item medal-catalog-item--${medal.tier} ${unlocked ? 'is-unlocked' : 'is-locked'}`.trim()}
+                      title={`${medal.name} (${medal.xp} XP)`}
+                    >
+                      <span>{medal.name}</span>
+                      <small>{medal.xp} XP</small>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="player-events-list">
+                {progression.events.length > 0 ? (
+                  [...progression.events]
+                    .reverse()
+                    .map((event) => (
+                      <div key={event.id} className="player-event-item">
+                        <span>{formatProgressEventLabel(event)}</span>
+                        <small>{new Date(event.at).toLocaleString(i18n.language)}</small>
+                      </div>
+                    ))
+                ) : (
+                  <StatusBanner>لا توجد إنجازات حتى الآن.</StatusBanner>
+                )}
+              </div>
+            </section>
           </GlassCard>
           );
         })}

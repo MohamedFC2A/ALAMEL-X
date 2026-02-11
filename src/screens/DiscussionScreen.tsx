@@ -16,6 +16,7 @@ import { Bot } from 'lucide-react';
 import type { Player } from '../types';
 import { AiDeskModal } from '../components/AiDeskModal';
 import { useAiDiscussionOrchestrator } from '../hooks/useAiDiscussionOrchestrator';
+import { RestartRoundButton } from '../components/RestartRoundButton';
 
 export function DiscussionScreen() {
   const { t, i18n } = useTranslation();
@@ -183,10 +184,12 @@ export function DiscussionScreen() {
             {t('aiDeskButton')}
           </GameButton>
         ) : null}
+        <RestartRoundButton />
         <GameButton variant="ghost" onClick={() => void skipDiscussion()}>
           {t('skipTimer')}
         </GameButton>
       </PrimaryActionBar>
+      <p className="subtle restart-round-note">{t('restartRoundNote')}</p>
 
       {hasAi && aiMatchMode === 'vote_only' && activeMatch.match.status === 'discussion' ? (
         <StatusBanner tone="warning">{t('aiModeVoteOnlyDiscussionHint')}</StatusBanner>

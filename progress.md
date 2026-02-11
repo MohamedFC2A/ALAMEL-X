@@ -658,3 +658,34 @@ Original prompt: PLEASE IMPLEMENT THIS PLAN: SUSAWI v1 premium pass-and-play soc
 ## Remaining TODOs / Suggestions
 - Optional cleanup: convert `formatAiError`, `submitBallotWithPick`, and `submitGuess` in `ResolutionScreen` to `useCallback` to silence hook-dependency warnings.
 - Optional UX pass: add explicit per-player delete icon variant on very small screens to reduce button width in crowded rows.
+
+## Progress Log
+- Added player progression engine (src/lib/player-progression.ts) with 30 medals, XP thresholds (L1-L20), unlock rules, level-up events, and award summary helpers.
+- Extended domain types with progression structures and per-round award events (src/types.ts).
+- Integrated progression updates into round completion in game-repository and added bandonActiveMatch() for restart flow.
+- Tightened guess-option difficulty: prioritize same-cluster/same-category decoys before fallback (word-engine + uildGuessOptions).
+- Added reusable UI components: LevelBadge, PlayerMedalStrip, PlayerNameplate, RestartRoundButton.
+- Wired UI updates across Home, Players, Setup, Reveal, Discussion, Resolution, and Summary screens (including team-spy guess messaging and restart CTA).
+## Progress Log
+- Fixed flaky reveal hold release behavior in `RevealScreen` by computing release progress from real elapsed time at pointer-up (instead of relying only on async state ticks), preserving the required threshold behavior.
+- Re-ran targeted and full test suites after the fix; all tests are now green.
+- Ran develop-web-game Playwright skill client smoke passes and generated fresh artifacts under:
+  - `output/web-game/medals-home`
+  - `output/web-game/medals-players`
+  - `output/web-game/medals-players-quickadd`
+  - `output/web-game/medals-setup`
+  - `output/web-game/medals-reveal`
+  - `output/web-game/medals-discussion`
+  - `output/web-game/medals-resolution`
+  - `output/web-game/medals-summary`
+- Reviewed latest screenshots manually and verified no `errors-*.json` console artifacts were produced in these runs.
+
+## Validation Update (Medals/Levels + Restart + 2-Spy Guess)
+- `npx vitest run src/screens/RevealScreen.test.tsx`: pass.
+- `npm run test`: pass (16 files, 70 tests).
+- `npm run lint`: pass with 4 pre-existing hook-deps warnings in `src/screens/ResolutionScreen.tsx`.
+- `npm run build`: pass.
+
+## Remaining TODOs / Suggestions
+- Optional cleanup: wrap `formatAiError`, `submitBallotWithPick`, and `submitGuess` in `ResolutionScreen` with `useCallback` to clear lint warnings.
+- Optional Playwright expansion: seed an in-browser active match before capture to produce direct gameplay-phase screenshots (reveal/discussion/resolution with live round state) in one end-to-end run.

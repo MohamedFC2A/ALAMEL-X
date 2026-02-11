@@ -762,6 +762,305 @@ input[type='range'] {
     gap: 0.25rem;
 }
 
+.player-nameplate {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.player-nameplate--compact {
+    gap: 0.22rem;
+}
+
+.player-nameplate__row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.player-nameplate__name {
+    font-weight: 700;
+    line-height: var(--lh-heading);
+    overflow-wrap: anywhere;
+}
+
+.level-badge {
+    display: inline-grid;
+    align-items: center;
+    gap: 0.22rem;
+    min-width: 0;
+}
+
+.level-badge--compact {
+    gap: 0.12rem;
+}
+
+.level-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.1rem;
+    padding: 0.12rem 0.44rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--accent) 36%, transparent);
+    background: color-mix(in oklab, var(--panel) 78%, var(--accent) 10%);
+    color: var(--text-main);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.level-chip--gold {
+    border-color: rgba(255, 204, 102, 0.72);
+    background: linear-gradient(120deg, #2f2411 0%, #7a5412 38%, #d1a743 56%, #a06d20 100%);
+    color: #fff3ca;
+    animation: level-gold-shimmer 2.2s linear infinite;
+}
+
+.level-chip--inferno {
+    --inferno-intensity: 0;
+    --inferno-glow-alpha: 0.48;
+    --inferno-speed: 1.3s;
+    --inferno-flame-opacity: 0.88;
+    border-color: rgba(255, 110, 64, 0.9);
+    background: linear-gradient(125deg, #2a0b02 0%, #6d1408 38%, #d63716 62%, #ffb347 100%);
+    color: #fff1d9;
+    box-shadow: 0 0 calc(16px + var(--inferno-intensity) * 1.8px) rgba(255, 87, 34, var(--inferno-glow-alpha));
+    animation: level-inferno-flicker var(--inferno-speed) ease-in-out infinite;
+}
+
+.level-chip--inferno::after {
+    content: '';
+    position: absolute;
+    inset: -4px -2px auto -2px;
+    height: calc(7px + var(--inferno-intensity) * 0.22px);
+    border-radius: 10px 10px 3px 3px;
+    background: radial-gradient(circle at 30% 100%, rgba(255, 222, 158, 0.9), rgba(255, 95, 31, 0.2) 65%, transparent 85%);
+    opacity: var(--inferno-flame-opacity);
+    pointer-events: none;
+    filter: blur(calc(0.2px + var(--inferno-intensity) * 0.016px));
+}
+
+.level-xp {
+    color: var(--text-soft);
+    font-size: 0.68rem;
+}
+
+.level-progress {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 7rem;
+    height: 4px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.level-progress__fill {
+    position: absolute;
+    inset: 0;
+    transform-origin: left center;
+    background: linear-gradient(90deg, #3bc9b9 0%, #4fd1c5 50%, #94fff5 100%);
+}
+
+.medal-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.24rem;
+}
+
+.medal-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1rem;
+    padding: 0.08rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid var(--stroke-2);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-soft);
+    font-size: 0.6rem;
+    font-weight: 700;
+    max-width: 10rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.medal-chip--bronze {
+    border-color: rgba(205, 127, 50, 0.6);
+    background: rgba(205, 127, 50, 0.14);
+    color: #ffd8b0;
+}
+
+.medal-chip--silver {
+    border-color: rgba(184, 196, 210, 0.7);
+    background: rgba(184, 196, 210, 0.14);
+    color: #f1f7ff;
+}
+
+.medal-chip--gold {
+    border-color: rgba(255, 198, 79, 0.78);
+    background: rgba(255, 198, 79, 0.18);
+    color: #fff2c0;
+}
+
+.medal-chip--mythic {
+    border-color: rgba(255, 112, 67, 0.85);
+    background: rgba(255, 112, 67, 0.2);
+    color: #ffd9c9;
+}
+
+.medal-chip--empty {
+    color: var(--text-dim);
+}
+
+.medal-chip--extra {
+    border-style: dashed;
+}
+
+.pick-card-nameplate {
+    width: 100%;
+}
+
+.player-progress-log {
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--stroke-2);
+    display: grid;
+    gap: 0.55rem;
+}
+
+.player-progress-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.player-progress-track {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.player-progress-track__fill {
+    position: absolute;
+    inset: 0;
+    transform-origin: left center;
+    background: linear-gradient(90deg, #33d1bf, #88f8ef);
+}
+
+.medal-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(8rem, 100%), 1fr));
+    gap: 0.4rem;
+}
+
+.medal-catalog-item {
+    display: grid;
+    gap: 0.18rem;
+    padding: 0.35rem 0.46rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--stroke-2);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-soft);
+}
+
+.medal-catalog-item small {
+    color: var(--text-dim);
+    font-size: 0.64rem;
+}
+
+.medal-catalog-item.is-locked {
+    opacity: 0.42;
+    filter: grayscale(1);
+}
+
+.medal-catalog-item.is-unlocked {
+    opacity: 1;
+}
+
+.medal-catalog-item--bronze.is-unlocked {
+    border-color: rgba(205, 127, 50, 0.58);
+}
+
+.medal-catalog-item--silver.is-unlocked {
+    border-color: rgba(184, 196, 210, 0.68);
+}
+
+.medal-catalog-item--gold.is-unlocked {
+    border-color: rgba(255, 198, 79, 0.72);
+}
+
+.medal-catalog-item--mythic.is-unlocked {
+    border-color: rgba(255, 112, 67, 0.82);
+}
+
+.player-events-list {
+    display: grid;
+    gap: 0.35rem;
+    max-height: 15rem;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+}
+
+.player-event-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.3rem 0.42rem;
+    border-radius: 0.48rem;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.player-event-item small {
+    color: var(--text-dim);
+    font-size: 0.66rem;
+}
+
+.restart-leading-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.restart-round-note {
+    display: block;
+    text-align: center;
+}
+
+.resolution-restart-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.round-awards-list {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.round-award-card {
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--stroke-2);
+    border-radius: 0.55rem;
+    background: rgba(255, 255, 255, 0.04);
+    display: grid;
+    gap: 0.28rem;
+}
+
 .player-main h3 {
     line-height: var(--lh-heading);
     overflow-wrap: anywhere;
@@ -1659,6 +1958,40 @@ input[type='range'] {
     }
 }
 
+@keyframes level-gold-shimmer {
+    0% {
+        filter: brightness(0.92) saturate(1);
+    }
+
+    50% {
+        filter: brightness(1.18) saturate(1.24);
+    }
+
+    100% {
+        filter: brightness(0.92) saturate(1);
+    }
+}
+
+@keyframes level-inferno-flicker {
+    0% {
+        transform: translateY(0) scale(1);
+        filter: brightness(0.93) saturate(1);
+        box-shadow: 0 0 calc(10px + var(--inferno-intensity) * 1.4px) rgba(255, 87, 34, calc(var(--inferno-glow-alpha) - 0.16));
+    }
+
+    40% {
+        transform: translateY(-1px) scale(calc(1 + var(--inferno-intensity) * 0.006));
+        filter: brightness(calc(1.14 + var(--inferno-intensity) * 0.01)) saturate(calc(1.24 + var(--inferno-intensity) * 0.01));
+        box-shadow: 0 0 calc(18px + var(--inferno-intensity) * 2.2px) rgba(255, 87, 34, calc(var(--inferno-glow-alpha) + 0.14));
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+        filter: brightness(calc(0.95 + var(--inferno-intensity) * 0.004)) saturate(calc(1.04 + var(--inferno-intensity) * 0.006));
+        box-shadow: 0 0 calc(12px + var(--inferno-intensity) * 1.6px) rgba(255, 87, 34, calc(var(--inferno-glow-alpha) - 0.08));
+    }
+}
+
 .ai-voice-room .status-banner {
     display: inline-flex;
     align-items: center;
@@ -1729,6 +2062,15 @@ input[type='range'] {
 
 .ai-desk-actions {
     justify-content: flex-end;
+}
+
+:root[data-motion='reduced'] .level-chip--gold,
+:root[data-motion='reduced'] .level-chip--inferno {
+    animation: none;
+}
+
+:root[data-motion='reduced'] .level-chip--inferno::after {
+    display: none;
 }
 
 /* ═══════════ RTL ADAPTATIONS (Components) ═══════════ */
@@ -1904,6 +2246,24 @@ html[dir='rtl'] .reveal-mask-progress-fill {
         min-width: 0;
         width: auto;
         padding: 0.4rem;
+    }
+
+    .player-nameplate__row {
+        gap: 0.25rem;
+    }
+
+    .medal-chip {
+        max-width: 7.5rem;
+        font-size: 0.56rem;
+    }
+
+    .medal-catalog-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(6.3rem, 100%), 1fr));
+    }
+
+    .resolution-restart-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .stats-grid {

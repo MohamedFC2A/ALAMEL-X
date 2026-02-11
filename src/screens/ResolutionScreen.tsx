@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PlayerAvatar } from '../components/PlayerAvatar';
+import { PlayerNameplate } from '../components/PlayerNameplate';
 import { db } from '../lib/db';
 import {
   completeActiveMatch,
@@ -24,6 +25,7 @@ import { GameButton } from '../components/GameButton';
 import { DeepSeekError } from '../lib/ai/deepseek-client';
 import { decideGuess, decideVoteDetailed, runtimeConfigFromSettings } from '../lib/ai/agent';
 import { speakWithEleven } from '../lib/ai/eleven-client';
+import { RestartRoundButton } from '../components/RestartRoundButton';
 
 export function ResolutionScreen() {
   const { t, i18n } = useTranslation();
@@ -71,7 +73,7 @@ export function ResolutionScreen() {
     }
   };
 
-  const formatAiError = (error: unknown): string => {
+  const formatAiError = useCallback((error: unknown): string => {
     if (error instanceof DeepSeekError) {
       if (error.kind === 'auth') return t('aiAuthError');
       if (error.kind === 'rate_limit') return t('aiRateLimitError');
@@ -79,9 +81,9 @@ export function ResolutionScreen() {
       return t('aiUnknownError');
     }
     return t('aiUnknownError');
-  };
+  }, [t]);
 
-  async function submitBallotWithPick(pick: string) {
+  const submitBallotWithPick = useCallback(async (pick: string) => {
     if (!pick) {
       return;
     }
@@ -183,9 +185,9 @@ export function ResolutionScreen() {
         lastTally: counts,
       },
     });
-  }
+  }, [guessMs]);
 
-  async function submitGuess(selectedGuess: string) {
+  const submitGuess = useCallback(async (selectedGuess: string) => {
     const current = await db.activeMatch.get('active');
     if (!current) {
       return;
@@ -200,7 +202,7 @@ export function ResolutionScreen() {
       resolutionStage: 'result',
       winner: correct ? 'spies' : 'citizens',
     });
-  }
+  }, []);
 
   const guessStateKey =
     activeMatch && activeMatch.resolutionStage === 'guess' ? `${activeMatch.match.id}:${activeMatch.guessEndsAt ?? 0}` : '';
@@ -469,6 +471,8 @@ export function ResolutionScreen() {
   const capturedSpy = capturedSpyId ? playerMap.get(capturedSpyId) ?? null : null;
   const isAiCapturedSpy = capturedSpy?.kind === 'ai';
   const aiGuessErrorMessage = aiGuessError?.key === guessStateKey ? aiGuessError.message : '';
+  const isTeamSpyGuess = currentMatch.match.spyIds.length > 1;
+  const guessPromptText = isTeamSpyGuess ? t('spyGuessPromptTeam') : t('spyGuessPrompt');
 
   const tieWasBroken = (() => {
     if (currentMatch.resolutionStage === 'vote' || voteState?.round !== 2 || !voteState.lastTally) {
@@ -491,6 +495,10 @@ export function ResolutionScreen() {
         <div className={`stage-pill ${currentMatch.resolutionStage === 'guess' ? 'active' : ''}`}>{t('stageGuess')}</div>
         <div className={`stage-pill ${currentMatch.resolutionStage === 'result' ? 'active' : ''}`}>{t('stageResult')}</div>
       </section>
+      <div className="resolution-restart-row">
+        <RestartRoundButton />
+        <span className="subtle restart-round-note">{t('restartRoundNote')}</span>
+      </div>
 
       {currentMatch.resolutionStage === 'vote' ? (
         !voteState || !voter ? (
@@ -500,6 +508,12 @@ export function ResolutionScreen() {
             <section className="glass-card handoff-card section-card cinematic-panel">
               {voteState.round === 2 ? <StatusBanner tone="warning">{t('voteRunoff')}</StatusBanner> : null}
               <PlayerAvatar avatarId={voter.avatarId} alt={voter.name} size={104} />
+              <PlayerNameplate
+                name={voter.name}
+                progression={voter.progression}
+                isAi
+                showMedals
+              />
               <h2>{t('aiVoteInProgress')}</h2>
               <p className="subtle">
                 {t('voteProgress', { current: voteState.voterIndex + 1, total: currentMatch.match.playerIds.length })}
@@ -535,6 +549,12 @@ export function ResolutionScreen() {
             <section className="glass-card handoff-card section-card cinematic-panel">
               {voteState.round === 2 ? <StatusBanner tone="warning">{t('voteRunoff')}</StatusBanner> : null}
               <PlayerAvatar avatarId={voter.avatarId} alt={voter.name} size={104} />
+              <PlayerNameplate
+                name={voter.name}
+                progression={voter.progression}
+                isAi={voter.kind === 'ai'}
+                showMedals
+              />
               <h2>{t('voteHandoff', { name: voter.name })}</h2>
               <p className="subtle">
                 {t('voteProgress', { current: voteState.voterIndex + 1, total: currentMatch.match.playerIds.length })}
@@ -578,7 +598,14 @@ export function ResolutionScreen() {
                     }}
                   >
                     <PlayerAvatar avatarId={avatarId} alt={label} size={56} />
-                    <span>{label}</span>
+                    <PlayerNameplate
+                      name={label}
+                      progression={player?.progression}
+                      isAi={player?.kind === 'ai'}
+                      compact
+                      showMedals
+                      className="pick-card-nameplate"
+                    />
                   </button>
                 );
               })}
@@ -627,9 +654,10 @@ export function ResolutionScreen() {
             <StatusBanner tone="success">
               {t('voteCapturedInfo')}
             </StatusBanner>
+            {isTeamSpyGuess ? <StatusBanner tone="warning">{t('spyGuessTeamInfo')}</StatusBanner> : null}
             {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
             <h2>{t('aiGuessInProgress')}</h2>
-            <p className="subtle">{t('spyGuessPrompt')}</p>
+            <p className="subtle">{guessPromptText}</p>
             <h2 className="countdown-value">{guessRemaining}</h2>
             {settings?.aiEnabled ? (
               aiGuessErrorMessage ? (
@@ -661,8 +689,9 @@ export function ResolutionScreen() {
             <StatusBanner tone="success">
               {t('voteCapturedInfo')}
             </StatusBanner>
+            {isTeamSpyGuess ? <StatusBanner tone="warning">{t('spyGuessTeamInfo')}</StatusBanner> : null}
             {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
-            <p>{t('spyGuessPrompt')}</p>
+            <p>{guessPromptText}</p>
             <h2 className="countdown-value">{guessRemaining}</h2>
             <p className="subtle">{t('spyGuessPick')}</p>
             <div className="choice-grid">

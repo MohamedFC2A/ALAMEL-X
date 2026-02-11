@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PlayerAvatar } from '../components/PlayerAvatar';
+import { PlayerNameplate } from '../components/PlayerNameplate';
 import { db } from '../lib/db';
 import { startMatch, wordsUsageSummary, resetWordLocks, minPlayersForSpyCount, isValidPlayerCount } from '../lib/game-repository';
 import { ScreenScaffold } from '../components/ScreenScaffold';
@@ -196,9 +197,14 @@ export function PlaySetupScreen() {
               disabled={maxReached}
             >
               <PlayerAvatar avatarId={player.avatarId} alt={player.name} size={58} />
-              <span className="pick-card-name">
-                {player.name} {isAi ? <span className="ai-badge ai-badge--small">{t('aiBadge')}</span> : null}
-              </span>
+              <PlayerNameplate
+                name={player.name}
+                progression={player.progression}
+                isAi={isAi}
+                compact
+                showMedals
+                className="pick-card-nameplate"
+              />
             </button>
           );
         })}

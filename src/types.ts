@@ -15,6 +15,53 @@ export type WordDifficulty = 'any' | Difficulty;
 export type HintMode = 'weak' | 'normal' | 'off';
 
 export type Winner = 'citizens' | 'spies';
+export type MedalTier = 'bronze' | 'silver' | 'gold' | 'mythic';
+export type ProgressEventType = 'medal_unlocked' | 'level_up';
+
+export interface PlayerMedalState {
+  medalId: string;
+  unlockedAt: number;
+}
+
+export interface PlayerProgressEvent {
+  id: string;
+  type: ProgressEventType;
+  at: number;
+  medalId?: string;
+  level?: number;
+  xpAfter: number;
+}
+
+export interface PlayerProgressMetrics {
+  matchesPlayed: number;
+  winsTotal: number;
+  lossesTotal: number;
+  winStreak: number;
+  loseStreak: number;
+  spyRoundsPlayed: number;
+  citizenRoundsPlayed: number;
+  spyWinStreak: number;
+  spyWinsTotal: number;
+  citizenWinsTotal: number;
+  comebackWins: number;
+  spyEscapes: number;
+  spyCorrectGuesses: number;
+  citizenCaptureWins: number;
+  citizenCaptureWinStreak: number;
+  runoffWins: number;
+  duoWinsAny: number;
+  duoCitizenWins: number;
+  duoSpyWins: number;
+}
+
+export interface PlayerProgression {
+  xp: number;
+  level: number;
+  medals: PlayerMedalState[];
+  metrics: PlayerProgressMetrics;
+  events: PlayerProgressEvent[];
+  updatedAt: number;
+}
 
 export interface AiAdaptiveStats {
   matchesPlayed: number;
@@ -53,6 +100,7 @@ export interface Player {
   enabled: boolean;
   accessibility: PlayerAccessibility;
   stats: PlayerStats;
+  progression?: PlayerProgression;
   createdAt: number;
   updatedAt: number;
 }
@@ -235,6 +283,16 @@ export interface MatchRecord {
   wordTextAr: string;
   decoysEn: string[];
   decoysAr: string[];
+  roundAwards?: MatchRoundAwardEvent[];
+}
+
+export interface MatchRoundAwardEvent {
+  playerId: string;
+  playerName: string;
+  medalIds: string[];
+  levelUps: number[];
+  xpAfter: number;
+  levelAfter: number;
 }
 
 export interface WordPackPayload {

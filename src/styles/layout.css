@@ -344,6 +344,14 @@ main {
     padding-block: var(--space-2);
 }
 
+.home-hud__champion {
+    width: min(100%, 360px);
+    padding: 0.65rem 0.8rem;
+    border: 1px solid color-mix(in oklab, var(--accent) 34%, rgba(255, 255, 255, 0.16));
+    display: grid;
+    gap: 0.35rem;
+}
+
 .home-hud__mission-wrap,
 .home-hud__dual-actions {
     width: 100%;
@@ -440,6 +448,11 @@ html[dir='rtl'] .screen-header-main {
     .home-hud__top h1 {
         letter-spacing: 0.16em;
         font-size: clamp(2rem, 13vw, 3rem);
+    }
+
+    .home-hud__champion {
+        width: 100%;
+        padding: 0.55rem 0.65rem;
     }
 
     .home-hud__footer {

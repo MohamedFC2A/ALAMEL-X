@@ -8,6 +8,7 @@ import type {
   MatchRecord,
   MatchResult,
   MatchStatus,
+  MatchRoundAwardEvent,
   Player,
   Winner,
 } from '../types';
@@ -15,6 +16,7 @@ import { defaultAccessibility, db, defaultSettings, ensureSettings, normalizeGlo
 import { createId, shuffle } from './utils';
 import { loadWordPack, pickBalancedUnusedWord } from './word-engine';
 import { extractCoreWord, formatWordForDisplay, normalizeWord } from './word-format';
+import { applyRoundProgression, buildRoundAwardEvent, createDefaultProgression, ensureProgressionState } from './player-progression';
 
 export function buildPlayer(name: string, avatarId: string): Player {
   const now = Date.now();
@@ -29,6 +31,7 @@ export function buildPlayer(name: string, avatarId: string): Player {
       spyWins: 0,
       citizenWins: 0,
     },
+    progression: createDefaultProgression(now),
     createdAt: now,
     updatedAt: now,
   };
@@ -139,7 +142,7 @@ export function buildGuessOptions(
     decoyOptions.set(key, formatted);
   };
 
-  [...similar, ...related, extra].forEach((value) => addDecoyOption(value));
+  [...similar, ...related].forEach((value) => addDecoyOption(value));
 
   if (decoyOptions.size < 4) {
     const rankedSameCategory = [...sameCategoryPool].sort((left, right) => {
@@ -153,6 +156,10 @@ export function buildGuessOptions(
         break;
       }
     }
+  }
+
+  if (decoyOptions.size < 4 && extra) {
+    addDecoyOption(extra);
   }
 
   if (decoyOptions.size < 4) {
@@ -540,29 +547,64 @@ export function resolveWinner(citizensIdentified: boolean, spyGuessCorrect: bool
   return spyGuessCorrect ? 'spies' : 'citizens';
 }
 
-async function updatePlayerStats(match: Match, winner: Winner): Promise<void> {
-  const players = await db.players.bulkGet(match.playerIds);
+async function updatePlayersAfterRound(active: ActiveMatch, winner: Winner): Promise<MatchRoundAwardEvent[]> {
+  const players = await db.players.bulkGet(active.match.playerIds);
+  const now = Date.now();
+  const spyCount: 1 | 2 = active.match.spyIds.length > 1 ? 2 : 1;
+  const wasRunoff = Boolean(active.voteState?.round === 2);
+  const roundAwards: MatchRoundAwardEvent[] = [];
+
   const updates = players
     .filter((player): player is Player => Boolean(player))
     .map((player) => {
-      const isSpy = match.spyIds.includes(player.id);
+      const isSpy = active.match.spyIds.includes(player.id);
       const spyWin = winner === 'spies' && isSpy;
       const citizenWin = winner === 'citizens' && !isSpy;
+      const teamWon = spyWin || citizenWin;
+
+      const progressionResult = applyRoundProgression(
+        {
+          ...player,
+          progression: ensureProgressionState(player.progression, now),
+        },
+        {
+          now,
+          role: isSpy ? 'spy' : 'citizen',
+          teamWon,
+          winner,
+          spyCount,
+          voteOutcome: active.voteOutcome,
+          spyGuessCorrect: active.spyGuessCorrect,
+          wasRunoff,
+        },
+      );
+
+      if (progressionResult.newlyUnlockedMedals.length > 0 || progressionResult.newLevels.length > 0) {
+        roundAwards.push(
+          buildRoundAwardEvent(
+            progressionResult.updatedPlayer,
+            progressionResult.newlyUnlockedMedals,
+            progressionResult.newLevels,
+          ),
+        );
+      }
 
       return {
-        ...player,
+        ...progressionResult.updatedPlayer,
         stats: {
           gamesPlayed: player.stats.gamesPlayed + 1,
           spyWins: player.stats.spyWins + (spyWin ? 1 : 0),
           citizenWins: player.stats.citizenWins + (citizenWin ? 1 : 0),
         },
-        updatedAt: Date.now(),
+        updatedAt: now,
       };
     });
 
   if (updates.length > 0) {
     await db.players.bulkPut(updates);
   }
+
+  return roundAwards;
 }
 
 export async function completeActiveMatch(): Promise<MatchRecord> {
@@ -584,7 +626,8 @@ export async function completeActiveMatch(): Promise<MatchRecord> {
     winner,
   };
 
-  const record: MatchRecord = {
+  const nextAdaptiveStats = mergeAdaptiveStats(settings.aiAdaptiveStats, active, winner);
+  let record: MatchRecord = {
     id: active.match.id,
     match: {
       ...active.match,
@@ -596,13 +639,16 @@ export async function completeActiveMatch(): Promise<MatchRecord> {
     wordTextAr: active.wordTextAr,
     decoysEn: active.decoysEn,
     decoysAr: active.decoysAr,
+    roundAwards: [],
   };
 
-  const nextAdaptiveStats = mergeAdaptiveStats(settings.aiAdaptiveStats, active, winner);
-
   await db.transaction('rw', db.matches, db.activeMatch, db.players, db.settings, async () => {
+    const roundAwards = await updatePlayersAfterRound(active, winner);
+    record = {
+      ...record,
+      roundAwards,
+    };
     await db.matches.put(record);
-    await updatePlayerStats(active.match, winner);
     await db.settings.put(
       normalizeGlobalSettings({
       ...settings,
@@ -614,6 +660,10 @@ export async function completeActiveMatch(): Promise<MatchRecord> {
   });
 
   return record;
+}
+
+export async function abandonActiveMatch(): Promise<void> {
+  await db.activeMatch.delete('active');
 }
 
 export async function ensureGlobalSettings(): Promise<GlobalSettings> {
