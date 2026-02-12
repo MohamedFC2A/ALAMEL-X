@@ -96,7 +96,15 @@ const state = {
   lastSliderSoundAt: 0,
   revealBucket: -1,
   lastRevealHapticAt: 0,
+  lastGradualVibrateAt: 0,
 };
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 function isCoarsePointerDevice(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -220,7 +228,11 @@ export function vibrateTap(strength: 'soft' | 'normal' | 'strong' = 'normal'): v
 export function beginRevealHoldFeedback(): void {
   state.revealBucket = -1;
   state.lastRevealHapticAt = 0;
+  state.lastGradualVibrateAt = 0;
   playUiFeedback('reveal-start');
+  if (canUseHaptics() && !prefersReducedMotion()) {
+    navigator.vibrate(15);
+  }
   if (canUseHaptics() && isCoarsePointerDevice() && !state.config.reducedMotionMode) {
     navigator.vibrate([14, 18, 18]);
     return;
@@ -237,6 +249,14 @@ export function updateRevealHoldFeedback(progress: number): void {
   state.revealBucket = bucket;
 
   playUiFeedback('reveal-tick', 0.72 + normalized * 0.9);
+
+  if (canUseHaptics() && !prefersReducedMotion()) {
+    const now = Date.now();
+    if (now - state.lastGradualVibrateAt >= 150) {
+      state.lastGradualVibrateAt = now;
+      navigator.vibrate(Math.round(8 + normalized * 25));
+    }
+  }
 
   if (canUseHaptics()) {
     const coarsePointer = isCoarsePointerDevice();
@@ -270,6 +290,9 @@ export function updateRevealHoldFeedback(progress: number): void {
 
 export function completeRevealHoldFeedback(): void {
   playUiFeedback('reveal-done', 1.05);
+  if (canUseHaptics() && !prefersReducedMotion()) {
+    navigator.vibrate([30, 50, 60]);
+  }
   if (canUseHaptics()) {
     if (state.config.reducedMotionMode) {
       navigator.vibrate([10, 16, 14, 18, 18]);
@@ -281,6 +304,7 @@ export function completeRevealHoldFeedback(): void {
   }
   state.revealBucket = -1;
   state.lastRevealHapticAt = 0;
+  state.lastGradualVibrateAt = 0;
 }
 
 export function cancelRevealHoldFeedback(): void {
@@ -290,6 +314,7 @@ export function cancelRevealHoldFeedback(): void {
   }
   state.revealBucket = -1;
   state.lastRevealHapticAt = 0;
+  state.lastGradualVibrateAt = 0;
 }
 
 function toneFromElement(element: Element): UiFeedbackTone {

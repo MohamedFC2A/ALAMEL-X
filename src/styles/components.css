@@ -1268,6 +1268,14 @@ input[type='range'] {
     border-radius: 999px;
     background: transparent;
     color: var(--text-main);
+    cursor: pointer;
+    transition: background calc(150ms * max(var(--anim-speed), 0.01)) ease,
+        box-shadow calc(150ms * max(var(--anim-speed), 0.01)) ease;
+}
+
+.pill-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .pill-btn.active {
@@ -1584,6 +1592,29 @@ input[type='range'] {
     line-height: 1.1;
 }
 
+@keyframes revealScanline {
+    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 0 0, 0 -120px, 0 0, 0 0, 0 0; }
+}
+
+@keyframes revealPulse {
+    0%, 100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), inset 0 -34px 50px rgba(0,0,0,0.28); }
+    50% { box-shadow: inset 0 0 0 1px rgba(77,215,255,0.12), inset 0 -34px 50px rgba(0,0,0,0.28), 0 0 20px rgba(77,215,255,0.08); }
+}
+
+@keyframes holdShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-1px); }
+    40% { transform: translateX(1.5px); }
+    60% { transform: translateX(-1px); }
+    80% { transform: translateX(0.5px); }
+}
+
+@keyframes trackShimmer {
+    0% { background-position: -200% 0, 0 0, 0 0; }
+    100% { background-position: 200% 0, 0 0, 0 0; }
+}
+
 .reveal-mask {
     position: absolute;
     inset: 0;
@@ -1618,6 +1649,7 @@ input[type='range'] {
     box-shadow:
         inset 0 0 0 1px rgba(255, 255, 255, 0.04),
         inset 0 -34px 50px rgba(0, 0, 0, 0.28);
+    animation: revealPulse 3s ease-in-out infinite, revealScanline 8s linear infinite;
     transition:
         border-color calc(120ms * max(var(--anim-speed), 0.01)) linear,
         box-shadow calc(160ms * max(var(--anim-speed), 0.01)) ease,
@@ -1629,7 +1661,9 @@ input[type='range'] {
     box-shadow:
         inset 0 0 0 1px rgba(77, 215, 255, 0.35),
         0 0 0 1px rgba(77, 215, 255, 0.28),
-        0 0 32px rgba(77, 215, 255, 0.26);
+        0 0 32px rgba(77, 215, 255, 0.26),
+        0 0 48px rgba(77, 215, 255, 0.12);
+    animation: holdShake 0.15s linear infinite;
 }
 
 .reveal-mask.charged {
@@ -1637,7 +1671,9 @@ input[type='range'] {
     box-shadow:
         inset 0 0 0 1px rgba(122, 255, 214, 0.28),
         0 0 0 1px rgba(122, 255, 214, 0.2),
-        0 0 36px rgba(67, 232, 175, 0.24);
+        0 0 36px rgba(67, 232, 175, 0.24),
+        0 0 52px rgba(67, 232, 175, 0.14);
+    animation: none;
 }
 
 .reveal-mask-title {
@@ -1656,12 +1692,15 @@ input[type='range'] {
     position: relative;
     display: block;
     width: 100%;
-    height: 22px;
+    height: 24px;
     border-radius: 999px;
     overflow: hidden;
     background:
+        linear-gradient(110deg, transparent 33%, rgba(255, 255, 255, 0.06) 50%, transparent 67%),
         linear-gradient(180deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.07)),
         rgba(5, 10, 16, 0.88);
+    background-size: 200% 100%, 100% 100%, 100% 100%;
+    animation: trackShimmer 2.5s ease-in-out infinite;
     border: 1px solid rgba(118, 187, 255, 0.5);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.18),

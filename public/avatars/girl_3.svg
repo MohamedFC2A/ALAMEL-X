@@ -1,25 +1,53 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="g3skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d4a070"/>
+      <stop offset="100%" stop-color="#b88050"/>
+    </linearGradient>
+    <linearGradient id="g3suit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e2e3e"/>
+      <stop offset="100%" stop-color="#0c1820"/>
+    </linearGradient>
+    <linearGradient id="g3braid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <linearGradient id="g3visor" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4fd1c5" stop-opacity="0.5"/>
+      <stop offset="50%" stop-color="#4fd1c5" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#4fd1c5" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
   <rect width="120" height="120" rx="24" fill="#0e1a24"/>
-  <!-- Hijab -->
-  <path d="M32 50c0-18 12-34 28-34s28 16 28 34c0 10-4 18-10 22v14c-4 4-12 6-18 6s-14-2-18-6V72c-6-4-10-12-10-22z" fill="#1a2a3a" stroke="#4fd1c5" stroke-width="1"/>
-  <!-- Face -->
-  <circle cx="60" cy="48" r="20" fill="#c68b5e"/>
-  <!-- Eyes (sharp, determined) -->
-  <ellipse cx="52" cy="46" rx="3" ry="2.5" fill="#1e1e1e"/>
-  <ellipse cx="68" cy="46" rx="3" ry="2.5" fill="#1e1e1e"/>
-  <circle cx="52" cy="46" r="1" fill="#fff"/>
-  <circle cx="68" cy="46" r="1" fill="#fff"/>
-  <!-- Eyebrows (strong) -->
-  <path d="M46 41l8-2" stroke="#2a1f14" stroke-width="2" stroke-linecap="round"/>
-  <path d="M74 41l-8-2" stroke="#2a1f14" stroke-width="2" stroke-linecap="round"/>
-  <!-- Mouth -->
-  <path d="M54 56c2 2 10 2 12 0" stroke="#8b6b4a" stroke-width="2" fill="none" stroke-linecap="round"/>
-  <!-- Body -->
-  <path d="M28 108c4-18 16-28 32-28s28 10 32 28z" fill="#1a2a3a"/>
-  <!-- Hijab pin (star) -->
-  <circle cx="40" cy="56" r="4" fill="#e53e3e"/>
-  <circle cx="40" cy="56" r="2" fill="#ff6b6b"/>
-  <!-- Tactical vest detail -->
-  <line x1="60" y1="82" x2="60" y2="104" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
-  <circle cx="60" cy="86" r="3" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.5"/>
+  <ellipse cx="60" cy="58" rx="22" ry="5" fill="#000" opacity="0.12"/>
+  <path d="M30 108c5-22 16-34 30-34s25 12 30 34z" fill="url(#g3suit)"/>
+  <line x1="60" y1="82" x2="60" y2="108" stroke="#4fd1c5" stroke-width="0.8" opacity="0.25"/>
+  <circle cx="60" cy="88" r="3.5" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.4"/>
+  <circle cx="60" cy="88" r="1" fill="#4fd1c5" opacity="0.3"/>
+  <path d="M44 78l16 6 16-6" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.3"/>
+  <ellipse cx="60" cy="50" rx="22" ry="24" fill="url(#g3skin)"/>
+  <ellipse cx="53" cy="56" rx="2.5" ry="1.5" fill="#b88050" opacity="0.25"/>
+  <ellipse cx="67" cy="56" rx="2.5" ry="1.5" fill="#b88050" opacity="0.25"/>
+  <path d="M38 42c2-18 10-28 22-28s20 10 22 28c-4 3-10 5-22 5s-18-2-22-5z" fill="url(#g3braid)"/>
+  <path d="M38 42c-4 6-6 18-4 34" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M37 50c0 4-1 8-1 12" stroke="#2a2a2a" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <path d="M36 58l-1 6" stroke="#2a2a2a" stroke-width="1" fill="none" opacity="0.3"/>
+  <circle cx="35" cy="78" r="3" fill="#1a1a1a"/>
+  <path d="M82 42c4 6 6 18 4 34" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M83 50c0 4 1 8 1 12" stroke="#2a2a2a" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <circle cx="85" cy="78" r="3" fill="#1a1a1a"/>
+  <rect x="36" y="40" width="48" height="12" rx="6" fill="url(#g3visor)" stroke="#4fd1c5" stroke-width="1.5"/>
+  <line x1="40" y1="46" x2="80" y2="46" stroke="#4fd1c5" stroke-width="0.5" opacity="0.3" stroke-dasharray="2 2"/>
+  <ellipse cx="50" cy="46" rx="4" ry="3.5" fill="#fff" opacity="0.85"/>
+  <circle cx="50" cy="46" r="2.2" fill="#3a2510"/>
+  <circle cx="50" cy="46" r="1" fill="#1e1208"/>
+  <circle cx="51" cy="45" r="0.7" fill="#fff" opacity="0.5"/>
+  <ellipse cx="70" cy="46" rx="4" ry="3.5" fill="#fff" opacity="0.85"/>
+  <circle cx="70" cy="46" r="2.2" fill="#3a2510"/>
+  <circle cx="70" cy="46" r="1" fill="#1e1208"/>
+  <circle cx="71" cy="45" r="0.7" fill="#fff" opacity="0.5"/>
+  <path d="M44 40l6-2" stroke="#0a0a0a" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M76 40l-6-2" stroke="#0a0a0a" stroke-width="1.8" stroke-linecap="round"/>
+  <ellipse cx="60" cy="58" rx="2" ry="1.5" fill="#b88050" opacity="0.4"/>
+  <path d="M54 60c2 3 10 3 12 0" stroke="#a07050" stroke-width="2" fill="none" stroke-linecap="round"/>
 </svg>

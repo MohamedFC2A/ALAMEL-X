@@ -1,28 +1,57 @@
-<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background -->
-  <rect width="192" height="192" rx="96" fill="#0a1118"/>
-  <circle cx="96" cy="96" r="84" fill="#0e1a24" stroke="#4fd1c5" stroke-width="2" stroke-dasharray="6 4"/>
-  <!-- Head/Helmet -->
-  <rect x="52" y="60" width="88" height="72" rx="22" fill="#111d2b" stroke="#4fd1c5" stroke-width="3"/>
-  <!-- Visor -->
-  <rect x="62" y="80" width="68" height="24" rx="12" fill="#0a1118" stroke="#4fd1c5" stroke-width="2"/>
-  <line x1="66" y1="92" x2="126" y2="92" stroke="#4fd1c5" stroke-width="1" stroke-dasharray="3 2" opacity="0.6"/>
-  <!-- Eyes (scanning) -->
-  <circle cx="82" cy="92" r="6" fill="#4fd1c5"/>
-  <circle cx="82" cy="92" r="3" fill="#0a1118"/>
-  <circle cx="110" cy="92" r="6" fill="#4fd1c5"/>
-  <circle cx="110" cy="92" r="3" fill="#0a1118"/>
-  <!-- Antenna -->
-  <line x1="96" y1="40" x2="96" y2="60" stroke="#4fd1c5" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="96" cy="36" r="6" fill="#e53e3e"/>
-  <circle cx="96" cy="36" r="3" fill="#ff6b6b" opacity="0.8"/>
-  <!-- Mouth grid -->
-  <line x1="78" y1="114" x2="114" y2="114" stroke="#4fd1c5" stroke-width="2" opacity="0.4"/>
-  <line x1="82" y1="110" x2="82" y2="118" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
-  <line x1="92" y1="110" x2="92" y2="118" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
-  <line x1="102" y1="110" x2="102" y2="118" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
-  <line x1="112" y1="110" x2="112" y2="118" stroke="#4fd1c5" stroke-width="1" opacity="0.3"/>
-  <!-- Badge -->
-  <rect x="68" y="136" width="56" height="14" rx="4" fill="#e53e3e" opacity="0.85"/>
-  <text x="96" y="147" text-anchor="middle" fill="#fff" font-size="9" font-family="monospace" font-weight="700">AI AGENT</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="aihead" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2c3c"/>
+      <stop offset="100%" stop-color="#0e1820"/>
+    </linearGradient>
+    <linearGradient id="aivisor" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0a1118"/>
+      <stop offset="50%" stop-color="#0e1820"/>
+      <stop offset="100%" stop-color="#0a1118"/>
+    </linearGradient>
+    <radialGradient id="aieye" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#7aeae0"/>
+      <stop offset="60%" stop-color="#4fd1c5"/>
+      <stop offset="100%" stop-color="#2aa89e"/>
+    </radialGradient>
+    <radialGradient id="aiantenna" cx="0.5" cy="0.3" r="0.6">
+      <stop offset="0%" stop-color="#ff8080"/>
+      <stop offset="100%" stop-color="#cc2020"/>
+    </radialGradient>
+    <radialGradient id="aieyeglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#4fd1c5" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#4fd1c5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" rx="24" fill="#0e1a24"/>
+  <circle cx="60" cy="60" r="52" fill="none" stroke="#4fd1c5" stroke-width="1" stroke-dasharray="4 3" opacity="0.2"/>
+  <rect x="34" y="38" width="52" height="44" rx="14" fill="url(#aihead)" stroke="#4fd1c5" stroke-width="2"/>
+  <rect x="35" y="39" width="50" height="42" rx="13" fill="none" stroke="#4fd1c5" stroke-width="0.5" opacity="0.15"/>
+  <rect x="40" y="52" width="40" height="16" rx="8" fill="url(#aivisor)" stroke="#4fd1c5" stroke-width="1.5"/>
+  <line x1="44" y1="60" x2="76" y2="60" stroke="#4fd1c5" stroke-width="0.5" stroke-dasharray="2 1.5" opacity="0.35"/>
+  <circle cx="52" cy="60" r="5" fill="url(#aieye)"/>
+  <circle cx="52" cy="60" r="2.5" fill="#0a1118"/>
+  <circle cx="53" cy="59" r="1" fill="#fff" opacity="0.5"/>
+  <circle cx="52" cy="60" r="8" fill="url(#aieyeglow)"/>
+  <circle cx="68" cy="60" r="5" fill="url(#aieye)"/>
+  <circle cx="68" cy="60" r="2.5" fill="#0a1118"/>
+  <circle cx="69" cy="59" r="1" fill="#fff" opacity="0.5"/>
+  <circle cx="68" cy="60" r="8" fill="url(#aieyeglow)"/>
+  <line x1="60" y1="24" x2="60" y2="38" stroke="#4fd1c5" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="60" cy="22" r="4.5" fill="url(#aiantenna)"/>
+  <circle cx="59" cy="21" r="1.5" fill="#fff" opacity="0.25"/>
+  <circle cx="60" cy="22" r="7" fill="url(#aieyeglow)" opacity="0.5"/>
+  <line x1="48" y1="73" x2="72" y2="73" stroke="#4fd1c5" stroke-width="1.5" opacity="0.35"/>
+  <line x1="50" y1="70" x2="50" y2="76" stroke="#4fd1c5" stroke-width="0.8" opacity="0.25"/>
+  <line x1="56" y1="70" x2="56" y2="76" stroke="#4fd1c5" stroke-width="0.8" opacity="0.25"/>
+  <line x1="62" y1="70" x2="62" y2="76" stroke="#4fd1c5" stroke-width="0.8" opacity="0.25"/>
+  <line x1="68" y1="70" x2="68" y2="76" stroke="#4fd1c5" stroke-width="0.8" opacity="0.25"/>
+  <rect x="30" y="55" width="5" height="10" rx="2.5" fill="#1a2a3a" stroke="#4fd1c5" stroke-width="0.8"/>
+  <circle cx="32.5" cy="60" r="1.2" fill="#4fd1c5" opacity="0.4"/>
+  <rect x="85" y="55" width="5" height="10" rx="2.5" fill="#1a2a3a" stroke="#4fd1c5" stroke-width="0.8"/>
+  <circle cx="87.5" cy="60" r="1.2" fill="#4fd1c5" opacity="0.4"/>
+  <rect x="40" y="86" width="40" height="10" rx="3" fill="#e53e3e" opacity="0.85"/>
+  <text x="60" y="94" text-anchor="middle" fill="#fff" font-size="7" font-family="monospace" font-weight="700" letter-spacing="1">AI AGENT</text>
+  <rect x="44" y="44" width="8" height="3" rx="1.5" fill="#4fd1c5" opacity="0.15"/>
+  <rect x="68" y="44" width="8" height="3" rx="1.5" fill="#4fd1c5" opacity="0.15"/>
 </svg>

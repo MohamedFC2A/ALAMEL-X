@@ -1,24 +1,50 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="b4skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a07850"/>
+      <stop offset="100%" stop-color="#7a5c38"/>
+    </linearGradient>
+    <linearGradient id="b4mask" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#222222"/>
+      <stop offset="100%" stop-color="#0e0e0e"/>
+    </linearGradient>
+    <linearGradient id="b4stealth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#161616"/>
+      <stop offset="100%" stop-color="#080808"/>
+    </linearGradient>
+    <radialGradient id="b4eyeglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#4fd1c5" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#4fd1c5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
   <rect width="120" height="120" rx="24" fill="#0e1a24"/>
-  <!-- Face -->
-  <circle cx="60" cy="46" r="24" fill="#8b6b4a"/>
-  <!-- Balaclava/Mask -->
-  <path d="M36 46c0-14 10-30 24-30s24 16 24 30c0 8-6 18-24 18s-24-10-24-18z" fill="#1a1a1a"/>
-  <!-- Eye slit -->
-  <rect x="40" y="40" width="40" height="12" rx="6" fill="#0e1a24"/>
-  <!-- Eyes -->
-  <circle cx="50" cy="46" r="3" fill="#e8c8a0"/>
-  <circle cx="50" cy="46" r="1.5" fill="#2a1f14"/>
-  <circle cx="70" cy="46" r="3" fill="#e8c8a0"/>
-  <circle cx="70" cy="46" r="1.5" fill="#2a1f14"/>
-  <!-- Body (stealth suit) -->
-  <path d="M28 108c4-21 16-32 32-32s28 11 32 32z" fill="#111111"/>
-  <!-- Utility belt -->
-  <rect x="38" y="90" width="44" height="6" rx="3" fill="#1a2a3a" stroke="#4fd1c5" stroke-width="1"/>
-  <!-- Belt buckle -->
-  <rect x="55" y="89" width="10" height="8" rx="2" fill="#e53e3e"/>
-  <!-- Crosshair on chest -->
-  <circle cx="60" cy="82" r="4" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.5"/>
-  <line x1="60" y1="76" x2="60" y2="88" stroke="#4fd1c5" stroke-width="0.5" opacity="0.4"/>
-  <line x1="54" y1="82" x2="66" y2="82" stroke="#4fd1c5" stroke-width="0.5" opacity="0.4"/>
+  <ellipse cx="60" cy="56" rx="22" ry="5" fill="#000" opacity="0.1"/>
+  <path d="M30 108c5-22 16-34 30-34s25 12 30 34z" fill="url(#b4stealth)"/>
+  <rect x="38" y="93" width="44" height="7" rx="3.5" fill="#1a2a3a" stroke="#4fd1c5" stroke-width="1"/>
+  <rect x="55" y="92" width="10" height="9" rx="2" fill="#e53e3e"/>
+  <rect x="57" y="94" width="6" height="5" rx="1" fill="#ff6b6b" opacity="0.3"/>
+  <circle cx="60" cy="84" r="5" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.3"/>
+  <line x1="60" y1="77" x2="60" y2="91" stroke="#4fd1c5" stroke-width="0.5" opacity="0.25"/>
+  <line x1="53" y1="84" x2="67" y2="84" stroke="#4fd1c5" stroke-width="0.5" opacity="0.25"/>
+  <circle cx="60" cy="84" r="1.5" fill="#4fd1c5" opacity="0.2"/>
+  <path d="M36 48c0-16 10-32 24-32s24 16 24 32c0 10-6 20-24 20s-24-10-24-20z" fill="url(#b4mask)"/>
+  <path d="M38 48c0-14 10-28 22-28s22 14 22 28" fill="url(#b4mask)"/>
+  <path d="M36 48c0 2 2 4 4 5" stroke="#333" stroke-width="0.5" opacity="0.3"/>
+  <path d="M84 48c0 2-2 4-4 5" stroke="#333" stroke-width="0.5" opacity="0.3"/>
+  <rect x="40" y="42" width="40" height="14" rx="7" fill="#0e1a24"/>
+  <rect x="41" y="43" width="38" height="12" rx="6" fill="none" stroke="#1a2a3a" stroke-width="0.5"/>
+  <ellipse cx="50" cy="49" rx="4.5" ry="4" fill="url(#b4skin)"/>
+  <circle cx="50" cy="49" r="2.5" fill="#5a4030"/>
+  <circle cx="50" cy="49" r="1.2" fill="#1e1208"/>
+  <circle cx="51" cy="48" r="0.8" fill="#fff" opacity="0.6"/>
+  <circle cx="50" cy="49" r="6" fill="url(#b4eyeglow)"/>
+  <ellipse cx="70" cy="49" rx="4.5" ry="4" fill="url(#b4skin)"/>
+  <circle cx="70" cy="49" r="2.5" fill="#5a4030"/>
+  <circle cx="70" cy="49" r="1.2" fill="#1e1208"/>
+  <circle cx="71" cy="48" r="0.8" fill="#fff" opacity="0.6"/>
+  <circle cx="70" cy="49" r="6" fill="url(#b4eyeglow)"/>
+  <path d="M46 44l6-2" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M74 44l-6-2" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+  <rect x="82" y="44" width="6" height="12" rx="3" fill="#1a2a3a"/>
+  <circle cx="85" cy="50" r="1.5" fill="#4fd1c5" opacity="0.5"/>
 </svg>

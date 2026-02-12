@@ -721,7 +721,7 @@ export function ResolutionScreen() {
             <p className="subtle">{t('spyGuessPick')}</p>
             <div className="choice-grid">
               {(i18n.language === 'ar' ? currentMatch.spyGuessOptionsAr : currentMatch.spyGuessOptionsEn).map((option) => {
-                const displayOption = formatWordForDisplay(option, i18n.language as 'en' | 'ar');
+                const displayOption = option;
                 return (
                   <button
                     key={option}
@@ -732,7 +732,7 @@ export function ResolutionScreen() {
                       void submitGuess(displayOption);
                     }}
                   >
-                    {t('confirmLocation', { location: displayOption }) || `Confirm: ${displayOption}`}
+                    {t('confirmLocation', { location: option }) || `Confirm: ${option}`}
                   </button>
                 );
               })}

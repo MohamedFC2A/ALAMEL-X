@@ -92,6 +92,12 @@ const medalRules: MedalRule[] = [
   { id: 'duo_hunter', name: 'قاهر الثنائي', xp: 210, tier: 'gold', condition: ({ metrics }) => metrics.duoCitizenWins >= 3 },
   { id: 'duo_shadowmate', name: 'شريك الظلال', xp: 210, tier: 'gold', condition: ({ metrics }) => metrics.duoSpyWins >= 3 },
   { id: 'duo_emperor', name: 'إمبراطور الثنائي', xp: 260, tier: 'mythic', condition: ({ metrics }) => metrics.duoSpyWins >= 6 },
+  { id: 'perfect_round', name: 'جولة مثالية', xp: 140, tier: 'silver', condition: ({ metrics }) => metrics.citizenCaptureWins >= 1 },
+  { id: 'spy_master', name: 'سيد التجسس', xp: 200, tier: 'gold', condition: ({ metrics }) => metrics.spyWinStreak >= 3 },
+  { id: 'iron_streak', name: 'سلسلة حديدية', xp: 280, tier: 'mythic', condition: ({ metrics }) => metrics.winStreak >= 7 },
+  { id: 'veteran_spy', name: 'جاسوس محترف', xp: 280, tier: 'mythic', condition: ({ metrics }) => metrics.spyWinsTotal >= 20 },
+  { id: 'guardian_angel', name: 'ملاك الحراسة', xp: 280, tier: 'mythic', condition: ({ metrics }) => metrics.citizenWinsTotal >= 20 },
+  { id: 'loss_recovery', name: 'نهوض من الرماد', xp: 200, tier: 'gold', condition: ({ metrics }) => metrics.comebackWins >= 2 },
   { id: 'collector_i', name: 'جامع الشارات I', xp: 220, tier: 'gold', condition: ({ unlockedCount }) => unlockedCount >= 10 },
   { id: 'collector_ii', name: 'جامع الشارات II', xp: 300, tier: 'mythic', condition: ({ unlockedCount }) => unlockedCount >= 20 },
 ];

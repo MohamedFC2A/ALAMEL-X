@@ -40,7 +40,6 @@ export function PlaySetupScreen() {
   const remainingWords = Math.max(0, usageSummary.total - usageSummary.used);
   const enabledPlayersCount = players?.length ?? 0;
   const spyCount = spyCountOverride ?? recommendedSpyCount(selectedPlayers.length);
-  const overridden = spyCountOverride !== null;
   const minPlayers = minPlayersForSpyCount(spyCount);
   const hasMinimumPlayersConfigured = enabledPlayersCount >= minPlayersForSpyCount(1);
   const playersPerPage = 6;
@@ -166,20 +165,24 @@ export function PlaySetupScreen() {
         <div className="setup-spy-panel__header">
           <p>{t('spiesCount')}</p>
           <span className="setup-spy-panel__current">
-            {t('selectedCount')}: {spyCount}
+            {spyCount}
           </span>
         </div>
         <div className="pill-row setup-pill-row" role="group" aria-label={t('spiesCount')}>
           <button type="button" className={`pill-btn ${spyCount === 1 ? 'active' : ''}`} onClick={() => setSpyCountOverride(1)}>
-            1 {!overridden && recommendedSpyCount(selectedPlayers.length) === 1 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
+            1 {recommendedSpyCount(selectedPlayers.length) === 1 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
           </button>
           <button type="button" className={`pill-btn ${spyCount === 2 ? 'active' : ''}`} onClick={() => setSpyCountOverride(2)}>
-            2 {!overridden && recommendedSpyCount(selectedPlayers.length) === 2 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
+            2 {recommendedSpyCount(selectedPlayers.length) === 2 ? <span className="recommend-badge">{t('spyRecommended')}</span> : null}
           </button>
         </div>
-        <p className="subtle">
-          {t('spiesCount')}: 1 (3+ {t('players')}) | 2 (4+ {t('players')})
-        </p>
+        {spyCount === 2 && selectedPlayers.length < 4 ? (
+          <StatusBanner tone="warning">{t('selectPlayers')}</StatusBanner>
+        ) : (
+          <p className="subtle">
+            {t('spiesCount')}: 1 (3+ {t('players')}) | 2 (4+ {t('players')})
+          </p>
+        )}
       </section>
 
       {hasAiSelected ? (

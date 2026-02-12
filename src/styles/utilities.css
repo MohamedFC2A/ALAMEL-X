@@ -3,21 +3,21 @@
 
     0%,
     100% {
-        opacity: 0.025;
+        opacity: 0.03;
     }
 
     50% {
-        opacity: 0.055;
+        opacity: 0.06;
     }
 }
 
 @keyframes gridDrift {
     0% {
-        background-position: 0 0, 0 0;
+        background-position: 0 0, 0 0, 0 0, 0 0;
     }
 
     100% {
-        background-position: 48px 48px, 48px 48px;
+        background-position: 48px 48px, 48px 48px, 192px 192px, 192px 192px;
     }
 }
 

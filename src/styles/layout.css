@@ -35,13 +35,22 @@
     inset: 0;
     z-index: var(--z-bg);
     background-image:
-        linear-gradient(rgba(56, 217, 197, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(56, 217, 197, 0.04) 1px, transparent 1px);
-    background-size: 48px 48px;
-    /* animation defined in utilities/index */
+        linear-gradient(rgba(56, 217, 197, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 217, 197, 0.035) 1px, transparent 1px),
+        linear-gradient(rgba(56, 217, 197, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 217, 197, 0.015) 1px, transparent 1px);
+    background-size: 48px 48px, 48px 48px, 192px 192px, 192px 192px;
     animation:
-        gridPulse 4s ease-in-out infinite,
-        gridDrift 20s linear infinite;
+        gridPulse 6s ease-in-out infinite,
+        gridDrift 30s linear infinite;
+    will-change: background-position, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-shell__grid {
+        animation: none;
+        opacity: 0.04;
+    }
 }
 
 .app-shell__content {

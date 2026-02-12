@@ -1,21 +1,50 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="b3skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0d8b8"/>
+      <stop offset="100%" stop-color="#d4b890"/>
+    </linearGradient>
+    <linearGradient id="b3suit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c2e40"/>
+      <stop offset="100%" stop-color="#0d1820"/>
+    </linearGradient>
+    <linearGradient id="b3hair" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a3520"/>
+      <stop offset="100%" stop-color="#2a1a0c"/>
+    </linearGradient>
+    <radialGradient id="b3monocle" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#4fd1c5" stop-opacity="0.5"/>
+      <stop offset="60%" stop-color="#4fd1c5" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#4fd1c5" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
   <rect width="120" height="120" rx="24" fill="#0e1a24"/>
-  <!-- Face -->
-  <circle cx="60" cy="46" r="24" fill="#e8c8a0"/>
-  <!-- Hair (slicked back) -->
-  <path d="M36 40c2-17 13-28 24-28s22 11 24 28c-4 2-12 4-24 4s-20-2-24-4z" fill="#3a2a1a"/>
-  <!-- Night vision monocle -->
-  <circle cx="48" cy="44" r="9" fill="#0a1118" stroke="#4fd1c5" stroke-width="2"/>
-  <circle cx="48" cy="44" r="4" fill="#4fd1c5" opacity="0.3"/>
-  <!-- Regular eye -->
-  <circle cx="72" cy="46" r="3" fill="#1e1e1e"/>
-  <circle cx="72" cy="46" r="1.5" fill="#4a3520"/>
-  <!-- Mouth (smirk) -->
-  <path d="M54 59c4 2 12 1 14-1" stroke="#8b6b4a" stroke-width="2" fill="none" stroke-linecap="round"/>
-  <!-- Body (spy suit with collar) -->
-  <path d="M28 108c4-21 16-32 32-32s28 11 32 32z" fill="#111d2b"/>
-  <!-- Collar/Lapels -->
-  <path d="M50 76l10 12 10-12" stroke="#4fd1c5" stroke-width="1.5" fill="none" opacity="0.6"/>
-  <!-- Mic wire -->
-  <path d="M36 50c-4 4-6 16-2 30" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.5"/>
+  <ellipse cx="60" cy="58" rx="22" ry="5" fill="#000" opacity="0.12"/>
+  <path d="M30 108c5-22 16-34 30-34s25 12 30 34z" fill="url(#b3suit)"/>
+  <path d="M50 78l10 10 10-10" stroke="#4fd1c5" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <line x1="60" y1="88" x2="60" y2="108" stroke="#263c50" stroke-width="0.8"/>
+  <path d="M46 76l-4 4" stroke="#fff" stroke-width="1" opacity="0.08"/>
+  <path d="M74 76l4 4" stroke="#fff" stroke-width="1" opacity="0.08"/>
+  <ellipse cx="60" cy="50" rx="22" ry="24" fill="url(#b3skin)"/>
+  <ellipse cx="53" cy="55" rx="3" ry="1.5" fill="#d4b080" opacity="0.25"/>
+  <ellipse cx="67" cy="55" rx="3" ry="1.5" fill="#d4b080" opacity="0.25"/>
+  <path d="M38 42c2-18 11-28 22-28s20 10 22 28c-3 4-10 7-22 7s-19-3-22-7z" fill="url(#b3hair)"/>
+  <path d="M62 16c6 2 14 8 18 20" stroke="#3a2510" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <path d="M58 16c-6 2-12 8-16 18" stroke="#3a2510" stroke-width="1" fill="none" opacity="0.2"/>
+  <circle cx="48" cy="48" r="11" fill="#0a1118" stroke="#4fd1c5" stroke-width="2"/>
+  <circle cx="48" cy="48" r="8" fill="url(#b3monocle)"/>
+  <circle cx="48" cy="48" r="4" fill="#4fd1c5" opacity="0.2"/>
+  <circle cx="46" cy="46" r="1.5" fill="#4fd1c5" opacity="0.4"/>
+  <path d="M59 48l6-2" stroke="#4fd1c5" stroke-width="1" opacity="0.4"/>
+  <ellipse cx="70" cy="50" rx="4" ry="3.5" fill="#fff"/>
+  <circle cx="70" cy="50" r="2.5" fill="#5a4030"/>
+  <circle cx="70" cy="50" r="1.2" fill="#1e1208"/>
+  <circle cx="71.2" cy="49" r="0.8" fill="#fff" opacity="0.7"/>
+  <path d="M44 44l8-2" stroke="#3a2510" stroke-width="2" stroke-linecap="round"/>
+  <path d="M66 46l8-2" stroke="#3a2510" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="60" cy="58" rx="2.5" ry="1.5" fill="#d4b080" opacity="0.4"/>
+  <path d="M55 62c3 2 10 1 12-1" stroke="#a08060" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M37 52c-4 4-5 16-1 28" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.35"/>
+  <circle cx="35" cy="54" r="2" fill="#1a2a3a" stroke="#4fd1c5" stroke-width="0.8"/>
+  <circle cx="35" cy="54" r="0.8" fill="#4fd1c5" opacity="0.5"/>
 </svg>

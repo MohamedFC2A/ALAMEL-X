@@ -1,23 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="g2skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#deb08a"/>
+      <stop offset="100%" stop-color="#c49060"/>
+    </linearGradient>
+    <linearGradient id="g2jacket" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#223344"/>
+      <stop offset="100%" stop-color="#121e2a"/>
+    </linearGradient>
+    <linearGradient id="g2hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a1e14"/>
+      <stop offset="100%" stop-color="#1e0e08"/>
+    </linearGradient>
+    <radialGradient id="g2earring" cx="0.5" cy="0.3" r="0.6">
+      <stop offset="0%" stop-color="#7aeae0"/>
+      <stop offset="100%" stop-color="#4fd1c5"/>
+    </radialGradient>
+  </defs>
   <rect width="120" height="120" rx="24" fill="#0e1a24"/>
-  <!-- Face -->
-  <circle cx="60" cy="46" r="24" fill="#d4a574"/>
-  <!-- Hair (bob cut with bangs) -->
-  <path d="M36 44c0-18 10-30 24-30s24 12 24 30c0 4-2 8-6 10v-10c0-12-8-22-18-22s-18 10-18 22v10c-4-2-6-6-6-10z" fill="#2a1510"/>
-  <rect x="40" y="32" width="40" height="8" rx="4" fill="#2a1510"/>
-  <!-- Eyes with liner -->
-  <ellipse cx="50" cy="46" rx="3.5" ry="3" fill="#1e1e1e"/>
-  <ellipse cx="70" cy="46" rx="3.5" ry="3" fill="#1e1e1e"/>
-  <path d="M44 44l2-2" stroke="#4fd1c5" stroke-width="1" stroke-linecap="round"/>
-  <path d="M76 44l-2-2" stroke="#4fd1c5" stroke-width="1" stroke-linecap="round"/>
-  <!-- Comm earring -->
-  <circle cx="34" cy="48" r="3" fill="#4fd1c5" opacity="0.7"/>
-  <!-- Lips -->
-  <path d="M54 58c2 3 10 3 12 0" stroke="#c45050" stroke-width="2" fill="none" stroke-linecap="round"/>
-  <!-- Body (tech jacket) -->
-  <path d="M28 108c4-21 16-32 32-32s28 11 32 32z" fill="#1a2a3a"/>
-  <!-- Collar details -->
-  <path d="M44 76l16 8 16-8" stroke="#4fd1c5" stroke-width="1" fill="none" opacity="0.5"/>
-  <!-- Badge -->
-  <rect x="52" y="86" width="16" height="8" rx="2" fill="#e53e3e" opacity="0.8"/>
+  <ellipse cx="60" cy="58" rx="22" ry="5" fill="#000" opacity="0.12"/>
+  <path d="M30 108c5-22 16-34 30-34s25 12 30 34z" fill="url(#g2jacket)"/>
+  <path d="M44 78l16 8 16-8" stroke="#4fd1c5" stroke-width="1.2" fill="none" opacity="0.45"/>
+  <rect x="52" y="88" width="16" height="9" rx="2.5" fill="#e53e3e" opacity="0.85"/>
+  <rect x="54" y="90" width="12" height="2" rx="1" fill="#fff" opacity="0.2"/>
+  <rect x="54" y="93" width="8" height="1.5" rx="0.75" fill="#fff" opacity="0.12"/>
+  <ellipse cx="60" cy="50" rx="22" ry="24" fill="url(#g2skin)"/>
+  <ellipse cx="53" cy="56" rx="2.5" ry="1.5" fill="#c49060" opacity="0.25"/>
+  <ellipse cx="67" cy="56" rx="2.5" ry="1.5" fill="#c49060" opacity="0.25"/>
+  <path d="M36 44c0-18 10-30 24-30s24 12 24 30c0 4-2 8-6 10v-8c0-14-8-24-18-24s-18 10-18 24v8c-4-2-6-6-6-10z" fill="url(#g2hair)"/>
+  <rect x="40" y="33" width="40" height="9" rx="4.5" fill="url(#g2hair)"/>
+  <path d="M42 37c4-1 12-2 18-2s14 1 18 2" stroke="#4a2820" stroke-width="0.8" fill="none" opacity="0.3"/>
+  <rect x="36" y="32" width="48" height="4" rx="2" fill="#4fd1c5" opacity="0.6"/>
+  <rect x="36" y="32" width="48" height="4" rx="2" fill="none" stroke="#4fd1c5" stroke-width="0.5" opacity="0.3"/>
+  <ellipse cx="50" cy="50" rx="4.5" ry="4" fill="#fff"/>
+  <circle cx="50" cy="50" r="2.5" fill="#4a3520"/>
+  <circle cx="50" cy="50" r="1.2" fill="#1e1208"/>
+  <circle cx="51" cy="49" r="0.8" fill="#fff" opacity="0.6"/>
+  <ellipse cx="70" cy="50" rx="4.5" ry="4" fill="#fff"/>
+  <circle cx="70" cy="50" r="2.5" fill="#4a3520"/>
+  <circle cx="70" cy="50" r="1.2" fill="#1e1208"/>
+  <circle cx="71" cy="49" r="0.8" fill="#fff" opacity="0.6"/>
+  <path d="M44 48c1-1 2-2 4-2" stroke="#4fd1c5" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+  <path d="M76 48c-1-1-2-2-4-2" stroke="#4fd1c5" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+  <path d="M46 45l6-2" stroke="#2a1510" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M74 45l-6-2" stroke="#2a1510" stroke-width="1.8" stroke-linecap="round"/>
+  <ellipse cx="60" cy="58" rx="2" ry="1.5" fill="#c49060" opacity="0.4"/>
+  <path d="M54 62c2 3 10 3 12 0" stroke="#c06060" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M55 63c2 1 6 1 8 0" stroke="#d47070" stroke-width="0.8" fill="none" opacity="0.35"/>
+  <circle cx="34" cy="52" r="3.5" fill="url(#g2earring)" opacity="0.8"/>
+  <circle cx="34" cy="52" r="1.5" fill="#fff" opacity="0.3"/>
 </svg>

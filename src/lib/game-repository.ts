@@ -532,11 +532,15 @@ export function computeSpyGuessCorrect(activeMatch: ActiveMatch, guess: string):
   const expectedArCore = normalizeWord(extractCoreWord(activeMatch.wordTextAr, 'ar'));
   const expectedEnFull = normalizeWord(activeMatch.wordTextEn);
   const expectedArFull = normalizeWord(activeMatch.wordTextAr);
+  const expectedEnFormatted = normalizeWord(formatWordForDisplay(activeMatch.wordTextEn, 'en'));
+  const expectedArFormatted = normalizeWord(formatWordForDisplay(activeMatch.wordTextAr, 'ar'));
   return (
     normalizedGuess === expectedEnCore ||
     normalizedGuess === expectedArCore ||
     normalizedGuess === expectedEnFull ||
-    normalizedGuess === expectedArFull
+    normalizedGuess === expectedArFull ||
+    normalizedGuess === expectedEnFormatted ||
+    normalizedGuess === expectedArFormatted
   );
 }
 
@@ -561,6 +565,18 @@ async function updatePlayersAfterRound(active: ActiveMatch, winner: Winner): Pro
       const spyWin = winner === 'spies' && isSpy;
       const citizenWin = winner === 'citizens' && !isSpy;
       const teamWon = spyWin || citizenWin;
+
+      if (player.kind === 'ai') {
+        return {
+          ...player,
+          stats: {
+            gamesPlayed: player.stats.gamesPlayed + 1,
+            spyWins: player.stats.spyWins + (spyWin ? 1 : 0),
+            citizenWins: player.stats.citizenWins + (citizenWin ? 1 : 0),
+          },
+          updatedAt: now,
+        };
+      }
 
       const progressionResult = applyRoundProgression(
         {
