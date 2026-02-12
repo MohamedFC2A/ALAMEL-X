@@ -14,6 +14,7 @@
     "test:elevenlabs": "node scripts/test-elevenlabs.mjs"
   },
   "dependencies": {
+    "@octokit/rest": "^22.0.0",
     "dexie": "^4.3.0",
     "dexie-react-hooks": "^4.2.0",
     "framer-motion": "^12.33.0",
