@@ -4,18 +4,33 @@ interface PhaseIndicatorProps {
 }
 
 export function PhaseIndicator({ current, labels }: PhaseIndicatorProps) {
+  const progress = ((current - 1) / (labels.length - 1)) * 100;
+
   return (
-    <ol className="phase-indicator glass-card" aria-label="phase progress">
-      {labels.map((label, idx) => {
-        const step = idx + 1;
-        const state = step === current ? 'current' : step < current ? 'done' : 'next';
-        return (
-          <li key={label} className={`phase-item ${state}`}>
-            <span className="phase-dot" aria-hidden="true" />
-            <span className="phase-label">{label}</span>
-          </li>
-        );
-      })}
-    </ol>
+    <nav className="phase-bar" aria-label="phase progress">
+      <div className="phase-bar__track">
+        <div
+          className="phase-bar__fill"
+          style={{ width: `${progress}%` }}
+        />
+        {labels.map((label, idx) => {
+          const step = idx + 1;
+          const state = step === current ? 'current' : step < current ? 'done' : 'next';
+          const position = labels.length > 1 ? (idx / (labels.length - 1)) * 100 : 50;
+          return (
+            <div
+              key={label}
+              className={`phase-bar__node ${state}`}
+              style={{ insetInlineStart: `${position}%` }}
+            >
+              <span className="phase-bar__dot" aria-hidden="true">
+                {step < current ? '✓' : step}
+              </span>
+              <span className="phase-bar__label">{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
