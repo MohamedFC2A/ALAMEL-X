@@ -2,8 +2,9 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { History, Settings2, UsersRound } from 'lucide-react';
+import { History, RotateCcw, Settings2, UsersRound } from 'lucide-react';
 import { db } from '../lib/db';
+import { abandonActiveMatch } from '../lib/game-repository';
 import { GameButton } from '../components/GameButton';
 import { PlayerNameplate } from '../components/PlayerNameplate';
 import { ensureProgressionState } from '../lib/player-progression';
@@ -38,6 +39,12 @@ export function HomeScreen() {
     }
   };
 
+  const handleRestart = async () => {
+    const confirmed = window.confirm(t('confirmRestartRound'));
+    if (!confirmed) return;
+    await abandonActiveMatch();
+  };
+
   return (
     <main className="home-hud">
       <section className="home-hud__top">
@@ -68,9 +75,19 @@ export function HomeScreen() {
             size="hero"
             onClick={handleMission}
           >
-            {t('startMission')}
+            {activeMatch ? t('continueMission') : t('startMission')}
           </GameButton>
         </motion.div>
+        {activeMatch ? (
+          <GameButton
+            variant="danger"
+            size="md"
+            icon={<RotateCcw size={16} aria-hidden />}
+            onClick={() => void handleRestart()}
+          >
+            {t('restartRound')}
+          </GameButton>
+        ) : null}
       </section>
 
       <nav className="home-hud__footer" aria-label={t('homeUtilities')}>

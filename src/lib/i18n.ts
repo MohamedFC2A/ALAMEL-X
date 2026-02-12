@@ -6,6 +6,7 @@ const translation = {
   homeTagline: 'مرر الموبايل.. وخلي شكك صاحي.',
   play: 'ابدأ اللعب',
   startMission: 'ابدأ المهمة',
+  continueMission: 'كمّل المهمة',
   resumeMission: 'استكمل المهمة',
   playAi: 'اللعب ضد الذكاء الاصطناعي',
   comingSoon: 'قريبًا',
