@@ -276,6 +276,7 @@ function AnimatedRoutes() {
             <Route path="/play/discussion" element={<DiscussionScreen />} />
             <Route path="/play/resolution" element={<ResolutionScreen />} />
             <Route path="/play/summary" element={<SummaryScreen />} />
+            <Route path="/match/:matchId" element={<SummaryScreen />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

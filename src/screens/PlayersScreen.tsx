@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PlayerNameplate } from '../components/PlayerNameplate';
@@ -40,6 +40,7 @@ function createDefaultForm(): PlayerFormState {
 
 export function PlayersScreen() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const players = useLiveQuery(async () => (await db.players.toArray()).sort((a, b) => a.createdAt - b.createdAt), []);
@@ -313,17 +314,20 @@ export function PlayersScreen() {
           <StatusBanner>{t('emptyHistory')}</StatusBanner>
         ) : (
           (matches ?? []).map((entry) => (
-            <GlassCard key={entry.id} className="history-card section-card cinematic-panel">
-              <strong>{new Date(entry.endedAt).toLocaleString(i18n.language)}</strong>
-              <p>{entry.result.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}</p>
-              <p>
-                {t('correctWord')}:{' '}
+            <div key={entry.id} className="glass-card history-card section-card cinematic-panel clickable-card" role="button" tabIndex={0} onClick={() => navigate(`/match/${entry.id}`)} onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/match/${entry.id}`); }}>
+              <div className="history-card__row">
+                <strong>{new Date(entry.endedAt).toLocaleString(i18n.language)}</strong>
+                <span className={`history-result-badge ${entry.result.winner === 'citizens' ? 'citizens-won' : 'spies-won'}`}>
+                  {entry.result.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}
+                </span>
+              </div>
+              <p className="history-card__word">
                 {formatWordForDisplay(
                   i18n.language === 'ar' ? entry.wordTextAr : entry.wordTextEn,
                   i18n.language as 'en' | 'ar',
                 )}
               </p>
-            </GlassCard>
+            </div>
           ))
         )}
       </section>
