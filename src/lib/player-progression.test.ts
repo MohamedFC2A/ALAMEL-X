@@ -53,9 +53,9 @@ describe('player progression engine', () => {
     expect(unlocked).toContain('citizen_debut');
 
     const progression = ensureProgressionState(result.updatedPlayer.progression);
-    expect(progression.xp).toBe(270);
-    expect(progression.level).toBe(3);
-    expect(result.newLevels).toEqual([2, 3]);
+    expect(progression.xp).toBe(443);
+    expect(progression.level).toBe(4);
+    expect(result.newLevels).toEqual([2, 3, 4]);
   });
 
   it('does not grant the same medal twice across rounds', () => {

@@ -296,11 +296,13 @@ function updateMetrics(base: PlayerProgressMetrics, context: RoundProgressionCon
     metrics.winStreak = 0;
   }
 
-  if (context.role === 'spy' && context.teamWon) {
-    metrics.spyWinsTotal += 1;
-    metrics.spyWinStreak += 1;
-  } else {
-    metrics.spyWinStreak = 0;
+  if (context.role === 'spy') {
+    if (context.teamWon) {
+      metrics.spyWinsTotal += 1;
+      metrics.spyWinStreak += 1;
+    } else {
+      metrics.spyWinStreak = 0;
+    }
   }
 
   if (context.role === 'citizen' && context.teamWon) {
@@ -315,13 +317,13 @@ function updateMetrics(base: PlayerProgressMetrics, context: RoundProgressionCon
     metrics.spyCorrectGuesses += 1;
   }
 
-  const isCitizenCaptureWin =
-    context.role === 'citizen' && context.teamWon && context.voteOutcome === 'captured';
-  if (isCitizenCaptureWin) {
-    metrics.citizenCaptureWins += 1;
-    metrics.citizenCaptureWinStreak += 1;
-  } else {
-    metrics.citizenCaptureWinStreak = 0;
+  if (context.role === 'citizen') {
+    if (context.teamWon && context.voteOutcome === 'captured') {
+      metrics.citizenCaptureWins += 1;
+      metrics.citizenCaptureWinStreak += 1;
+    } else {
+      metrics.citizenCaptureWinStreak = 0;
+    }
   }
 
   if (context.teamWon && context.wasRunoff) {
@@ -373,7 +375,28 @@ export function applyRoundProgression(player: Player, context: RoundProgressionC
   const metrics = updateMetrics(baseProgression.metrics, context);
   const { nextMedals, newlyUnlocked } = unlockMedals(metrics, baseProgression.medals, context.now);
 
-  const xpGain = newlyUnlocked.reduce((sum, medal) => sum + medal.xp, 0);
+  const BASE_ROUND_XP = 15;
+  const WIN_BONUS_XP = 10;
+  const SPY_ROLE_BONUS_XP = 5;
+  const CORRECT_GUESS_BONUS_XP = 20;
+  const CAPTURE_BONUS_XP = 8;
+  const DUO_WIN_BONUS_XP = 5;
+  const STREAK_BONUS_XP_PER = 3;
+
+  let roundXp = BASE_ROUND_XP;
+  if (context.teamWon) roundXp += WIN_BONUS_XP;
+  if (context.role === 'spy') roundXp += SPY_ROLE_BONUS_XP;
+  if (context.spyGuessCorrect) roundXp += CORRECT_GUESS_BONUS_XP;
+  if (context.role === 'citizen' && context.teamWon && context.voteOutcome === 'captured') roundXp += CAPTURE_BONUS_XP;
+  if (context.spyCount === 2 && context.teamWon) roundXp += DUO_WIN_BONUS_XP;
+
+  const currentStreak = metrics.winStreak;
+  if (currentStreak > 1) {
+    roundXp += Math.min(currentStreak, 10) * STREAK_BONUS_XP_PER;
+  }
+
+  const medalXp = newlyUnlocked.reduce((sum, medal) => sum + medal.xp, 0);
+  const xpGain = roundXp + medalXp;
   const xpAfter = Math.max(0, baseProgression.xp + xpGain);
   const levelBefore = baseProgression.level;
   const levelAfter = getLevelForXp(xpAfter);

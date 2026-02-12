@@ -28,6 +28,8 @@ An Arabic-language social deduction web game built with React, TypeScript, and V
 - Static deployment serving the `dist/` directory after build
 
 ## Recent Changes
+- 2026-02-12: SVG medal icons with unique gradient IDs (useId), tier letters (B/S/G/M), icon+label chips with gradient backgrounds and hover effects
+- 2026-02-12: Smarter XP system - base 15 XP/round + bonuses (win 10, spy 5, guess 20, capture 8, duo 5, streak 3/count), streaks only reset when playing that role
 - 2026-02-12: Winner messages show spy names (الجاسوس محمد كسب! / الجواسيس محمد واحمد انتصروا!), guessing now mandatory
 - 2026-02-12: Spy-themed result UI - result-winner-banner with shimmer, guess-countdown with pulse, stage pills with HUD styling
 - 2026-02-12: Smarter Auto UI system - continuous scale calculation, auto animation speed based on device, better breakpoints

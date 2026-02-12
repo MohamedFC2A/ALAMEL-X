@@ -1,5 +1,6 @@
 import type { PlayerProgression } from '../types';
 import { countUnlockedMedals, getUnlockedMedalsForDisplay } from '../lib/player-progression';
+import { MedalIcon } from './MedalIcon';
 
 interface PlayerMedalStripProps {
   progression?: PlayerProgression;
@@ -17,11 +18,12 @@ export function PlayerMedalStrip({ progression, limit = 5, className = '' }: Pla
       {medals.length > 0 ? (
         medals.map((medal) => (
           <span key={medal.id} className={`medal-chip medal-chip--${medal.tier}`.trim()} title={medal.name}>
-            {medal.name}
+            <MedalIcon tier={medal.tier} size={16} />
+            <span className="medal-chip__label">{medal.name}</span>
           </span>
         ))
       ) : (
-        <span className="medal-chip medal-chip--empty">بدون ميداليات</span>
+        <span className="medal-chip medal-chip--empty">-</span>
       )}
       {hiddenCount > 0 ? <span className="medal-chip medal-chip--extra">+{hiddenCount}</span> : null}
     </div>
