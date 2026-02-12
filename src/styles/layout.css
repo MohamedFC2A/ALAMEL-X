@@ -7,7 +7,7 @@
     width: 100%;
     /* Mobile viewport fix */
     min-height: -webkit-fill-available;
-    background-color: var(--bg-void);
+    background: linear-gradient(180deg, var(--bg-void) 0%, color-mix(in oklab, var(--bg-void) 95%, #0a1628) 100%);
     overflow: clip;
 }
 
@@ -16,7 +16,7 @@
     position: fixed;
     inset: 0;
     z-index: var(--z-bg);
-    background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.25) 100%);
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.35) 100%);
 }
 
 .app-shell__noise {
@@ -35,9 +35,9 @@
     inset: 0;
     z-index: var(--z-bg);
     background-image:
-        linear-gradient(rgba(79, 209, 197, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(79, 209, 197, 0.06) 1px, transparent 1px);
-    background-size: 40px 40px;
+        linear-gradient(rgba(56, 217, 197, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 217, 197, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
     /* animation defined in utilities/index */
     animation:
         gridPulse 4s ease-in-out infinite,
@@ -303,7 +303,7 @@ main {
     padding-inline: var(--space-2);
     overflow-y: auto;
     min-height: 0;
-    gap: var(--space-3);
+    gap: var(--space-4);
 }
 
 .home-hud__top {
@@ -318,8 +318,8 @@ main {
 
 .home-hud__kicker {
     font-family: var(--font-hud);
-    letter-spacing: 0.3em;
-    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    font-size: 0.72rem;
     color: var(--text-muted);
     margin-block-end: 0.2rem;
 }

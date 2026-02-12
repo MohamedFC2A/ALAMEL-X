@@ -28,4 +28,5 @@ An Arabic-language social deduction web game built with React, TypeScript, and V
 - Static deployment serving the `dist/` directory after build
 
 ## Recent Changes
+- 2026-02-12: UI visual redesign - refined color palette (blue-tinted dark backgrounds), teal CTA buttons, improved typography for Arabic, better spacing/radius, enhanced card/surface depth
 - 2026-02-12: Initial Replit setup - configured Vite for port 5000 with host 0.0.0.0 and allowedHosts

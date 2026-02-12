@@ -12,7 +12,7 @@
         linear-gradient(165deg, color-mix(in oklab, var(--surface-1) 90%, rgba(255, 255, 255, 0.04)), color-mix(in oklab, var(--surface-1) 96%, transparent)),
         color-mix(in oklab, var(--surface-1) 90%, transparent);
     backdrop-filter: blur(16px);
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.04);
     transition:
         transform calc(180ms * max(var(--anim-speed), 0.01)) ease,
         box-shadow calc(180ms * max(var(--anim-speed), 0.01)) ease,
@@ -56,7 +56,7 @@
 
 .section-card {
     border: 1px solid var(--stroke-1);
-    background: var(--surface-1);
+    background: linear-gradient(168deg, var(--surface-2), var(--surface-1));
     animation: cardRise 360ms ease;
 }
 
@@ -213,9 +213,9 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     font-family: var(--font-hud);
-    font-weight: 650;
+    font-weight: 600;
     text-transform: uppercase;
     transition:
         transform calc(120ms * max(var(--anim-speed), 0.01)) ease,
@@ -275,12 +275,12 @@
 }
 
 .game-button--hero {
-    width: min(100%, 320px);
-    padding-block: var(--space-3);
+    width: min(100%, 340px);
+    padding-block: var(--space-4);
     padding-inline: var(--space-4);
-    border-radius: var(--radius-2);
+    border-radius: var(--radius-3);
     /* Responsive hero text */
-    font-size: clamp(1.1rem, 4vw, 1.35rem);
+    font-size: clamp(1.15rem, 4.2vw, 1.4rem);
     font-weight: 700;
     letter-spacing: 0.08em;
     border-color: var(--accent);
@@ -295,10 +295,10 @@
     padding-block: var(--space-3);
     padding-inline: var(--space-2);
     width: calc(33.333% - var(--space-2));
-    min-height: 76px;
-    border-radius: var(--radius-2);
+    min-height: 80px;
+    border-radius: var(--radius-3);
     flex-direction: column;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     letter-spacing: 0.08em;
     gap: 0.5rem;
 }
@@ -340,23 +340,23 @@
     border-color: var(--accent);
 }
 
-/* ─── CTA (Green Call-to-Action) ─── */
+/* ─── CTA (Teal Call-to-Action) ─── */
 .game-button--cta {
     border-color: transparent;
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: #051b12;
+    background: linear-gradient(135deg, #2dd4bf, #14b8a6, #0d9488);
+    color: #02201a;
     font-weight: 700;
     box-shadow:
-        0 0 0 1px rgba(34, 197, 94, 0.3),
-        0 2px 12px rgba(34, 197, 94, 0.2);
+        0 0 0 1px rgba(45, 212, 191, 0.3),
+        0 2px 12px rgba(45, 212, 191, 0.2);
 }
 
 .game-button--cta:hover:not(:disabled) {
     border-color: transparent;
-    background: linear-gradient(135deg, #2dd468, #1db954);
+    background: linear-gradient(135deg, #5eead4, #2dd4bf, #14b8a6);
     box-shadow:
-        0 0 0 1px rgba(34, 197, 94, 0.5),
-        0 4px 20px rgba(34, 197, 94, 0.35);
+        0 0 0 1px rgba(45, 212, 191, 0.5),
+        0 4px 24px rgba(45, 212, 191, 0.35);
 }
 
 .game-button--cta:disabled {
@@ -366,37 +366,34 @@
 
 .game-button--cta.game-button--hero {
     border-color: transparent;
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+    background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #0d9488 100%);
     box-shadow:
-        0 0 0 1px rgba(34, 197, 94, 0.4),
-        0 4px 24px rgba(34, 197, 94, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        0 0 0 1px rgba(45, 212, 191, 0.4),
+        0 4px 28px rgba(45, 212, 191, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
     animation: ctaPulse 2.8s ease-in-out infinite;
 }
 
 .game-button--cta.game-button--hero:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2dd468 0%, #1db954 50%, #16a34a 100%);
+    background: linear-gradient(135deg, #5eead4 0%, #2dd4bf 50%, #14b8a6 100%);
     box-shadow:
-        0 0 0 2px rgba(34, 197, 94, 0.6),
-        0 6px 32px rgba(34, 197, 94, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        0 0 0 2px rgba(45, 212, 191, 0.6),
+        0 8px 36px rgba(45, 212, 191, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 @keyframes ctaPulse {
-
-    0%,
-    100% {
+    0%, 100% {
         box-shadow:
-            0 0 0 1px rgba(34, 197, 94, 0.4),
-            0 4px 24px rgba(34, 197, 94, 0.25),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            0 0 0 1px rgba(45, 212, 191, 0.4),
+            0 4px 28px rgba(45, 212, 191, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.18);
     }
-
     50% {
         box-shadow:
-            0 0 0 2px rgba(34, 197, 94, 0.55),
-            0 6px 32px rgba(34, 197, 94, 0.35),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            0 0 0 2px rgba(45, 212, 191, 0.55),
+            0 8px 36px rgba(45, 212, 191, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.22);
     }
 }
 
@@ -418,8 +415,8 @@
     min-height: 54px;
     padding: 0.75rem 1.6rem;
     font-size: 1.05rem;
-    background: linear-gradient(135deg, color-mix(in oklab, var(--success) 78%, white), var(--success));
-    color: #051b12;
+    background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+    color: #02201a;
 }
 
 .next-btn:hover {
