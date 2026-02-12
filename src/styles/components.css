@@ -817,6 +817,7 @@ input[type='range'] {
     align-items: center;
     gap: 0.22rem;
     min-width: 0;
+    overflow: visible;
 }
 
 .level-badge--compact {
@@ -838,132 +839,151 @@ input[type='range'] {
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    overflow: visible;
 }
 
-.level-chip--ember {
-    border-color: rgba(255, 160, 60, 0.45);
-    background: linear-gradient(125deg, #1a0f04 0%, #3d2008 50%, #6b3a10 100%);
-    color: #ffd4a8;
-    box-shadow: 0 0 var(--fire-spread, 6px) rgba(255, 140, 40, var(--fire-glow, 0.25));
-    animation: fire-ember var(--fire-speed, 1.6s) ease-in-out infinite;
+.level-badge--compact .fire-particles {
+    display: none;
 }
 
-.level-chip--flame {
-    border-color: rgba(255, 204, 102, 0.65);
-    background: linear-gradient(125deg, #2f1a04 0%, #7a4a12 38%, #d1a743 60%, #a06d20 100%);
-    color: #fff3ca;
-    box-shadow: 0 0 var(--fire-spread, 8px) rgba(255, 180, 50, var(--fire-glow, 0.3));
-    animation: fire-flame var(--fire-speed, 1.2s) ease-in-out infinite;
+.level-badge--compact .fire-glow-ring {
+    inset: -1px;
 }
 
-.level-chip--flame::after {
-    content: '';
-    position: absolute;
-    inset: -3px -1px auto -1px;
-    height: calc(6px + var(--fire-intensity, 0.2) * 10px);
-    border-radius: 8px 8px 2px 2px;
-    background: radial-gradient(ellipse at 50% 100%, rgba(255, 200, 100, 0.7), rgba(255, 150, 40, 0.15) 70%, transparent 90%);
-    opacity: calc(0.6 + var(--fire-intensity, 0.2) * 0.35);
-    pointer-events: none;
-    filter: blur(1px);
-    animation: fire-tongue var(--fire-speed, 1.2s) ease-in-out infinite;
+.level-chip__text {
+    position: relative;
+    z-index: 2;
 }
 
-.level-chip--inferno {
-    border-color: rgba(255, 110, 40, 0.8);
-    background: linear-gradient(125deg, #2a0b02 0%, #6d1408 35%, #d63716 62%, #ff8c2a 100%);
-    color: #fff1d9;
-    box-shadow: 0 0 var(--fire-spread, 14px) rgba(255, 87, 34, var(--fire-glow, 0.5));
-    animation: fire-inferno var(--fire-speed, 0.9s) ease-in-out infinite;
-}
-
-.level-chip--inferno::before {
-    content: '';
+.fire-glow-ring {
     position: absolute;
     inset: -2px;
     border-radius: inherit;
-    background: radial-gradient(ellipse at 50% 0%, rgba(255, 120, 40, 0.3), transparent 70%);
     pointer-events: none;
-    animation: fire-aura calc(var(--fire-speed, 0.9s) * 0.7) ease-in-out infinite alternate;
+    z-index: 0;
 }
 
-.level-chip--inferno::after {
-    content: '';
+.fire-particles {
     position: absolute;
-    inset: -6px -4px auto -4px;
-    height: calc(8px + var(--fire-intensity, 0.4) * 14px);
-    border-radius: 10px 10px 3px 3px;
-    background: radial-gradient(ellipse at 30% 100%, rgba(255, 222, 158, 0.85), rgba(255, 95, 31, 0.25) 60%, transparent 85%);
-    opacity: calc(0.6 + var(--fire-intensity, 0.4) * 0.35);
+    inset: 0;
     pointer-events: none;
-    filter: blur(calc(0.5px + var(--fire-intensity, 0.4) * 1.5px));
-    animation: fire-tongue calc(var(--fire-speed, 0.9s) * 0.6) ease-in-out infinite;
+    z-index: 1;
 }
 
-.level-chip--mythic-fire {
-    border-color: rgba(255, 60, 100, 0.85);
-    background: linear-gradient(125deg, #1a0020 0%, #5c0a2a 30%, #c41840 55%, #ff6b35 85%, #ffa040 100%);
+.fire-particle {
+    position: absolute;
+    display: block;
+    width: 6px;
+    height: var(--fire-height, 10px);
+    bottom: 40%;
+    left: calc(10% + (var(--p-i, 0) / var(--p-total, 1)) * 80%);
+    border-radius: 50% 50% 20% 20%;
+    transform-origin: bottom center;
+    pointer-events: none;
+    animation:
+        fire-rise var(--fire-speed, 1s) ease-out infinite,
+        fire-flicker calc(var(--fire-speed, 1s) * 0.7) ease-in-out infinite alternate;
+    animation-delay: calc(var(--p-i, 0) * -0.18s);
+    opacity: 0;
+}
+
+.fire-ember {
+    border-color: rgba(255, 160, 60, 0.5);
+    background: linear-gradient(135deg, #1a0f04 0%, #3d2008 50%, #6b3a10 100%);
+    color: #ffd4a8;
+    box-shadow: 0 0 var(--fire-glow-size, 6px) rgba(255, 140, 40, var(--fire-glow-opacity, 0.25));
+    animation: fire-badge-pulse var(--fire-speed, 1.6s) ease-in-out infinite;
+}
+
+.fire-ember .fire-glow-ring {
+    box-shadow: 0 0 8px 2px rgba(255, 140, 40, 0.2);
+    animation: glow-pulse var(--fire-speed, 1.6s) ease-in-out infinite;
+}
+
+.fire-ember .fire-particle {
+    background: linear-gradient(to top, #ff8c00, #ffb347 40%, #ffd080 70%, transparent 100%);
+    box-shadow: 0 0 3px 1px rgba(255, 160, 60, 0.4);
+    width: 4px;
+}
+
+.fire-flame {
+    border-color: rgba(255, 204, 102, 0.7);
+    background: linear-gradient(135deg, #2f1a04 0%, #7a4a12 38%, #d1a743 60%, #a06d20 100%);
+    color: #fff3ca;
+    box-shadow: 0 0 var(--fire-glow-size, 10px) rgba(255, 180, 50, var(--fire-glow-opacity, 0.35));
+    animation: fire-badge-pulse var(--fire-speed, 1.2s) ease-in-out infinite;
+}
+
+.fire-flame .fire-glow-ring {
+    box-shadow: 0 0 12px 3px rgba(255, 180, 50, 0.3);
+    animation: glow-pulse var(--fire-speed, 1.2s) ease-in-out infinite;
+}
+
+.fire-flame .fire-particle {
+    background: linear-gradient(to top, #ff6600, #ff9933 30%, #ffcc66 60%, #ffee99 85%, transparent 100%);
+    box-shadow: 0 0 4px 1px rgba(255, 180, 50, 0.5);
+    width: 5px;
+}
+
+.fire-inferno {
+    border-color: rgba(255, 110, 40, 0.85);
+    background: linear-gradient(135deg, #2a0b02 0%, #6d1408 35%, #d63716 62%, #ff8c2a 100%);
+    color: #fff1d9;
+    box-shadow: 0 0 var(--fire-glow-size, 16px) rgba(255, 87, 34, var(--fire-glow-opacity, 0.5));
+    animation: fire-badge-pulse var(--fire-speed, 0.9s) ease-in-out infinite;
+}
+
+.fire-inferno .fire-glow-ring {
+    box-shadow: 0 0 18px 5px rgba(255, 87, 34, 0.35);
+    animation: glow-pulse var(--fire-speed, 0.9s) ease-in-out infinite;
+}
+
+.fire-inferno .fire-particle {
+    background: linear-gradient(to top, #cc2200, #ff4400 25%, #ff7722 50%, #ffaa44 75%, #ffdd88 90%, transparent 100%);
+    box-shadow: 0 0 5px 2px rgba(255, 100, 30, 0.6);
+    width: 6px;
+}
+
+.fire-mythic {
+    border-color: rgba(255, 60, 100, 0.9);
+    background: linear-gradient(135deg, #1a0020 0%, #5c0a2a 30%, #c41840 55%, #ff6b35 85%, #ffa040 100%);
     color: #ffe8f0;
-    box-shadow: 0 0 var(--fire-spread, 18px) rgba(255, 50, 80, var(--fire-glow, 0.65)),
-                0 0 calc(var(--fire-spread, 18px) * 2) rgba(180, 30, 120, calc(var(--fire-glow, 0.65) * 0.3));
-    animation: fire-mythic var(--fire-speed, 0.6s) ease-in-out infinite;
+    box-shadow: 0 0 var(--fire-glow-size, 22px) rgba(255, 50, 80, var(--fire-glow-opacity, 0.65)),
+                0 0 calc(var(--fire-glow-size, 22px) * 2) rgba(180, 30, 120, calc(var(--fire-glow-opacity, 0.65) * 0.3));
+    animation: fire-badge-pulse var(--fire-speed, 0.6s) ease-in-out infinite;
 }
 
-.level-chip--mythic-fire::before {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    border-radius: inherit;
-    background: conic-gradient(from 0deg, rgba(255, 60, 100, 0.3), rgba(180, 30, 180, 0.2), rgba(255, 120, 40, 0.3), rgba(255, 60, 100, 0.3));
-    pointer-events: none;
-    animation: fire-ring calc(var(--fire-speed, 0.6s) * 3) linear infinite;
+.fire-mythic .fire-glow-ring {
+    box-shadow: 0 0 22px 6px rgba(255, 50, 80, 0.4), 0 0 40px 8px rgba(180, 30, 120, 0.15);
+    animation: glow-pulse-mythic var(--fire-speed, 0.6s) ease-in-out infinite;
 }
 
-.level-chip--mythic-fire::after {
-    content: '';
-    position: absolute;
-    inset: -8px -5px auto -5px;
-    height: calc(10px + var(--fire-intensity, 0.7) * 18px);
-    border-radius: 12px 12px 4px 4px;
-    background: radial-gradient(ellipse at 40% 100%, rgba(255, 180, 200, 0.8), rgba(255, 60, 100, 0.35) 50%, rgba(180, 30, 180, 0.1) 80%, transparent 95%);
-    opacity: calc(0.7 + var(--fire-intensity, 0.7) * 0.28);
-    pointer-events: none;
-    filter: blur(calc(1px + var(--fire-intensity, 0.7) * 2px));
-    animation: fire-tongue calc(var(--fire-speed, 0.6s) * 0.5) ease-in-out infinite;
+.fire-mythic .fire-particle {
+    background: linear-gradient(to top, #cc0033, #ff3366 20%, #ff6699 45%, #ffaacc 70%, #ffddee 90%, transparent 100%);
+    box-shadow: 0 0 6px 2px rgba(255, 60, 100, 0.6);
+    width: 7px;
 }
 
-.level-chip--legendary {
-    border-color: rgba(180, 220, 255, 0.9);
-    background: linear-gradient(125deg, #000820 0%, #0a1a5c 25%, #1a3aaa 45%, #4488ff 65%, #88ccff 85%, #ccefff 100%);
+.fire-legendary {
+    border-color: rgba(180, 220, 255, 0.95);
+    background: linear-gradient(135deg, #000820 0%, #0a1a5c 25%, #1a3aaa 45%, #4488ff 65%, #88ccff 85%, #ccefff 100%);
     color: #ffffff;
-    box-shadow: 0 0 var(--fire-spread, 28px) rgba(100, 180, 255, var(--fire-glow, 0.9)),
-                0 0 calc(var(--fire-spread, 28px) * 3) rgba(60, 120, 255, calc(var(--fire-glow, 0.9) * 0.5)),
-                0 0 calc(var(--fire-spread, 28px) * 5) rgba(160, 200, 255, calc(var(--fire-glow, 0.9) * 0.2));
-    animation: fire-legendary var(--fire-speed, 0.4s) ease-in-out infinite;
-    text-shadow: 0 0 6px rgba(200, 230, 255, 0.8);
+    box-shadow: 0 0 var(--fire-glow-size, 30px) rgba(100, 180, 255, var(--fire-glow-opacity, 0.9)),
+                0 0 calc(var(--fire-glow-size, 30px) * 2.5) rgba(60, 120, 255, calc(var(--fire-glow-opacity, 0.9) * 0.4)),
+                0 0 calc(var(--fire-glow-size, 30px) * 5) rgba(160, 200, 255, calc(var(--fire-glow-opacity, 0.9) * 0.15));
+    animation: fire-badge-pulse var(--fire-speed, 0.4s) ease-in-out infinite;
+    text-shadow: 0 0 8px rgba(200, 230, 255, 0.9);
 }
 
-.level-chip--legendary::before {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: inherit;
-    background: conic-gradient(from 0deg, rgba(100, 180, 255, 0.4), rgba(200, 230, 255, 0.3), rgba(60, 120, 255, 0.4), rgba(100, 180, 255, 0.4));
-    pointer-events: none;
-    animation: fire-ring calc(var(--fire-speed, 0.4s) * 2.5) linear infinite;
+.fire-legendary .fire-glow-ring {
+    box-shadow: 0 0 28px 8px rgba(100, 180, 255, 0.5), 0 0 56px 12px rgba(60, 120, 255, 0.2);
+    animation: glow-pulse-legendary var(--fire-speed, 0.4s) ease-in-out infinite;
 }
 
-.level-chip--legendary::after {
-    content: '';
-    position: absolute;
-    inset: -12px -8px auto -8px;
-    height: calc(14px + var(--fire-intensity, 1) * 20px);
-    border-radius: 14px 14px 5px 5px;
-    background: radial-gradient(ellipse at 50% 100%, rgba(200, 230, 255, 0.8), rgba(100, 180, 255, 0.4) 40%, rgba(60, 120, 255, 0.15) 70%, transparent 95%);
-    opacity: 0.9;
-    pointer-events: none;
-    filter: blur(calc(1.5px + var(--fire-intensity, 1) * 2px));
-    animation: fire-tongue calc(var(--fire-speed, 0.4s) * 0.4) ease-in-out infinite;
+.fire-legendary .fire-particle {
+    background: linear-gradient(to top, #0044cc, #2266ff 20%, #55aaff 40%, #88ccff 60%, #bbddff 80%, #eef6ff 92%, transparent 100%);
+    box-shadow: 0 0 8px 3px rgba(100, 180, 255, 0.7);
+    width: 8px;
 }
 
 .level-xp {
@@ -2467,118 +2487,126 @@ input[type='range'] {
     }
 }
 
-@keyframes fire-ember {
-    0%, 100% {
-        filter: brightness(0.95) saturate(1);
-        box-shadow: 0 0 var(--fire-spread, 4px) rgba(255, 140, 40, calc(var(--fire-glow, 0.15) - 0.05));
-    }
-    50% {
-        filter: brightness(1.12) saturate(1.15);
-        box-shadow: 0 0 calc(var(--fire-spread, 4px) * 1.4) rgba(255, 140, 40, calc(var(--fire-glow, 0.15) + 0.08));
-    }
-}
-
-@keyframes fire-flame {
-    0%, 100% {
-        transform: scale(1);
-        filter: brightness(0.94) saturate(1);
-    }
-    50% {
-        transform: scale(var(--fire-scale, 1.02));
-        filter: brightness(1.16) saturate(1.2);
-    }
-}
-
-@keyframes fire-inferno {
+@keyframes fire-rise {
     0% {
-        transform: translateY(0) scale(1);
-        filter: brightness(0.93);
+        transform: translateY(0) scaleX(1) scaleY(0.8) rotate(0deg);
+        opacity: 0;
     }
-    35% {
-        transform: translateY(-0.5px) scale(var(--fire-scale, 1.04));
-        filter: brightness(1.15);
-    }
-    70% {
-        transform: translateY(0.3px) scale(calc(var(--fire-scale, 1.04) - 0.01));
-        filter: brightness(1.08);
-    }
-    100% {
-        transform: translateY(0) scale(1);
-        filter: brightness(0.95);
-    }
-}
-
-@keyframes fire-mythic {
-    0% {
-        transform: translateY(0) scale(1);
-        filter: brightness(0.9) hue-rotate(0deg);
+    10% {
+        opacity: 0.9;
     }
     30% {
-        transform: translateY(-1px) scale(var(--fire-scale, 1.06));
-        filter: brightness(1.2) hue-rotate(5deg);
+        transform: translateY(calc(var(--fire-height, 10px) * -0.5)) scaleX(0.9) scaleY(1.1) rotate(-3deg);
+        opacity: 0.85;
     }
     60% {
-        transform: translateY(0.5px) scale(calc(var(--fire-scale, 1.06) - 0.02));
-        filter: brightness(1.1) hue-rotate(-3deg);
+        transform: translateY(calc(var(--fire-height, 10px) * -0.85)) scaleX(0.6) scaleY(1.3) rotate(2deg);
+        opacity: 0.5;
     }
     100% {
-        transform: translateY(0) scale(1);
-        filter: brightness(0.92) hue-rotate(0deg);
+        transform: translateY(calc(var(--fire-height, 10px) * -1.2)) scaleX(0.2) scaleY(1.5) rotate(-1deg);
+        opacity: 0;
     }
 }
 
-@keyframes fire-legendary {
+@keyframes fire-flicker {
     0% {
-        transform: translateY(0) scale(1);
-        filter: brightness(0.95) hue-rotate(0deg);
+        transform: translateX(-1px) scaleX(0.85);
     }
     25% {
-        transform: translateY(-1.2px) scale(var(--fire-scale, 1.08));
-        filter: brightness(1.25) hue-rotate(8deg);
+        transform: translateX(1.5px) scaleX(1.1);
     }
     50% {
-        transform: translateY(0.3px) scale(calc(var(--fire-scale, 1.08) - 0.01));
-        filter: brightness(1.15) hue-rotate(-5deg);
+        transform: translateX(-0.5px) scaleX(0.95);
     }
     75% {
-        transform: translateY(-0.8px) scale(calc(var(--fire-scale, 1.08) - 0.02));
-        filter: brightness(1.2) hue-rotate(4deg);
+        transform: translateX(1px) scaleX(1.05);
     }
     100% {
-        transform: translateY(0) scale(1);
-        filter: brightness(0.97) hue-rotate(0deg);
+        transform: translateX(-1px) scaleX(0.9);
     }
 }
 
-@keyframes fire-tongue {
+@keyframes fire-badge-pulse {
     0%, 100% {
-        transform: scaleY(0.7) scaleX(0.95);
-        opacity: var(--fire-glow, 0.5);
+        filter: brightness(0.95) saturate(1);
     }
-    30% {
-        transform: scaleY(1.1) scaleX(1.05);
-        opacity: calc(var(--fire-glow, 0.5) + 0.15);
-    }
-    60% {
-        transform: scaleY(0.85) scaleX(0.98);
-        opacity: calc(var(--fire-glow, 0.5) + 0.05);
+    50% {
+        filter: brightness(1.15) saturate(1.2);
     }
 }
 
-@keyframes fire-aura {
-    from {
-        opacity: 0.3;
-        transform: scale(0.98);
+@keyframes glow-pulse {
+    0%, 100% {
+        opacity: 0.5;
+        transform: scale(0.95);
     }
-    to {
-        opacity: 0.6;
-        transform: scale(1.04);
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
     }
 }
 
-@keyframes fire-ring {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+@keyframes glow-pulse-mythic {
+    0%, 100% {
+        opacity: 0.5;
+        transform: scale(0.95);
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.12);
+        filter: hue-rotate(10deg);
+    }
+}
+
+@keyframes glow-pulse-legendary {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.95);
+        filter: hue-rotate(0deg);
+    }
+    33% {
+        opacity: 1;
+        transform: scale(1.15);
+        filter: hue-rotate(12deg);
+    }
+    66% {
+        opacity: 0.7;
+        transform: scale(1.05);
+        filter: hue-rotate(-8deg);
+    }
+    100% {
+        opacity: 0.5;
+        transform: scale(0.95);
+        filter: hue-rotate(0deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fire-particle {
+        animation: none !important;
+        display: none;
+    }
+    .fire-glow-ring {
+        animation: none !important;
+    }
+    .fire-ember,
+    .fire-flame,
+    .fire-inferno,
+    .fire-mythic,
+    .fire-legendary {
+        animation: none !important;
+    }
+}
+
+[data-reduced-motion="true"] .fire-particle {
+    animation: none !important;
+    display: none;
+}
+
+[data-reduced-motion="true"] .fire-glow-ring {
+    animation: none !important;
 }
 
 .ai-voice-room .status-banner {
