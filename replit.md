@@ -28,5 +28,11 @@ An Arabic-language social deduction web game built with React, TypeScript, and V
 - Static deployment serving the `dist/` directory after build
 
 ## Recent Changes
+- 2026-02-12: Enhanced grid background - dual-layer animation (48px + 192px), smooth drift/pulse, reduced-motion support
+- 2026-02-12: Improved reveal mask - gradual haptic vibration on mobile, CSS pulse/scanline/shake animations
+- 2026-02-12: Redesigned all 9 player SVG avatars - detailed spy theme with gradients, tactical gear, distinct characters
+- 2026-02-12: Smarter medal system - excluded AI bots, added 6 new medal rules (perfect_round, spy_master, iron_streak, veteran_spy, guardian_angel, loss_recovery)
+- 2026-02-12: Fixed guessing comparison - removed double-formatting, aligned normalization for Arabic/English word matching
+- 2026-02-12: Fixed spy count selection UX - clearer toggle, hover states, validation warnings
 - 2026-02-12: UI visual redesign - refined color palette (blue-tinted dark backgrounds), teal CTA buttons, improved typography for Arabic, better spacing/radius, enhanced card/surface depth
 - 2026-02-12: Initial Replit setup - configured Vite for port 5000 with host 0.0.0.0 and allowedHosts
