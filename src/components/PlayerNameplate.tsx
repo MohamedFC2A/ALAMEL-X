@@ -21,7 +21,7 @@ export function PlayerNameplate({
 }: PlayerNameplateProps) {
   return (
     <div className={`player-nameplate ${compact ? 'player-nameplate--compact' : ''} ${className}`.trim()}>
-      {showMedals ? <PlayerMedalStrip progression={progression} limit={5} /> : null}
+      {showMedals ? <PlayerMedalStrip progression={progression} limit={3} /> : null}
       <div className="player-nameplate__row">
         <span className="player-nameplate__name">{name}</span>
         <LevelBadge progression={progression} compact />

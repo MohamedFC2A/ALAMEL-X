@@ -9,6 +9,30 @@ interface LevelBadgeProps {
   className?: string;
 }
 
+function getFireTier(level: number): string {
+  if (level >= 50) return 'level-chip--legendary';
+  if (level >= 35) return 'level-chip--mythic-fire';
+  if (level >= 20) return 'level-chip--inferno';
+  if (level >= 10) return 'level-chip--flame';
+  if (level >= 5) return 'level-chip--ember';
+  return '';
+}
+
+function getFireStyle(level: number): CSSProperties | undefined {
+  if (level < 5) return undefined;
+
+  const t = Math.min(level, 50);
+  const norm = (t - 5) / 45;
+
+  return {
+    '--fire-intensity': norm,
+    '--fire-glow': Math.min(0.95, 0.15 + norm * 0.8),
+    '--fire-speed': `${Math.max(0.4, 1.6 - norm * 1.2)}s`,
+    '--fire-scale': 1 + norm * 0.08,
+    '--fire-spread': `${4 + norm * 22}px`,
+  } as CSSProperties;
+}
+
 export function LevelBadge({ progression, compact = false, showXp = false, className = '' }: LevelBadgeProps) {
   const state = ensureProgressionState(progression);
   const level = state.level;
@@ -19,22 +43,12 @@ export function LevelBadge({ progression, compact = false, showXp = false, class
       ? Math.max(0, Math.min(1, (state.xp - currentThreshold) / (nextThreshold - currentThreshold)))
       : 1;
 
-  const levelClass = level >= 20 ? 'level-chip--inferno' : level >= 10 ? 'level-chip--gold' : '';
-  const infernoIntensity = Math.max(0, level - 20);
-  const infernoStep = Math.min(18, infernoIntensity);
-  const levelStyle: CSSProperties | undefined =
-    level >= 20
-      ? ({
-          '--inferno-intensity': infernoStep,
-          '--inferno-glow-alpha': Math.min(0.9, 0.48 + infernoStep * 0.02),
-          '--inferno-speed': `${Math.max(0.6, 1.3 - infernoStep * 0.03)}s`,
-          '--inferno-flame-opacity': Math.min(0.97, 0.86 + infernoStep * 0.006),
-        } as CSSProperties)
-      : undefined;
+  const tierClass = getFireTier(level);
+  const fireStyle = getFireStyle(level);
 
   return (
     <div className={`level-badge ${compact ? 'level-badge--compact' : ''} ${className}`.trim()}>
-      <span className={`level-chip ${levelClass}`.trim()} style={levelStyle}>{`Lv.${level}`}</span>
+      <span className={`level-chip ${tierClass}`.trim()} style={fireStyle}>{`Lv.${level}`}</span>
       {showXp ? (
         <span className="level-xp">
           {nextThreshold ? `${state.xp}/${nextThreshold}` : `${state.xp}/MAX`}
