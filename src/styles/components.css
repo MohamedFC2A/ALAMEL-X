@@ -1843,20 +1843,24 @@ input[type='range'] {
     position: relative;
     display: block;
     width: 100%;
-    height: 24px;
+    height: 8px;
     border-radius: 999px;
     overflow: hidden;
     background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 6px),
         linear-gradient(110deg, transparent 33%, rgba(255, 255, 255, 0.06) 50%, transparent 67%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.07)),
-        rgba(5, 10, 16, 0.88);
-    background-size: 200% 100%, 100% 100%, 100% 100%;
+        linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05)),
+        rgba(5, 10, 16, 0.92);
+    background-size: 6px 100%, 200% 100%, 100% 100%, 100% 100%;
     animation: trackShimmer 2.5s ease-in-out infinite;
-    border: 1px solid rgba(118, 187, 255, 0.5);
+    border: 1px solid rgba(118, 187, 255, 0.35);
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        inset 0 -5px 12px rgba(0, 0, 0, 0.32),
-        0 0 18px rgba(77, 215, 255, 0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.3),
+        0 0 12px rgba(77, 215, 255, 0.15);
+    transition:
+        border-color 200ms ease,
+        box-shadow 200ms ease;
 }
 
 .reveal-mask-progress-grid {
@@ -1871,31 +1875,52 @@ input[type='range'] {
     width: 100%;
     height: 100%;
     background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0) 42%),
-        repeating-linear-gradient(110deg,
-            color-mix(in oklab, var(--accent) 74%, white) 0 14px,
-            color-mix(in oklab, var(--accent) 56%, #8ef2ff) 14px 28px),
-        linear-gradient(90deg, color-mix(in oklab, var(--accent) 72%, white), var(--accent), color-mix(in oklab, var(--success) 66%, white));
+        linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 50%),
+        linear-gradient(90deg, #0d9488, #14b8a6, #2dd4bf, #5eead4);
     transform-origin: left center;
     transition: transform 70ms linear;
     will-change: transform;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.24),
-        0 0 18px rgba(77, 215, 255, 0.32);
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 0 14px rgba(45, 212, 191, 0.4);
+    animation: progressPulseGlow 1.8s ease-in-out infinite;
+}
+
+@keyframes progressPulseGlow {
+    0%, 100% {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.2),
+            0 0 14px rgba(45, 212, 191, 0.4);
+    }
+    50% {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.3),
+            0 0 22px rgba(45, 212, 191, 0.6),
+            0 0 36px rgba(45, 212, 191, 0.2);
+    }
 }
 
 .reveal-mask-progress-glow {
     position: absolute;
-    inset-block: -7px;
+    inset-block: -5px;
     inset-inline-start: 0;
-    width: 34px;
+    width: 28px;
     border-radius: 999px;
     pointer-events: none;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.78) 0 26%, rgba(77, 215, 255, 0.55) 32%, transparent 72%);
-    filter: blur(1.1px);
-    opacity: 0.92;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 20%, rgba(45, 212, 191, 0.6) 30%, transparent 70%);
+    filter: blur(1.5px);
+    opacity: 0.9;
     transform: translateX(0%);
     transition: transform 70ms linear;
+}
+
+.reveal-mask.charged .reveal-mask-progress-track {
+    border-color: rgba(45, 212, 191, 0.7);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.3),
+        0 0 18px rgba(45, 212, 191, 0.35),
+        0 0 32px rgba(45, 212, 191, 0.15);
 }
 
 .reveal-mask-percentage {
@@ -2763,6 +2788,43 @@ html[dir='rtl'] .reveal-mask-progress-glow {
 
     .ai-voice-cta .game-button {
         width: 100%;
+    }
+
+    .ai-vote-listener-card {
+        gap: 0.65rem;
+        display: grid;
+    }
+
+    .ai-vote-listener-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .ai-vote-listener-info {
+        display: grid;
+        gap: 0.15rem;
+    }
+
+    .ai-vote-listener-mic {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--clr-danger, #ef4444);
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .ai-vote-listener-mic.pulsing {
+        animation: mic-pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes mic-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.15); opacity: 0.8; }
     }
 
     .ai-orchestrator-strip {

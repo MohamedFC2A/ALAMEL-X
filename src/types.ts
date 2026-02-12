@@ -12,7 +12,7 @@ export type PlayerKind = 'human' | 'ai';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type WordDifficulty = 'any' | Difficulty;
-export type HintMode = 'weak' | 'normal' | 'off';
+export type HintMode = 'weak' | 'normal' | 'strong' | 'off';
 
 export type Winner = 'citizens' | 'spies';
 export type MedalTier = 'bronze' | 'silver' | 'gold' | 'mythic';
@@ -212,6 +212,7 @@ export interface ActiveMatchAiState {
   playerIds: string[];
   mode?: AiMatchMode;
   threads: Record<string, AiThreadState>;
+  discussionTranscripts?: string[];
 }
 
 export interface ActiveMatch {

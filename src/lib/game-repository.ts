@@ -17,6 +17,7 @@ import { createId, shuffle } from './utils';
 import { loadWordPack, pickBalancedUnusedWord } from './word-engine';
 import { extractCoreWord, formatWordForDisplay, normalizeWord } from './word-format';
 import { applyRoundProgression, buildRoundAwardEvent, createDefaultProgression, ensureProgressionState } from './player-progression';
+import { chatComplete } from './ai/deepseek-client';
 
 export function buildPlayer(name: string, avatarId: string): Player {
   const now = Date.now();
@@ -357,18 +358,53 @@ export async function startMatch(playerIds: string[], spyCount: 1 | 2, options: 
   const weakHintAr = 'ركّز على نوع الكلمة والسياق العام فقط.';
   const offHintEn = 'No hint.';
   const offHintAr = 'بدون تلميح.';
-  const spyHintEn =
-    hintMode === 'off'
-      ? offHintEn
-      : hintMode === 'weak'
-        ? weakHintEn
-        : selection.word.hints[0] ?? weakHintEn;
-  const spyHintAr =
-    hintMode === 'off'
-      ? offHintAr
-      : hintMode === 'weak'
-        ? weakHintAr
-        : selection.word.hints[1] ?? weakHintAr;
+  const normalHintEn = selection.word.hints[0] ?? weakHintEn;
+  const normalHintAr = selection.word.hints[1] ?? weakHintAr;
+
+  let spyHintEn: string;
+  let spyHintAr: string;
+
+  if (hintMode === 'strong') {
+    const systemPrompt = 'You are helping in a spy deduction game. The spy doesn\'t know the secret word. Generate a subtle hint that helps the spy understand the general topic without revealing the exact word. The hint should help the spy respond naturally if questioned by other players. Keep it to 1-2 sentences.';
+    try {
+      const [aiHintEn, aiHintAr] = await Promise.all([
+        chatComplete({
+          model: settings.aiModel,
+          messages: [
+            { role: 'system', content: systemPrompt + ' Reply in English only.' },
+            { role: 'user', content: `Category: ${selection.word.category}, Word: ${wordTextEn}. Generate a hint for the spy.` },
+          ],
+          temperature: 0.7,
+          maxTokens: 120,
+          timeoutMs: 12_000,
+        }),
+        chatComplete({
+          model: settings.aiModel,
+          messages: [
+            { role: 'system', content: systemPrompt + ' Reply in Arabic only.' },
+            { role: 'user', content: `Category: ${selection.word.category}, Word: ${wordTextAr}. Generate a hint for the spy in Arabic.` },
+          ],
+          temperature: 0.7,
+          maxTokens: 120,
+          timeoutMs: 12_000,
+        }),
+      ]);
+      spyHintEn = aiHintEn;
+      spyHintAr = aiHintAr;
+    } catch {
+      spyHintEn = normalHintEn;
+      spyHintAr = normalHintAr;
+    }
+  } else if (hintMode === 'off') {
+    spyHintEn = offHintEn;
+    spyHintAr = offHintAr;
+  } else if (hintMode === 'weak') {
+    spyHintEn = weakHintEn;
+    spyHintAr = weakHintAr;
+  } else {
+    spyHintEn = normalHintEn;
+    spyHintAr = normalHintAr;
+  }
 
   const activeMatch: ActiveMatch = {
     id: 'active',
@@ -463,6 +499,7 @@ export async function updateActiveMatch(patch: Partial<ActiveMatch>): Promise<vo
           ...(active.ai?.threads ?? {}),
           ...(patchAi.threads ?? {}),
         },
+        discussionTranscripts: patchAi.discussionTranscripts ?? active.ai?.discussionTranscripts,
       }
     : active.ai;
 

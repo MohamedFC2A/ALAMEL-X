@@ -922,3 +922,74 @@ export async function decideGuess(
 
   throw new DeepSeekError('Invalid guess choice from model.', { kind: 'invalid_response' });
 }
+
+export async function decideVoteFromTranscripts(
+  config: AiRuntimeConfig,
+  context: AiMatchContext,
+  candidates: Array<{ id: string; name: string }>,
+  transcripts: string[],
+): Promise<AiVoteDecision> {
+  const candidateList = candidates.map((item) => `- ${item.id}: ${item.name}`).join('\n');
+  const allowed = candidates.map((item) => item.id);
+  const nameById = new Map(candidates.map((item) => [item.id, item.name]));
+  const depth = getReasoningDepth(config);
+
+  const transcriptBlock = transcripts.length > 0
+    ? transcripts.slice(-30).join('\n')
+    : 'لم يتم التقاط أي كلام واضح أثناء النقاش.';
+
+  const systemMsg = [
+    'أنت محلل ذكي في لعبة كشف الجاسوس.',
+    'مهمتك تحلل كلام اللاعبين اللي اتسجل أثناء النقاش وتحدد مين الجاسوس.',
+    'الجاسوس عادة بيكون:',
+    '- كلامه مبهم وعام',
+    '- بيتجنب التفاصيل',
+    '- ممكن يناقض باقي اللاعبين',
+    '- مش عارف الكلمة السرية فبيحاول يتكلم حوالين الموضوع',
+    context.role === 'citizen' && context.secretWord
+      ? `الكلمة السرية: ${context.secretWord}`
+      : '',
+    `الفئة: ${context.category}`,
+  ].filter(Boolean).join('\n');
+
+  const messages = [
+    { role: 'system' as const, content: systemMsg },
+    {
+      role: 'user' as const,
+      content:
+        `كلام اللاعبين أثناء النقاش:\n${transcriptBlock}\n\n` +
+        `اللاعبين المرشحين للتصويت:\n${candidateList}\n\n` +
+        'حلل الكلام واختر اللاعب الأكثر احتمالًا أنه الجاسوس.\n' +
+        'أعد فقط JSON بالشكل: {"choice":"<id>","confidence":<0-100>,"why":"سبب مصري قصير"} حيث <id> من القائمة فقط.',
+    },
+  ];
+
+  const text = await chatComplete({
+    ...config,
+    messages,
+    temperature: depth === 3 ? 0.22 : 0.26,
+    maxTokens: depth === 3 ? 180 : 140,
+  });
+
+  const parsed = parseJsonObject(text);
+  if (parsed && typeof parsed === 'object' && parsed !== null && 'choice' in parsed) {
+    const choice = (parsed as { choice?: unknown }).choice;
+    if (typeof choice === 'string' && allowed.includes(choice)) {
+      const selectedName = nameById.get(choice) ?? choice;
+      const why = (parsed as { why?: unknown }).why;
+      const reason = composeVoteReason(selectedName, typeof why === 'string' ? why : '');
+      return { choice, reason };
+    }
+  }
+
+  const fallback = parseIdFromText(allowed, text);
+  if (fallback) {
+    const selectedName = nameById.get(fallback) ?? fallback;
+    return {
+      choice: fallback,
+      reason: composeVoteReason(selectedName, ''),
+    };
+  }
+
+  throw new DeepSeekError('Invalid vote choice from transcript analysis.', { kind: 'invalid_response' });
+}

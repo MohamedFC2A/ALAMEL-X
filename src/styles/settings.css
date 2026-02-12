@@ -1,0 +1,55 @@
+.settings-section .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+}
+
+.settings-section .section-heading h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-section .section-heading .section-icon {
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.setting-card {
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.setting-card:active {
+    transform: scale(0.995);
+}
+
+.switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 2.8rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-field select,
+.form-field input[type="range"] {
+    accent-color: var(--accent);
+}
+
+.actions-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.settings-section + .settings-section {
+    margin-top: 1rem;
+}

@@ -23,7 +23,7 @@ import { useActiveMatch } from '../hooks/useActiveMatch';
 import { formatWordForDisplay } from '../lib/word-format';
 import { GameButton } from '../components/GameButton';
 import { DeepSeekError } from '../lib/ai/deepseek-client';
-import { decideGuess, decideVoteDetailed, runtimeConfigFromSettings } from '../lib/ai/agent';
+import { decideGuess, decideVoteDetailed, decideVoteFromTranscripts, runtimeConfigFromSettings } from '../lib/ai/agent';
 import { speakWithEleven } from '../lib/ai/eleven-client';
 import { RestartRoundButton } from '../components/RestartRoundButton';
 import { playUiFeedback } from '../lib/ui-feedback';
@@ -326,7 +326,11 @@ export function ResolutionScreen() {
         const candidateIds = (voteState.candidates ?? activeMatch.match.playerIds).filter((id) => id !== voterId);
         const candidates = candidateIds.map((id) => ({ id, name: playerMap.get(id)?.name ?? id })).filter((item) => item.id);
 
-        const decision = await decideVoteDetailed(config, context, thread, candidates);
+        const aiMode = activeMatch.ai?.mode ?? 'full';
+        const transcripts = activeMatch.ai?.discussionTranscripts ?? [];
+        const decision = aiMode === 'vote_only' && transcripts.length > 0
+          ? await decideVoteFromTranscripts(config, context, candidates, transcripts)
+          : await decideVoteDetailed(config, context, thread, candidates);
         setAiVoteNarration({ key: voteStateKey, message: decision.reason });
         if (settings.soundEnabled && settings.aiVoiceOutputEnabled) {
           try {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Palette } from 'lucide-react';
 import type { ContrastPreset, GlobalSettings, UiDensity } from '../../types';
 import { updateGlobalSettings } from '../../lib/game-repository';
 import { GameButton } from '../../components/GameButton';
@@ -52,7 +53,7 @@ export function DisplaySettingsSection({
   return (
     <section className="stack-list settings-section">
       <div className="section-heading section-heading--stack">
-        <h2>{t('displaySettings')}</h2>
+        <h2><Palette size={20} className="section-icon" aria-hidden /> {t('displaySettings')}</h2>
         <span className="subtle">{t('themeLocked')}</span>
       </div>
 

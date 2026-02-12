@@ -288,19 +288,26 @@ export function updateRevealHoldFeedback(progress: number): void {
   }
 }
 
+export function vibrateRevealComplete(): void {
+  if (!canUseHaptics()) {
+    return;
+  }
+  if (prefersReducedMotion() || state.config.reducedMotionMode) {
+    navigator.vibrate([20, 20, 30, 20, 40]);
+    return;
+  }
+  navigator.vibrate([40, 30, 60, 40, 80, 50, 100]);
+}
+
 export function completeRevealHoldFeedback(): void {
   playUiFeedback('reveal-done', 1.05);
+  vibrateRevealComplete();
   if (canUseHaptics() && !prefersReducedMotion()) {
-    navigator.vibrate([30, 50, 60]);
-  }
-  if (canUseHaptics()) {
-    if (state.config.reducedMotionMode) {
-      navigator.vibrate([10, 16, 14, 18, 18]);
-    } else if (isCoarsePointerDevice()) {
-      navigator.vibrate([18, 14, 26, 14, 34, 16, 44]);
-    } else {
-      navigator.vibrate([16, 14, 24, 16, 30, 18, 40]);
-    }
+    setTimeout(() => {
+      if (canUseHaptics()) {
+        navigator.vibrate([40, 30, 60, 40, 80, 50, 100]);
+      }
+    }, 420);
   }
   state.revealBucket = -1;
   state.lastRevealHapticAt = 0;

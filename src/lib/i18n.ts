@@ -59,6 +59,7 @@ const translation = {
   hintMode: 'قوة التلميح',
   hintWeak: 'ضعيف',
   hintNormal: 'عادي',
+  hintStrong: 'ذكي (AI)',
   hintOff: 'بدون تلميح',
   minutes: 'دقيقة',
   seconds: 'ثانية',
@@ -360,6 +361,13 @@ const translation = {
   updateAvailable: 'يتوفر تحديث جديد',
   upToDate: 'اللعبة محدّثة',
   checking: 'جاري الفحص...',
+  aiVoteListening: 'AI يسمع النقاش...',
+  aiVoteListeningHint: 'الميكروفون مفتوح عشان AI يسمع ويحلل النقاش للتصويت الذكي.',
+  aiVoteCapturedPhrases: '{{count}} جملة مسموعة',
+  aiVoteMicError: 'تعذّر فتح الميكروفون. تأكد من السماح بالوصول.',
+  aiVoteMicNotSupported: 'متصفحك لا يدعم التعرف على الصوت.',
+  aiVoteAnalyzing: 'AI يحلل النقاش للتصويت...',
+  aiVoteSmartReason: 'تحليل AI',
 };
 
 const resources = {

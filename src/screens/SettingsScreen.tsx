@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Gamepad2, Volume2 } from 'lucide-react';
 import { db, ensureSettings } from '../lib/db';
 import { updateGlobalSettings } from '../lib/game-repository';
 import { chatComplete, DeepSeekError } from '../lib/ai/deepseek-client';
@@ -360,7 +361,7 @@ export function SettingsScreen() {
     <ScreenScaffold title={t('globalSettings')} subtitle={t('settingsSubtitle')} eyebrow={t('settings')}>
       <section className="stack-list settings-section">
         <div className="section-heading section-heading--stack">
-          <h2>{t('gameSettings')}</h2>
+          <h2><Gamepad2 size={20} className="section-icon" aria-hidden /> {t('gameSettings')}</h2>
           <span className="subtle">{t('settingsGameplayHint')}</span>
         </div>
 
@@ -420,6 +421,7 @@ export function SettingsScreen() {
             >
               <option value="weak">{t('hintWeak')}</option>
               <option value="normal">{t('hintNormal')}</option>
+              <option value="strong">{t('hintStrong')}</option>
               <option value="off">{t('hintOff')}</option>
             </select>
           </label>
@@ -435,8 +437,8 @@ export function SettingsScreen() {
       />
 
       <section className="stack-list settings-section">
-        <div className="section-heading">
-          <h2>{t('audioSettings')}</h2>
+        <div className="section-heading section-heading--stack">
+          <h2><Volume2 size={20} className="section-icon" aria-hidden /> {t('audioSettings')}</h2>
         </div>
 
         <div className="glass-card setting-card cinematic-panel section-card">

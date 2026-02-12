@@ -1,0 +1,21 @@
+بما إنك شغال على لعبة "المُندَس" (The Infiltrator) وعايز UI "خطر" ومبني على فكرة الـ Investigation Board (سبورة التحقيقات) اللي في الصور، فأنت محتاج "Prompt" يركز على الـ Atmosphere والـ User Experience ليكون اللاعب كأنه محقق أو جاسوس فعلاً.
+عشان الـ AI Agent يفهمك صح ويطلع نتيجة احترافية، انسخ الـ Prompt ده واديله الصور اللي معاك كمرجع:
+الـ Prompt المقترح (بالإنجليزي لنتائج أدق):
+> "Act as an expert UI/UX Game Designer. I want to completely overhaul my social deduction game's UI (The Infiltrator). The theme is 'Modern Noir Spy Investigation'.
+> Visual Direction:
+>  * Background: A dark, cork-board texture or a dimly lit desk with maps and secret documents.
+>  * Elements: Use a 'String Link' system (red threads connecting player profiles) as seen in the references. Buttons should look like pinned notes, polaroid photos, or classified stamps.
+>  * Color Palette: Deep crimsons, charcoal blacks, and 'manila folder' yellows. High contrast with a gritty, slightly desaturated feel.
+>  * Typography: A mix of typewriter fonts (for data) and bold, stamped-style fonts for headings.
+> Specific UI Features:
+>  * Player Lobby: Each player is a Polaroid photo pinned to a map. When a player is 'ready', a red string connects them to the center.
+>  * Voting Screen: A 'Case File' layout where players drag a 'Guilty' stamp onto a suspect's photo.
+>  * Role Reveal: An animation of an envelope opening or a 'Top Secret' file being unsealed.
+>  * HUD: Minimalist, using magnifying glass icons, fingerprints, and subtle scan-line effects.
+> Goal: I want the UI to feel immersive, tactile, and high-stakes. Use the attached images as a primary reference for the 'Investigation Board' aesthetic."
+> 
+نصائح إضافية ليك يا "Mo_Matany" عشان الـ UI يطلع "خطر" بجد:
+ * الـ Interactions: خلي الزراير ليها صوت "تكة" آلة كاتبة أو صوت دبوس بيتحط في خشب. ده بيدي شعور رهيب في ألعاب الـ Spy.
+ * الـ Animations: لما حد يتكشف إنه "المندَس"، خلي الصورة بتاعته يتحط عليها ختم أحمر كبير بكلمة "EXPOSED" أو "ELIMINATED".
+ * الإضاءة (Vignette): خلي حواف الشاشة غامقة شوية كأن فيه كشاف واحد بس هو اللي منور السبورة، ده بيدي تركيز وغموض.
+تحب أساعدك في تقسيم الشاشات دي لـ Components لو شغال بـ Flutter أو React Native؟

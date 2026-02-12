@@ -12,10 +12,11 @@ import { StatusBanner } from '../components/StatusBanner';
 import { useActiveMatch } from '../hooks/useActiveMatch';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { GameButton } from '../components/GameButton';
-import { Bot } from 'lucide-react';
+import { Bot, Mic } from 'lucide-react';
 import type { Player } from '../types';
 import { AiDeskModal } from '../components/AiDeskModal';
 import { useAiDiscussionOrchestrator } from '../hooks/useAiDiscussionOrchestrator';
+import { useAiVoteListener } from '../hooks/useAiVoteListener';
 import { RestartRoundButton } from '../components/RestartRoundButton';
 import { playUiFeedback } from '../lib/ui-feedback';
 
@@ -54,6 +55,8 @@ export function DiscussionScreen() {
   const hasAi = aiPlayers.length > 0;
   const aiMatchMode = activeMatch?.ai?.mode ?? 'full';
   const aiDiscussionEnabled = hasAi && aiMatchMode === 'full';
+  const isVoteOnlyListening = hasAi && aiMatchMode === 'vote_only';
+
   const orchestrator = useAiDiscussionOrchestrator({
     activeMatch,
     aiPlayers: aiDiscussionEnabled ? aiPlayers : [],
@@ -97,6 +100,32 @@ export function DiscussionScreen() {
   const progress = activeMatch?.discussionEndsAt
     ? Math.max(0, Math.min(100, (remainingMs / discussionMs) * 100))
     : 100;
+
+  const discussionActive = activeMatch?.match.status === 'discussion' && remainingMs > 0;
+
+  const voteListener = useAiVoteListener({
+    enabled: isVoteOnlyListening,
+    discussionActive,
+  });
+
+  const voteListenerTranscriptsSavedRef = useRef(false);
+  useEffect(() => {
+    if (!isVoteOnlyListening || discussionActive || voteListenerTranscriptsSavedRef.current) {
+      if (discussionActive) {
+        voteListenerTranscriptsSavedRef.current = false;
+      }
+      return;
+    }
+    if (voteListener.transcripts.length === 0) return;
+    voteListenerTranscriptsSavedRef.current = true;
+    const texts = voteListener.transcripts.map((entry) => entry.text);
+    void updateActiveMatch({
+      ai: {
+        ...(activeMatch?.ai ?? { playerIds: [], mode: 'vote_only', threads: {} }),
+        discussionTranscripts: texts,
+      },
+    });
+  }, [isVoteOnlyListening, discussionActive, voteListener.transcripts, activeMatch?.ai]);
 
   useEffect(() => {
     if (!activeMatch) {
@@ -227,8 +256,20 @@ export function DiscussionScreen() {
       </PrimaryActionBar>
       <p className="subtle restart-round-note">{t('restartRoundNote')}</p>
 
-      {hasAi && aiMatchMode === 'vote_only' && activeMatch.match.status === 'discussion' ? (
-        <StatusBanner tone="warning">{t('aiModeVoteOnlyDiscussionHint')}</StatusBanner>
+      {isVoteOnlyListening && activeMatch.match.status === 'discussion' ? (
+        <section className="glass-card section-card cinematic-panel ai-vote-listener-card">
+          <div className="ai-vote-listener-row">
+            <span className={`ai-vote-listener-mic${voteListener.isListening ? ' pulsing' : ''}`}>
+              <Mic size={22} aria-hidden />
+            </span>
+            <div className="ai-vote-listener-info">
+              <strong>{t('aiVoteListening')}</strong>
+              <span className="subtle">{t('aiVoteListeningHint')}</span>
+            </div>
+          </div>
+          <span className="subtle">{t('aiVoteCapturedPhrases', { count: voteListener.transcripts.length })}</span>
+          {voteListener.error ? <StatusBanner tone="danger">{t(voteListener.error)}</StatusBanner> : null}
+        </section>
       ) : null}
 
       {aiDiscussionEnabled && activeMatch.match.status === 'discussion' ? (

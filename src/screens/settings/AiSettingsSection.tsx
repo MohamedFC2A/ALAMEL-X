@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Bot } from 'lucide-react';
 import type {
   AiHumanMode,
   AiReplyLength,
@@ -39,7 +40,7 @@ export function AiSettingsSection({
   return (
     <section className="stack-list settings-section">
       <div className="section-heading section-heading--stack">
-        <h2>{t('aiSettings')}</h2>
+        <h2><Bot size={20} className="section-icon" aria-hidden /> {t('aiSettings')}</h2>
         <span className="subtle">{t('aiSettingsHint')}</span>
       </div>
 

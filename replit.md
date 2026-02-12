@@ -28,6 +28,13 @@ An Arabic-language social deduction web game built with React, TypeScript, and V
 - Static deployment serving the `dist/` directory after build
 
 ## Recent Changes
+- 2026-02-12: AI vote-only mode with microphone listening - useAiVoteListener hook captures Arabic speech during discussion, saves transcripts, AI uses them for smarter voting via decideVoteFromTranscripts()
+- 2026-02-12: Strong AI hint mode - DeepSeek-powered contextual hints for spy players, generates English+Arabic hints without revealing the secret word
+- 2026-02-12: DeepSeek API proxy - Vite middleware plugin at /api/deepseek/chat proxies requests to DeepSeek API using DEEPSEEK_API_KEY secret
+- 2026-02-12: Cinematic splash screen - animated glowing "X" logo, floating particles, progress bar, ~2.5s duration, fades to main app
+- 2026-02-12: Enhanced reveal vibration - dramatic haptic patterns [40,30,60,40,80,50,100], vibrateRevealComplete() function
+- 2026-02-12: Improved progress bar - gradient fill, pulsing glow effect, tech grid styling
+- 2026-02-12: Settings redesign - Lucide React icons for all section headings (Gamepad2, Palette, Volume2, Bot, Wrench), new settings.css
 - 2026-02-12: Expanded word pack to 1002 words (was 504) - 19 categories, per-cluster hints, 7 new Egyptian categories (أفلام ومسلسلات, شارع مصري, أمثال وكلام, ألعاب أطفال, أغاني ومزيكا, سفر وسياحة, صحة وجسم)
 - 2026-02-12: Moved restart game button to home screen - shows only when active match exists, CTA changes to "كمّل المهمة" during active match
 - 2026-02-12: 5-tier fire system on level badge - ember (Lv5), flame (Lv10), inferno (Lv20), mythic (Lv35), legendary (Lv50+) with progressive CSS animations
