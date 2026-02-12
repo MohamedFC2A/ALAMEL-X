@@ -20,6 +20,7 @@ import { serializeUiDiagnosticsSnapshot } from './lib/ui-debugger';
 import { installGlobalUiFeedback, playUiFeedback, syncUiFeedbackSettings } from './lib/ui-feedback';
 import { LoadingProvider, useLoading } from './components/loading-controller';
 import { LoadingOverlay } from './components/LoadingOverlay';
+import { SplashScreen } from './components/SplashScreen';
 import type { GlobalSettings } from './types';
 import './index.css';
 
@@ -288,6 +289,7 @@ function AnimatedRoutes() {
 function App() {
   const settings = useLiveQuery(() => db.settings.get('global'), []);
   const noiseTexture = useMemo(() => generateNoise(0.03), []);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     void ensureSettings();
@@ -301,6 +303,7 @@ function App() {
   return (
     <BrowserRouter>
       <LoadingProvider>
+        {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
         <div className="app-shell">
           <div className="app-shell__grid" aria-hidden="true" />
           <div className="app-shell__vignette" />
