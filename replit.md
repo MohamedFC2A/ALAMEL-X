@@ -28,6 +28,8 @@ An Arabic-language social deduction web game built with React, TypeScript, and V
 - Static deployment serving the `dist/` directory after build
 
 ## Recent Changes
+- 2026-02-12: Expanded word pack to 1002 words (was 504) - 19 categories, per-cluster hints, 7 new Egyptian categories (أفلام ومسلسلات, شارع مصري, أمثال وكلام, ألعاب أطفال, أغاني ومزيكا, سفر وسياحة, صحة وجسم)
+- 2026-02-12: Moved restart game button to home screen - shows only when active match exists, CTA changes to "كمّل المهمة" during active match
 - 2026-02-12: 5-tier fire system on level badge - ember (Lv5), flame (Lv10), inferno (Lv20), mythic (Lv35), legendary (Lv50+) with progressive CSS animations
 - 2026-02-12: PlayerNameplate shows top 3 medals only (was 5)
 - 2026-02-12: SVG medal icons with unique gradient IDs (useId), tier letters (B/S/G/M), icon+label chips with gradient backgrounds and hover effects
