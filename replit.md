@@ -28,6 +28,9 @@ An Arabic-language social deduction web game built with React, TypeScript, and V
 - Static deployment serving the `dist/` directory after build
 
 ## Recent Changes
+- 2026-02-12: Winner messages show spy names (الجاسوس محمد كسب! / الجواسيس محمد واحمد انتصروا!), guessing now mandatory
+- 2026-02-12: Spy-themed result UI - result-winner-banner with shimmer, guess-countdown with pulse, stage pills with HUD styling
+- 2026-02-12: Smarter Auto UI system - continuous scale calculation, auto animation speed based on device, better breakpoints
 - 2026-02-12: Enhanced grid background - dual-layer animation (48px + 192px), smooth drift/pulse, reduced-motion support
 - 2026-02-12: Improved reveal mask - gradual haptic vibration on mobile, CSS pulse/scanline/shake animations
 - 2026-02-12: Redesigned all 9 player SVG avatars - detailed spy theme with gradients, tactical gear, distinct characters
