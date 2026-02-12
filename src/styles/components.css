@@ -58,6 +58,7 @@
     border: 1px solid var(--stroke-1);
     background: linear-gradient(168deg, var(--surface-2), var(--surface-1));
     animation: cardRise 360ms ease;
+    flex-shrink: 0;
 }
 
 .panel-grid {
@@ -1202,6 +1203,8 @@ input[type='range'] {
     align-items: stretch;
     justify-content: flex-start;
     gap: var(--space-2);
+    flex-shrink: 0;
+    min-height: auto;
 }
 
 .setup-spy-panel--primary {
@@ -1255,10 +1258,12 @@ input[type='range'] {
     gap: 0.28rem;
     border-radius: 0.9rem;
     padding: 0.28rem;
+    flex-shrink: 0;
 }
 
 .setup-pill-row .pill-btn {
     min-height: 50px;
+    flex-shrink: 0;
 }
 
 .pill-btn {
