@@ -28,6 +28,8 @@ An Arabic-language social deduction web game built with React, TypeScript, and V
 - Static deployment serving the `dist/` directory after build
 
 ## Recent Changes
+- 2026-02-12: 5-tier fire system on level badge - ember (Lv5), flame (Lv10), inferno (Lv20), mythic (Lv35), legendary (Lv50+) with progressive CSS animations
+- 2026-02-12: PlayerNameplate shows top 3 medals only (was 5)
 - 2026-02-12: SVG medal icons with unique gradient IDs (useId), tier letters (B/S/G/M), icon+label chips with gradient backgrounds and hover effects
 - 2026-02-12: Smarter XP system - base 15 XP/round + bonuses (win 10, spy 5, guess 20, capture 8, duo 5, streak 3/count), streaks only reset when playing that role
 - 2026-02-12: Winner messages show spy names (الجاسوس محمد كسب! / الجواسيس محمد واحمد انتصروا!), guessing now mandatory
