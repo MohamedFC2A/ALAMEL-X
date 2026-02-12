@@ -12,6 +12,7 @@ import {
   analyzeUiHealth,
   buildUiSelfHealPersistedPatch,
   collectUiDiagnosticsContext,
+  resolveAutoAnimSpeed,
   resolveAutoUiScale,
   shouldPersistUiSelfHeal,
 } from './lib/ui-self-heal';
@@ -87,6 +88,13 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     return resolveAutoUiScale(viewportScaleInput, { uiDensity: settings.uiDensity });
   }, [settings, viewportScaleInput]);
 
+  const effectiveAnimSpeed = useMemo(() => {
+    if (!settings) {
+      return 1;
+    }
+    return resolveAutoAnimSpeed(viewportScaleInput, { reducedMotionMode: settings.reducedMotionMode });
+  }, [settings, viewportScaleInput]);
+
   useEffect(() => {
     if (!settings) {
       return;
@@ -94,7 +102,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
 
     const root = document.documentElement;
     root.style.setProperty('--ui-scale', effectiveUiScale.toString());
-    root.style.setProperty('--anim-speed', settings.reducedMotionMode ? '0' : settings.animationSpeed.toString());
+    root.style.setProperty('--anim-speed', settings.reducedMotionMode ? '0' : effectiveAnimSpeed.toString());
     root.setAttribute('data-theme', settings.theme);
     root.setAttribute('data-contrast', settings.contrastPreset);
     root.setAttribute('data-density', settings.uiDensity);
@@ -107,7 +115,7 @@ function ThemeController({ settings }: { settings: GlobalSettings | undefined })
     }
 
     applyDocumentLanguage(settings.language);
-  }, [effectiveUiScale, i18n, settings]);
+  }, [effectiveAnimSpeed, effectiveUiScale, i18n, settings]);
 
   useEffect(() => {
     if (routeAudioRef.current === location.pathname) {

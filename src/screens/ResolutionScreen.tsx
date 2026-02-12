@@ -52,7 +52,7 @@ export function ResolutionScreen() {
     });
   };
   const [guessInput, setGuessInput] = useState('');
-  const guessTimeoutHandled = useRef(false);
+
   const aiVoteHandledKeyRef = useRef('');
   const aiGuessHandledKeyRef = useRef('');
   const [aiVoteRetryNonce, setAiVoteRetryNonce] = useState(0);
@@ -216,39 +216,9 @@ export function ResolutionScreen() {
     }
   }, [activeMatch, activeMatchState, navigate]);
 
-  // Guess timeout auto-resolve: when timer expires without a guess, citizens win
   const guessRemainingMs = Math.max(0, (activeMatch?.guessEndsAt ?? 0) - now);
   const guessRemaining = Math.ceil(guessRemainingMs / 1000);
-
-  useEffect(() => {
-    if (
-      !activeMatch ||
-      activeMatch.resolutionStage !== 'guess' ||
-      guessRemainingMs > 0 ||
-      !activeMatch.guessEndsAt ||
-      guessTimeoutHandled.current
-    ) {
-      return;
-    }
-
-    guessTimeoutHandled.current = true;
-    void (async () => {
-      await updateActiveMatch({
-        spyGuess: '',
-        spyGuessCorrect: false,
-        guessTimedOut: true,
-        resolutionStage: 'result',
-        winner: 'citizens',
-      });
-    })();
-  }, [activeMatch, guessRemainingMs]);
-
-  // Reset timeout handler when entering a new guess stage
-  useEffect(() => {
-    if (activeMatch?.resolutionStage !== 'guess') {
-      guessTimeoutHandled.current = false;
-    }
-  }, [activeMatch?.resolutionStage]);
+  const guessTimerExpired = activeMatch?.resolutionStage === 'guess' && activeMatch?.guessEndsAt && guessRemainingMs <= 0;
 
   useEffect(() => {
     if (!activeMatch || activeMatch.resolutionStage !== 'vote' || activeMatch.voteState) {
@@ -717,7 +687,7 @@ export function ResolutionScreen() {
             {isTeamSpyGuess ? <StatusBanner tone="warning">{t('spyGuessTeamInfo')}</StatusBanner> : null}
             {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
             <p>{guessPromptText}</p>
-            <h2 className="countdown-value">{guessRemaining}</h2>
+            <div className={`guess-countdown${guessRemaining <= 5 ? ' urgent' : ''}`}>{guessRemaining}</div>
             <p className="subtle">{t('spyGuessPick')}</p>
             <div className="choice-grid">
               {(i18n.language === 'ar' ? currentMatch.spyGuessOptionsAr : currentMatch.spyGuessOptionsEn).map((option) => {
@@ -737,7 +707,7 @@ export function ResolutionScreen() {
                 );
               })}
             </div>
-            {guessRemaining === 0 ? <StatusBanner tone="warning">{t('guessTimeoutMessage')}</StatusBanner> : null}
+            {guessTimerExpired ? <div className="guess-required-flash">{t('guessRequiredAlert')}</div> : null}
           </section>
         )
       ) : null}
@@ -749,9 +719,17 @@ export function ResolutionScreen() {
             const isGuessTimedOut = currentMatch.guessTimedOut;
             return (
               <>
-                <StatusBanner tone={currentMatch.winner === 'citizens' ? 'success' : 'danger'}>
-                  {currentMatch.winner === 'citizens' ? t('winnerCitizens') : t('winnerSpies')}
-                </StatusBanner>
+                <div className={`result-winner-banner ${currentMatch.winner === 'citizens' ? 'citizens-won' : 'spies-won'}`}>
+                  {currentMatch.winner === 'citizens'
+                    ? t('winnerCitizens')
+                    : (() => {
+                        const spyNames = currentMatch.match.spyIds.map((id) => playerMap.get(id)?.name ?? id);
+                        if (spyNames.length === 1) {
+                          return t('winnerSpySingle', { name: spyNames[0] });
+                        }
+                        return t('winnerSpiesTeam', { names: spyNames.join(' و ') });
+                      })()}
+                </div>
                 {tieWasBroken ? <StatusBanner tone="warning">{t('voteTieBroken')}</StatusBanner> : null}
                 {voteOutcome === 'missed' ? (
                   <StatusBanner tone="warning">

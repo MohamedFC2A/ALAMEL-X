@@ -4,7 +4,7 @@ import type { ContrastPreset, GlobalSettings, UiDensity } from '../../types';
 import { updateGlobalSettings } from '../../lib/game-repository';
 import { GameButton } from '../../components/GameButton';
 import { StatusBanner } from '../../components/StatusBanner';
-import { collectUiDiagnosticsContext, resolveAutoUiScale } from '../../lib/ui-self-heal';
+import { collectUiDiagnosticsContext, resolveAutoAnimSpeed, resolveAutoUiScale } from '../../lib/ui-self-heal';
 import type { AsyncStatus, BannerTone } from './types';
 
 interface DisplaySettingsSectionProps {
@@ -44,6 +44,11 @@ export function DisplaySettingsSection({
     [settings.uiDensity, uiContext],
   );
 
+  const autoAnimSpeed = useMemo(
+    () => resolveAutoAnimSpeed(uiContext, { reducedMotionMode: settings.reducedMotionMode }),
+    [settings.reducedMotionMode, uiContext],
+  );
+
   return (
     <section className="stack-list settings-section">
       <div className="section-heading section-heading--stack">
@@ -62,7 +67,7 @@ export function DisplaySettingsSection({
 
       <div className="glass-card setting-card cinematic-panel section-card">
         <label className="form-field">
-          <span>{t('animationSpeed')} ({settings.animationSpeed.toFixed(2)}x)</span>
+          <span>{t('animationSpeed')} ({autoAnimSpeed.toFixed(2)}x · Auto)</span>
           <input
             type="range"
             min={0.5}

@@ -57,47 +57,74 @@ export function resolveAutoUiScale(
   input: AutoUiScaleInput,
   settings?: Pick<GlobalSettings, 'uiDensity'>,
 ): number {
-  const viewportWidth = Number.isFinite(input.viewportWidth) ? input.viewportWidth : 390;
-  const viewportHeight = Number.isFinite(input.viewportHeight) ? input.viewportHeight : 780;
-  const devicePixelRatio = Number.isFinite(input.devicePixelRatio) ? input.devicePixelRatio : 1;
+  const vw = Number.isFinite(input.viewportWidth) ? input.viewportWidth : 390;
+  const vh = Number.isFinite(input.viewportHeight) ? input.viewportHeight : 780;
+  const dpr = Number.isFinite(input.devicePixelRatio) ? input.devicePixelRatio : 1;
 
-  let deviceScale = 1;
+  const refW = 390;
+  const refH = 844;
 
-  if (viewportWidth <= 320) {
-    deviceScale -= 0.09;
-  } else if (viewportWidth <= 360) {
-    deviceScale -= 0.06;
-  } else if (viewportWidth <= 390) {
-    deviceScale -= 0.035;
-  } else if (viewportWidth <= 430) {
-    deviceScale -= 0.012;
-  } else if (viewportWidth >= 1440) {
-    deviceScale += 0.03;
-  } else if (viewportWidth >= 1024) {
-    deviceScale += 0.015;
+  const widthRatio = vw / refW;
+  const heightRatio = vh / refH;
+
+  const blendedRatio = widthRatio * 0.65 + heightRatio * 0.35;
+
+  let scale = 1 + (blendedRatio - 1) * 0.4;
+
+  if (vw <= 390 && dpr >= 3) {
+    scale -= 0.015;
+  } else if (vw >= 1024 && dpr <= 1.2) {
+    scale += 0.01;
   }
 
-  if (viewportHeight <= 600) {
-    deviceScale -= 0.055;
-  } else if (viewportHeight <= 690) {
-    deviceScale -= 0.032;
-  } else if (viewportHeight >= 920 && viewportWidth >= 430) {
-    deviceScale += 0.015;
+  if (vw <= 320) {
+    scale -= 0.04;
   }
 
-  if (viewportWidth <= 390 && devicePixelRatio >= 3) {
-    deviceScale -= 0.01;
-  } else if (viewportWidth >= 1280 && devicePixelRatio <= 1.2) {
-    deviceScale += 0.008;
+  if (vh <= 600) {
+    scale -= 0.03;
   }
 
   if (settings?.uiDensity === 'compact') {
-    deviceScale -= 0.006;
-  } else {
-    deviceScale += 0.004;
+    scale -= 0.008;
   }
 
-  return Number(clamp(deviceScale, 0.9, 1.08).toFixed(3));
+  return Number(clamp(scale, 0.88, 1.12).toFixed(3));
+}
+
+export function resolveAutoAnimSpeed(
+  input: AutoUiScaleInput,
+  settings?: Pick<GlobalSettings, 'reducedMotionMode'>,
+): number {
+  if (settings?.reducedMotionMode) {
+    return 0.5;
+  }
+
+  const vw = Number.isFinite(input.viewportWidth) ? input.viewportWidth : 390;
+  const vh = Number.isFinite(input.viewportHeight) ? input.viewportHeight : 780;
+  const dpr = Number.isFinite(input.devicePixelRatio) ? input.devicePixelRatio : 1;
+
+  let speed = 1.0;
+
+  if (vw <= 360) {
+    speed = 0.85;
+  } else if (vw <= 390) {
+    speed = 0.9;
+  } else if (vw >= 1024) {
+    speed = 1.05;
+  }
+
+  if (vh <= 600) {
+    speed = Math.min(speed, 0.8);
+  } else if (vh <= 700) {
+    speed = Math.min(speed, 0.88);
+  }
+
+  if (dpr <= 1 && vw <= 400) {
+    speed = Math.min(speed, 0.85);
+  }
+
+  return Number(clamp(speed, 0.5, 1.5).toFixed(2));
 }
 
 function createFallbackContext(): UiDiagnosticsContext {
@@ -391,6 +418,13 @@ export function analyzeUiHealth(settings: GlobalSettings, context: UiDiagnostics
     );
     patchComposer.enableReducedMotion();
     patchComposer.lowerAnimationSpeedTo(0.85);
+  }
+
+  if (patchComposer.patch.animationSpeed === undefined) {
+    const autoSpeed = resolveAutoAnimSpeed(context, settings);
+    if (Math.abs(autoSpeed - settings.animationSpeed) > 0.08) {
+      patchComposer.lowerAnimationSpeedTo(autoSpeed);
+    }
   }
 
   const weightSum = issues.reduce((sum, issue) => sum + issue.weight, 0);
