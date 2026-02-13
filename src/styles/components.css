@@ -3433,3 +3433,92 @@ html[dir='rtl'] .reveal-mask-progress-glow {
     color: #ff6b6b;
     border: 1px solid rgba(229, 62, 62, 0.3);
 }
+
+:root[data-theme='dreamland'] .glass-card,
+:root[data-theme='dreamland'] .section-card,
+:root[data-theme='dreamland'] .panel-grid,
+:root[data-theme='dreamland'] .primary-action-bar,
+:root[data-theme='dreamland'] .status-banner {
+    border-radius: 1.4rem;
+    border-color: color-mix(in oklab, var(--accent) 28%, white);
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 238, 250, 0.88) 55%, rgba(228, 247, 255, 0.9)),
+        var(--surface-1);
+    box-shadow: 0 10px 28px rgba(255, 131, 188, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme='dreamland'] .game-button {
+    border-radius: 999px;
+    border-color: rgba(255, 113, 172, 0.45);
+    color: #7a2f67;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    font-weight: 700;
+    background:
+        radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.8), transparent 40%),
+        linear-gradient(150deg, #ffd4ea 0%, #ffb9dc 48%, #ffc7e5 100%);
+    box-shadow: 0 8px 18px rgba(255, 113, 172, 0.28), inset 0 -5px 12px rgba(255, 96, 160, 0.17);
+}
+
+:root[data-theme='dreamland'] .game-button:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 26px rgba(255, 113, 172, 0.35), 0 0 0 2px rgba(255, 255, 255, 0.7);
+    animation: dreamlandTwinkle 900ms ease-in-out infinite alternate;
+}
+
+:root[data-theme='dreamland'] .game-button--danger {
+    background: linear-gradient(145deg, #ffc5cf, #ff9ab0);
+    color: #8a2543;
+}
+
+:root[data-theme='dreamland'] .game-button--ghost {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.8), rgba(226, 248, 255, 0.9));
+}
+
+:root[data-theme='dreamland'] .player-avatar-wrap {
+    padding: 0.18rem;
+    border-radius: 48% 52% 52% 48%;
+    background: linear-gradient(145deg, #ffd9ec, #c8efff);
+    box-shadow: 0 8px 20px rgba(255, 129, 185, 0.28);
+}
+
+:root[data-theme='dreamland'] .player-avatar-wrap::after {
+    inset: -4px;
+    border: 2px solid rgba(255, 114, 173, 0.35);
+}
+
+:root[data-theme='dreamland'] .player-avatar {
+    border-color: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 0 0 3px rgba(255, 118, 173, 0.18);
+}
+
+:root[data-theme='dreamland'] .pill-btn,
+:root[data-theme='dreamland'] .stage-pill,
+:root[data-theme='dreamland'] .metric-chip,
+:root[data-theme='dreamland'] .section-count-badge,
+:root[data-theme='dreamland'] .level-chip {
+    border-radius: 999px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 231, 246, 0.88));
+    border-color: rgba(255, 121, 176, 0.35);
+}
+
+:root[data-theme='dreamland'] .status-banner::before {
+    width: 8px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ff79b7, #89dfff);
+}
+
+:root[data-theme='dreamland'] input[type='range'] {
+    accent-color: #ff5f9e;
+}
+
+:root[data-theme='dreamland'] .phase-bar__dot {
+    border-radius: 999px;
+    background: linear-gradient(145deg, #ffe1f0, #b9edff);
+    border-color: rgba(255, 111, 166, 0.4);
+}
+
+@keyframes dreamlandTwinkle {
+    from { filter: saturate(1) brightness(1); }
+    to { filter: saturate(1.15) brightness(1.07); }
+}

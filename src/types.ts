@@ -1,6 +1,6 @@
 export type Language = 'en' | 'ar';
 
-export type ThemeName = 'aurora' | 'solar' | 'onyx';
+export type ThemeName = 'dreamland' | 'aurora' | 'solar' | 'onyx';
 export type ContrastPreset = 'normal' | 'high';
 export type UiDensity = 'comfortable' | 'compact';
 export type AiHumanMode = 'strategic' | 'natural' | 'ultra';
