@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Palette } from 'lucide-react';
-import type { ContrastPreset, GlobalSettings, UiDensity } from '../../types';
+import type { ContrastPreset, GlobalSettings, ThemeName, UiDensity } from '../../types';
 import { updateGlobalSettings } from '../../lib/game-repository';
 import { GameButton } from '../../components/GameButton';
 import { StatusBanner } from '../../components/StatusBanner';
@@ -54,7 +54,18 @@ export function DisplaySettingsSection({
     <section className="stack-list settings-section">
       <div className="section-heading section-heading--stack">
         <h2><Palette size={20} className="section-icon" aria-hidden /> {t('displaySettings')}</h2>
-        <span className="subtle">{t('themeLocked')}</span>
+      </div>
+
+      <div className="glass-card setting-card cinematic-panel section-card">
+        <label className="form-field">
+          <span>{t('theme')}</span>
+          <select value={settings.theme} onChange={(event) => void updateGlobalSettings({ theme: event.target.value as ThemeName })}>
+            <option value="dreamland">{t('themeDreamland')}</option>
+            <option value="aurora">{t('themeAurora')}</option>
+            <option value="solar">{t('themeSolar')}</option>
+            <option value="onyx">{t('themeOnyx')}</option>
+          </select>
+        </label>
       </div>
 
       <div className="glass-card setting-card cinematic-panel section-card">

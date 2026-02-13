@@ -53,7 +53,7 @@ describe('rtl ui regressions', () => {
     expect(await screen.findByRole('button', { name: /حفظ/i })).toHaveClass('game-button');
   });
 
-  it('uses stacked section headings in settings and shows theme lock hint once', async () => {
+  it('uses stacked section headings in settings and shows theme selector', async () => {
     render(
       <LoadingProvider>
         <MemoryRouter>
@@ -67,6 +67,6 @@ describe('rtl ui regressions', () => {
 
     expect(gameplayHeading.closest('.section-heading')).toHaveClass('section-heading--stack');
     expect(displayHeading.closest('.section-heading')).toHaveClass('section-heading--stack');
-    expect(screen.getAllByText(/سمة OLED Noir مفعلة دائمًا/i)).toHaveLength(1);
+    expect(screen.getByRole('combobox', { name: /شكل الألوان/i })).toBeInTheDocument();
   });
 });

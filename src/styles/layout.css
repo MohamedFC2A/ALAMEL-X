@@ -499,3 +499,37 @@ html[dir='rtl'] .screen-header-main {
         font-size: 0.68rem;
     }
 }
+
+:root[data-theme='dreamland'] .app-shell {
+    background:
+        radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.85) 0 12%, transparent 13%),
+        radial-gradient(circle at 80% 15%, rgba(186, 238, 255, 0.7) 0 10%, transparent 11%),
+        radial-gradient(circle at 70% 70%, rgba(255, 230, 162, 0.38) 0 12%, transparent 13%),
+        linear-gradient(170deg, #fff5fb 0%, #ffe4f1 38%, #e6f7ff 100%);
+}
+
+:root[data-theme='dreamland'] .app-shell__grid {
+    opacity: 0.7;
+    background-image:
+        radial-gradient(circle at 10% 22%, rgba(255, 255, 255, 0.8) 0 2px, transparent 3px),
+        radial-gradient(circle at 72% 35%, rgba(255, 255, 255, 0.7) 0 1.5px, transparent 2.5px),
+        radial-gradient(circle at 30% 60%, rgba(255, 133, 189, 0.35) 0 4px, transparent 6px),
+        radial-gradient(circle at 85% 76%, rgba(123, 223, 255, 0.35) 0 4px, transparent 6px);
+    background-size: 260px 260px, 320px 320px, 220px 220px, 280px 280px;
+    animation: cloudFloat 22s linear infinite;
+}
+
+:root[data-theme='dreamland'] .app-shell__vignette {
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.12) 25%, rgba(255, 171, 213, 0.22) 100%);
+}
+
+:root[data-theme='dreamland'] .screen-header {
+    background: color-mix(in oklab, var(--surface-1) 94%, white);
+    border-block-end: 1px solid color-mix(in oklab, var(--accent) 26%, white);
+    box-shadow: 0 8px 22px rgba(255, 124, 186, 0.2);
+}
+
+@keyframes cloudFloat {
+    0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 160px -120px, -120px 150px, 110px -130px, -150px 140px; }
+}

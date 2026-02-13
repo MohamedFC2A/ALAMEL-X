@@ -1,6 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { ActiveMatch, GlobalSettings, MatchRecord, Player, TeaserOptIn, WordUsage } from '../types';
 
+const ALLOWED_THEMES = new Set<GlobalSettings['theme']>(['dreamland', 'aurora', 'solar', 'onyx']);
+
 export interface SusawiDB extends Dexie {
   players: EntityTable<Player, 'id'>;
   settings: EntityTable<GlobalSettings, 'id'>;
@@ -22,7 +24,7 @@ export const defaultSettings: GlobalSettings = {
   uiDensity: 'comfortable',
   soundEnabled: true,
   language: 'ar',
-  theme: 'onyx',
+  theme: 'dreamland',
   discussionMinutes: 3,
   guessSeconds: 30,
   wordDifficulty: 'any',
@@ -85,7 +87,7 @@ export function normalizeGlobalSettings(input: GlobalSettings): GlobalSettings {
   const normalized: GlobalSettings = {
     ...input,
     id: 'global',
-    theme: 'onyx',
+    theme: ALLOWED_THEMES.has(input.theme) ? input.theme : defaultSettings.theme,
     language: 'ar',
     aiVoiceProvider: 'elevenlabs',
     pendingLanguage: undefined,
