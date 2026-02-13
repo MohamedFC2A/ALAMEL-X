@@ -529,6 +529,57 @@ html[dir='rtl'] .screen-header-main {
     box-shadow: 0 8px 22px rgba(255, 124, 186, 0.2);
 }
 
+
+:root[data-theme='aurora'] .app-shell {
+    background:
+        radial-gradient(circle at 12% 20%, rgba(255, 255, 255, 0.85) 0 10%, transparent 11%),
+        radial-gradient(circle at 78% 14%, rgba(174, 236, 255, 0.72) 0 11%, transparent 12%),
+        linear-gradient(170deg, #f4fbff 0%, #e5f6ff 45%, #d5f1ff 100%);
+}
+
+:root[data-theme='aurora'] .app-shell__grid {
+    opacity: 0.58;
+    background-image:
+        radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.75) 0 2px, transparent 3px),
+        radial-gradient(circle at 60% 60%, rgba(113, 211, 255, 0.36) 0 4px, transparent 5px);
+    background-size: 280px 280px, 240px 240px;
+}
+
+:root[data-theme='solar'] .app-shell {
+    background:
+        radial-gradient(circle at 20% 20%, rgba(255, 241, 204, 0.86) 0 10%, transparent 11%),
+        radial-gradient(circle at 75% 16%, rgba(255, 215, 139, 0.68) 0 11%, transparent 12%),
+        linear-gradient(170deg, #fff9ee 0%, #ffeec7 45%, #ffe2a6 100%);
+}
+
+:root[data-theme='solar'] .app-shell__grid {
+    opacity: 0.55;
+    background-image:
+        radial-gradient(circle at 18% 24%, rgba(255, 255, 255, 0.65) 0 2px, transparent 3px),
+        radial-gradient(circle at 66% 64%, rgba(235, 168, 71, 0.35) 0 4px, transparent 6px);
+    background-size: 280px 280px, 240px 240px;
+}
+
+:root[data-theme='onyx'] .app-shell {
+    background:
+        radial-gradient(circle at 20% 14%, rgba(56, 120, 170, 0.2) 0 13%, transparent 14%),
+        radial-gradient(circle at 80% 20%, rgba(77, 175, 224, 0.18) 0 12%, transparent 13%),
+        linear-gradient(170deg, #070b14 0%, #0d1422 42%, #111c2d 100%);
+}
+
+:root[data-theme='onyx'] .app-shell__grid {
+    opacity: 0.45;
+    background-image:
+        linear-gradient(rgba(90, 166, 214, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(90, 166, 214, 0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+:root[data-theme='onyx'] .screen-header {
+    background: color-mix(in oklab, var(--surface-1) 95%, black);
+    border-block-end: 1px solid rgba(80, 162, 216, 0.32);
+    box-shadow: 0 8px 22px rgba(2, 8, 18, 0.58);
+}
 @keyframes cloudFloat {
     0% { background-position: 0 0, 0 0, 0 0, 0 0; }
     100% { background-position: 160px -120px, -120px 150px, 110px -130px, -150px 140px; }

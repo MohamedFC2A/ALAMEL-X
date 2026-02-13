@@ -224,10 +224,10 @@ const translation = {
   voteMissedResult: 'التصويت لم يحدد الجاسوس — الجواسيس كسبوا تلقائيًا.',
   spyTeamLabel: 'فريقك',
   spyTeamNote: 'زميلك في الفريق: {{names}}',
-  themeDreamland: 'سانريو دريم لاند',
-  themeAurora: 'نسيم',
-  themeSolar: 'شمس',
-  themeOnyx: 'مخابرات',
+  themeDreamland: 'Hello Kitty الحقيقي 🎀',
+  themeAurora: 'شفق جليدي',
+  themeSolar: 'غروب ذهبي',
+  themeOnyx: 'أونيكس تكتيكي',
   aiSettings: 'إعدادات AI',
   aiSettingsHint: 'إعدادات الذكاء والصوت. مفتاح DeepSeek مُدار من الخادم (Vercel).',
   aiEnabled: 'تفعيل لاعب AI',
