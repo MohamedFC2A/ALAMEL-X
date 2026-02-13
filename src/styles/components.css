@@ -3444,7 +3444,7 @@ html[dir='rtl'] .reveal-mask-progress-glow {
     background:
         linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 238, 250, 0.88) 55%, rgba(228, 247, 255, 0.9)),
         var(--surface-1);
-    box-shadow: 0 10px 28px rgba(255, 131, 188, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 28px rgba(255, 131, 188, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.8), inset 0 0 0 1px rgba(255, 181, 216, 0.55);
 }
 
 :root[data-theme='dreamland'] .game-button {
@@ -3455,9 +3455,29 @@ html[dir='rtl'] .reveal-mask-progress-glow {
     text-transform: none;
     font-weight: 700;
     background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.33) 0 12%, transparent 12% 24%, rgba(255, 255, 255, 0.2) 24% 32%, transparent 32%),
         radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.8), transparent 40%),
         linear-gradient(150deg, #ffd4ea 0%, #ffb9dc 48%, #ffc7e5 100%);
     box-shadow: 0 8px 18px rgba(255, 113, 172, 0.28), inset 0 -5px 12px rgba(255, 96, 160, 0.17);
+}
+
+:root[data-theme='dreamland'] .screen-header__title::after {
+    content: '🎀';
+    margin-inline-start: 0.35rem;
+    filter: drop-shadow(0 2px 3px rgba(255, 82, 155, 0.35));
+}
+
+:root[data-theme='dreamland'] .status-banner {
+    position: relative;
+    overflow: hidden;
+}
+
+:root[data-theme='dreamland'] .status-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(125deg, rgba(255, 164, 206, 0.12) 0 10px, rgba(255, 255, 255, 0) 10px 20px);
+    pointer-events: none;
 }
 
 :root[data-theme='dreamland'] .game-button:hover:not(:disabled) {
@@ -3516,6 +3536,57 @@ html[dir='rtl'] .reveal-mask-progress-glow {
     border-radius: 999px;
     background: linear-gradient(145deg, #ffe1f0, #b9edff);
     border-color: rgba(255, 111, 166, 0.4);
+}
+
+:root[data-theme='aurora'] .glass-card,
+:root[data-theme='aurora'] .section-card,
+:root[data-theme='aurora'] .panel-grid,
+:root[data-theme='aurora'] .primary-action-bar,
+:root[data-theme='aurora'] .status-banner {
+    border-color: rgba(43, 149, 205, 0.38);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(232, 249, 255, 0.9));
+    box-shadow: 0 10px 24px rgba(49, 144, 190, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+:root[data-theme='aurora'] .game-button {
+    border-color: rgba(42, 153, 210, 0.45);
+    color: #145172;
+    background: linear-gradient(145deg, #d8f3ff, #bce7ff 52%, #c8f8ff);
+    box-shadow: 0 8px 18px rgba(42, 149, 205, 0.24), inset 0 -4px 10px rgba(34, 140, 194, 0.15);
+}
+
+:root[data-theme='solar'] .glass-card,
+:root[data-theme='solar'] .section-card,
+:root[data-theme='solar'] .panel-grid,
+:root[data-theme='solar'] .primary-action-bar,
+:root[data-theme='solar'] .status-banner {
+    border-color: rgba(208, 129, 39, 0.4);
+    background: linear-gradient(160deg, rgba(255, 252, 242, 0.94), rgba(255, 238, 203, 0.9));
+    box-shadow: 0 10px 24px rgba(201, 126, 42, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+:root[data-theme='solar'] .game-button {
+    border-color: rgba(211, 126, 30, 0.48);
+    color: #653d07;
+    background: linear-gradient(150deg, #ffe4b2, #ffc972 50%, #ffd386 100%);
+    box-shadow: 0 8px 18px rgba(189, 113, 30, 0.28), inset 0 -4px 10px rgba(180, 101, 16, 0.17);
+}
+
+:root[data-theme='onyx'] .glass-card,
+:root[data-theme='onyx'] .section-card,
+:root[data-theme='onyx'] .panel-grid,
+:root[data-theme='onyx'] .primary-action-bar,
+:root[data-theme='onyx'] .status-banner {
+    border-color: rgba(74, 154, 205, 0.32);
+    background: linear-gradient(160deg, rgba(13, 22, 36, 0.96), rgba(17, 30, 47, 0.92));
+    box-shadow: 0 14px 34px rgba(2, 7, 18, 0.6), inset 0 1px 0 rgba(83, 162, 214, 0.18);
+}
+
+:root[data-theme='onyx'] .game-button {
+    border-color: rgba(66, 193, 242, 0.45);
+    color: #cbf1ff;
+    background: linear-gradient(150deg, #17334a, #1a4a68 55%, #235f83 100%);
+    box-shadow: 0 10px 22px rgba(4, 18, 33, 0.56), inset 0 -5px 12px rgba(40, 124, 173, 0.2);
 }
 
 @keyframes dreamlandTwinkle {
